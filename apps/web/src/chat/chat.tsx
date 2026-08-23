@@ -1,4 +1,5 @@
 import { useChat } from "@tanstack/ai-react";
+import { useRouter } from "@tanstack/react-router";
 import {
   Conversation,
   ConversationContent,
@@ -14,8 +15,15 @@ import {
 import { WarningIcon } from "@erudane/ui/icons";
 import { chatOptions } from "./client";
 
-export function Chat() {
-  const { messages, sendMessage, stop, status, error } = useChat(chatOptions);
+export function Chat({ threadId }: { readonly threadId: string }) {
+  const router = useRouter();
+  const { messages, sendMessage, stop, status, error } = useChat({
+    ...chatOptions,
+    persistence: true,
+    threadId,
+    // The first run of a new thread creates it server-side; refresh the sidebar.
+    onFinish: () => void router.invalidate(),
+  });
   const empty = messages.length === 0;
   const last = messages.at(-1);
 
@@ -38,7 +46,7 @@ export function Chat() {
 
   if (empty) {
     return (
-      <main className="flex h-dvh flex-col items-center justify-center gap-8 px-4">
+      <main className="flex h-full flex-col items-center justify-center gap-8 px-4">
         <h1 className="font-heading text-3xl font-medium tracking-tight">
           What do you have on your mind?
         </h1>
@@ -48,7 +56,7 @@ export function Chat() {
   }
 
   return (
-    <main className="flex h-dvh flex-col">
+    <main className="flex h-full flex-col">
       <Conversation>
         <ConversationContent className="mx-auto w-full max-w-2xl px-4 py-8">
           {messages.map((message) => (

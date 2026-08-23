@@ -1,4 +1,4 @@
-import type { Db } from "@erudane/db/service";
+import type { Database } from "@erudane/db/service";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -15,12 +15,12 @@ import type { ChatEvent, MessageId, NewMessage, RunInput, ThreadId } from "./typ
 export interface Interface {
   readonly start: (
     input: RunInput,
-  ) => Stream.Stream<ChatEvent, ChatError | ThreadNotFound | RepoError, Db.Runtime>;
+  ) => Stream.Stream<ChatEvent, ChatError | ThreadNotFound | RepoError, Database.Runtime>;
 }
 
 /**
  * @effect-expect-leaking RuntimeContext
- * `Db.Runtime` is the worker's per-request context, carried by the repository.
+ * `Database.Runtime` is the worker's per-request context, carried by the repository.
  */
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/Run") {}
 

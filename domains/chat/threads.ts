@@ -1,4 +1,4 @@
-import { Db } from "@erudane/db/service";
+import { Database } from "@erudane/db/service";
 import { messages, threads } from "@erudane/db/schema";
 import { eq } from "drizzle-orm";
 import * as Clock from "effect/Clock";
@@ -19,24 +19,24 @@ export interface Interface {
   readonly create: (thread: {
     readonly id: ThreadId;
     readonly title?: string | undefined;
-  }) => Effect.Effect<Thread, RepoError, Db.Runtime>;
-  readonly get: (id: ThreadId) => Effect.Effect<Option.Option<Thread>, RepoError, Db.Runtime>;
+  }) => Effect.Effect<Thread, RepoError, Database.Runtime>;
+  readonly get: (id: ThreadId) => Effect.Effect<Option.Option<Thread>, RepoError, Database.Runtime>;
   readonly list: (options: {
     readonly limit: number;
-  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Db.Runtime>;
+  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Database.Runtime>;
   readonly messages: (
     id: ThreadId,
-  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Db.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Database.Runtime>;
   /** Appends in order after the thread's last message; bumps `updatedAt`. */
   readonly append: (
     id: ThreadId,
     messages: ReadonlyArray<NewMessage>,
-  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError | ThreadNotFound, Db.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError | ThreadNotFound, Database.Runtime>;
 }
 
 /**
  * @effect-expect-leaking RuntimeContext
- * `Db.Runtime` is the worker's per-request context; queries open their pool on it.
+ * `Database.Runtime` is the worker's per-request context; queries open their pool on it.
  */
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/ThreadRepo") {}
 
@@ -71,7 +71,7 @@ const toStored = (row: typeof messages.$inferSelect) =>
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
-    const { db } = yield* Db.Service;
+    const db = yield* Database.Service;
 
     const create: Interface["create"] = (thread) =>
       Effect.gen(function* () {

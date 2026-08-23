@@ -1,7 +1,7 @@
 import { Run } from "@erudane/chat/run";
 import { ThreadRepo } from "@erudane/chat/threads";
 import { ThreadId } from "@erudane/chat/types";
-import type { Db } from "@erudane/db/service";
+import type { Database } from "@erudane/db/service";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
@@ -59,7 +59,7 @@ const run = HttpRouter.add(
 
     // The response body streams after this handler returns; it keeps the
     // request's runtime context (the per-request pool lives on it).
-    const runtime = yield* Effect.context<Db.Runtime>();
+    const runtime = yield* Effect.context<Database.Runtime>();
     const sse = runs
       .start({ threadId, message, system: SYSTEM, maxSteps: MAX_STEPS })
       .pipe(Agui.encode(body), Stream.encodeText, Stream.provideContext(runtime));
@@ -81,17 +81,17 @@ const run = HttpRouter.add(
 
 const HydrateQuery = Schema.Struct({ threadId: ThreadId });
 
-/** `GET /chat?threadId=`: TanStack's hydration probe — the stored transcript as `UIMessage`s. */
+/**
+ * `GET /chat?threadId=`: TanStack's hydration probe — the stored transcript as
+ * `UIMessage`s. A thread that does not exist yet (the page minted the id, no
+ * run has happened) hydrates as empty: the client treats any non-2xx as an error.
+ */
 const hydrate = HttpRouter.add(
   "GET",
   "/chat",
   Effect.gen(function* () {
     const { threadId } = yield* HttpServerRequest.schemaSearchParams(HydrateQuery);
     const repo = yield* ThreadRepo.Service;
-    const thread = yield* repo.get(threadId);
-    if (thread._tag === "None") {
-      return HttpServerResponse.text("thread not found", { status: 404 });
-    }
     const stored = yield* repo.messages(threadId);
     return HttpServerResponse.jsonUnsafe({
       messages: toUiMessages(stored),

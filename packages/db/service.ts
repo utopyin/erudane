@@ -11,21 +11,17 @@ import { relations } from "./schema";
 /** What every query needs: the worker's per-request runtime (binding access, execution scope). */
 export type Runtime = Alchemy.RuntimeContext;
 
-export class DbError extends Schema.TaggedError<DbError>()("Db.Error", {
+export class DatabaseError extends Schema.TaggedError<DatabaseError>()("Database.Error", {
   message: Schema.String,
   cause: Schema.Unknown,
 }) {}
 
-export type Database = Effect.Success<
+export type Instance = Effect.Success<
   ReturnType<typeof Drizzle.Postgres<typeof relations, never, never>>
 >;
 
-export interface Interface {
-  /** Drizzle over the bound Hyperdrive. Query Effects require `Runtime`. */
-  readonly db: Database;
-}
-
-export class Service extends Context.Service<Service, Interface>()("@erudane/db/Db") {}
+/** The service is the Drizzle instance itself: `const db = yield* Database.Service`. Query Effects require `Runtime`. */
+export class Service extends Context.Service<Service, Instance>()("@erudane/db/Database") {}
 
 /**
  * Infrastructure as a Layer: building it registers the Hyperdrive (and, in dev,
@@ -36,9 +32,8 @@ export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const connection = yield* Cloudflare.Hyperdrive.Connect(Hyperdrive);
-    const db = yield* Drizzle.Postgres(connection.connectionString, { relations });
-    return { db };
+    return yield* Drizzle.Postgres(connection.connectionString, { relations });
   }),
 ).pipe(Layer.provide(Cloudflare.Hyperdrive.ConnectBinding));
 
-export * as Db from "./service";
+export * as Database from "./service";

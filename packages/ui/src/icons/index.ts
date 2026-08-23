@@ -6,10 +6,12 @@
  */
 export { ArrowDownGlyph18 as ArrowDownIcon } from "./ArrowDownGlyph18";
 export { BrainGlyph18 as BrainIcon } from "./BrainGlyph18";
+export { ChatBubbleGlyph18 as ChatIcon } from "./ChatBubbleGlyph18";
 export { CheckGlyph18 as CheckIcon } from "./CheckGlyph18";
 export { ChevronDownGlyph18 as ChevronDownIcon } from "./ChevronDownGlyph18";
 export { CircleCheckGlyph18 as CircleCheckIcon } from "./CircleCheckGlyph18";
 export { MediaPauseGlyph18 as StopIcon } from "./MediaPauseGlyph18";
+export { ComposeGlyph18 as ComposeIcon } from "./ComposeGlyph18";
 export { CopyGlyph18 as CopyIcon } from "./CopyGlyph18";
 export { LoaderGlyph18 as LoaderIcon } from "./LoaderGlyph18";
 export { RefreshGlyph18 as RefreshIcon } from "./RefreshGlyph18";

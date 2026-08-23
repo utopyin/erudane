@@ -1,7 +1,7 @@
 import { Run } from "@erudane/chat/run";
 import { Chat } from "@erudane/chat/service";
 import { ThreadRepo } from "@erudane/chat/threads";
-import { Db } from "@erudane/db/service";
+import { Database } from "@erudane/db/service";
 import { Http } from "@erudane/http";
 import { layer as registry } from "@erudane/http/chat/registry";
 import * as Cloudflare from "alchemy/Cloudflare";
@@ -18,18 +18,18 @@ export default class Api extends Cloudflare.Worker<Api>()(
   "Api",
   { main: import.meta.url, compatibility: { flags: ["nodejs_compat"] } },
   Effect.gen(function* () {
-    const db = yield* Db.Service;
+    const db = yield* Database.Service;
 
     // Domain services are built once per isolate; routes take them per request.
     const services = yield* Layer.build(
       Run.layer.pipe(
         Layer.provideMerge(Layer.mergeAll(Chat.layer, ThreadRepo.layer)),
         Layer.provide(Layer.mergeAll(Model.layer, registry)),
-        Layer.provideMerge(Layer.succeed(Db.Service, db)),
+        Layer.provideMerge(Layer.succeed(Database.Service, db)),
       ),
     );
     const handler = yield* HttpRouter.toHttpEffect(Http.layer);
 
     return { fetch: handler.pipe(Effect.provideContext(services)) };
-  }).pipe(Effect.provide(Db.layer)),
+  }).pipe(Effect.provide(Database.layer)),
 ) {}
