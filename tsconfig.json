@@ -2,12 +2,14 @@
   "$schema": "./node_modules/@effect/tsgo/schema.json",
   "compilerOptions": {
     "target": "esnext",
+    "strict": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noUncheckedIndexedAccess": true,
     "noEmitOnError": true,
     "moduleResolution": "bundler",
     "module": "esnext",
+    "verbatimModuleSyntax": true,
     "noEmit": true,
     "plugins": [
       {

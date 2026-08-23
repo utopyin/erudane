@@ -38,3 +38,6 @@ yarn-error.log*
 .dev.vars.local
 .wrangler
 worker-configuration.d.ts
+
+# alchemy
+.alchemy

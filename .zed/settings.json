@@ -55,6 +55,7 @@
       ]
     }
   },
+  "read_only_files": ["apps/web/src/routeTree.gen.ts"],
   "file_scan_exclusions": [
     "**/.git",
     "**/.svn",
