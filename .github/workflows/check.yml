@@ -1,0 +1,64 @@
+name: Check
+
+# Validates the repository type graph and website docs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # pnpm needs the distilled submodule (workspace member)
+          submodules: true
+
+      - name: Setup pnpm, Node.js, Bun
+        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+        with:
+          cache: true
+          install: false
+
+      - name: Install Node 24
+        run: pnpm runtime set node 24 -g
+
+      - name: Restore Astro build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: website/node_modules/.astro
+          key: website-check-astro-${{ runner.os }}-${{ github.event.pull_request.number || 'main' }}-${{ github.sha }}
+          restore-keys: |
+            website-check-astro-${{ runner.os }}-${{ github.event.pull_request.number || 'main' }}-
+            website-check-astro-${{ runner.os }}-main-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Node Utils tests
+        run: pnpm -C packages/node-utils test
+
+      - name: Run Typecheck
+        run: pnpm tsc -b
+
+      - name: Check API JSDocs
+        run: pnpm docs:check-jsdoc
+
+      # An internal PR carrying `deploy-website` gets a full Astro build in
+      # website.yml via StaticSite. That build runs the same output validators,
+      # so avoid building the site a second time here. Forks still run this
+      # check because they cannot access the preview deployment secrets.
+      - name: Check website docs
+        if: >-
+          github.event.pull_request.head.repo.full_name != github.repository ||
+          !contains(github.event.pull_request.labels.*.name, 'deploy-website')
+        run: pnpm docs:check
