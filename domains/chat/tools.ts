@@ -11,7 +11,6 @@ import * as Toolkit from "effect/unstable/ai/Toolkit";
 export const CurrentTime = Tool.make("CurrentTime", {
   description:
     "Returns the current UTC date and time as an ISO-8601 string. Use for anything time-relative.",
-  parameters: Schema.Struct({}),
   success: Schema.Struct({ iso: Schema.String }),
   failureMode: "return",
 });

@@ -118,7 +118,7 @@ Implementation notes:
 ```ts
 export const CurrentTime = Tool.make("CurrentTime", {
   description: "Current UTC date-time, for anything time-relative the learner asks.",
-  parameters: Schema.Struct({}),
+  // no `parameters`: Tool.EmptyParams. `Schema.Struct({})` emits `anyOf[object,array]`, which OpenAI rejects.
   success: Schema.Struct({ iso: Schema.String }),
   failureMode: "return",
 });
@@ -155,5 +155,5 @@ Written here until a `@erudane/tool` package earns its existence.
 2. **Names are PascalCase nouns or verb-phrases unique across the registry** (`CurrentTime`, `SearchCourses`). The name is the wire id on every protocol.
 3. **`failureMode: "return"` by default.** Expected tool failures are information for the model, not a run failure. Declare them in `failure:` so they are encoded, and keep `Chat.Service`'s error channel to `ChatError`. Use `"error"` only when a failure must abort the run.
 4. **`dependencies`/`addDependency` are for per-request services** (the current user, a request-scoped trace). Everything else is provided to the handler layer.
-5. **Schemas are JSON-representable**: params and success must round-trip through JSON Schema (`Tool.getJsonSchema`) and Standard Schema, because the same definition types the client. No `Schema.Date`, `Option` or classes at the edge; use ISO strings / nullable.
+5. **Schemas are JSON-representable**: params and success must round-trip through JSON Schema (`Tool.getJsonSchema`) and Standard Schema, because the same definition types the client. No `Schema.Date`, `Option` or classes at the edge; use ISO strings / nullable. A tool without parameters omits `parameters` entirely (`Schema.Struct({})` produces a JSON schema OpenAI rejects).
 6. **Describe for the model, not for the reader.** `description` and parameter annotations are prompt text.

@@ -8,7 +8,9 @@
  */
 import type { ChatError } from "@erudane/chat/errors";
 import type { ChatEvent, ChatInput } from "@erudane/chat/types";
+import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import * as Prompt from "effect/unstable/ai/Prompt";
@@ -170,6 +172,7 @@ export interface RunIds {
 type Json = Record<string, unknown>;
 
 interface EncoderState {
+  failure: Cause.Cause<ChatError> | undefined;
   readonly messageId: string;
   readonly startedToolCalls: Set<string>;
   readonly reasoningIds: Set<string>;
@@ -275,6 +278,11 @@ const partEvents = (state: EncoderState, part: Response.StreamPart<any>): Readon
   }
 };
 
+const errorMessage = (cause: Cause.Cause<ChatError>): string => {
+  const squashed = Cause.squash(cause);
+  return squashed instanceof Error ? squashed.message : String(squashed);
+};
+
 const toSse = (event: Json): string =>
   Sse.encoder.write({
     _tag: "Event",
@@ -288,6 +296,7 @@ export const encode =
   (ids: RunIds) =>
   <R>(events: Stream.Stream<ChatEvent, ChatError, R>): Stream.Stream<string, never, R> => {
     const initial = (): EncoderState => ({
+      failure: undefined,
       messageId: `${ids.runId}-0`,
       startedToolCalls: new Set(),
       reasoningIds: new Set(),
@@ -298,20 +307,25 @@ export const encode =
 
     const step = (
       state: EncoderState,
-      event: ChatEvent,
+      event: Result.Result<ChatEvent, Cause.Cause<ChatError>>,
     ): readonly [EncoderState, ReadonlyArray<Json>] => {
-      switch (event._tag) {
+      if (Result.isFailure(event)) {
+        state.failure = event.failure;
+        return [state, [runError(event.failure)]];
+      }
+      const chatEvent = event.success;
+      switch (chatEvent._tag) {
         case "StepStart": {
-          const next = { ...state, messageId: `${ids.runId}-${event.step}` };
+          const next = { ...state, messageId: `${ids.runId}-${chatEvent.step}` };
           return [
             next,
             [{ type: "TEXT_MESSAGE_START", messageId: next.messageId, role: "assistant" }],
           ];
         }
         case "Part":
-          return [state, partEvents(state, event.part)];
+          return [state, partEvents(state, chatEvent.part)];
         case "StepEnd":
-          state.reason = event.reason;
+          state.reason = chatEvent.reason;
           return [state, [{ type: "TEXT_MESSAGE_END", messageId: state.messageId }]];
         case "MaxStepsReached":
           state.reason = "length";
@@ -333,15 +347,20 @@ export const encode =
       metadata: { tanstack: { finishReason: finishReason(state.reason) } },
     });
 
-    const runError = (cause: unknown): Json => ({
+    const runError = (cause: Cause.Cause<ChatError>): Json => ({
       type: "RUN_ERROR",
-      message: String(cause),
+      message: errorMessage(cause),
       metadata: { tanstack: { threadId: ids.threadId, runId: ids.runId } },
     });
 
+    // Failures are folded into the accumulator so `onHalt` can tell a clean end
+    // (RUN_FINISHED) from a failed one (RUN_ERROR already emitted).
     const body: Stream.Stream<Json, never, R> = events.pipe(
-      Stream.mapAccum(initial, step, { onHalt: (state) => [runFinished(state)] }),
-      Stream.catchCause((cause) => Stream.succeed(runError(cause))),
+      Stream.map(Result.succeed),
+      Stream.catchCause((cause) => Stream.succeed(Result.fail(cause))),
+      Stream.mapAccum(initial, step, {
+        onHalt: (state) => (state.failure === undefined ? [runFinished(state)] : []),
+      }),
     );
 
     const started: Json = { type: "RUN_STARTED", threadId: ids.threadId, runId: ids.runId };
