@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     "./config": "./config.ts",
-    "./schema": "./schema.ts",
+    "./schema": "./schema/index.ts",
     "./infra": "./infra.ts",
     "./service": "./service.ts",
     "./hyperdrive": "./hyperdrive.ts"

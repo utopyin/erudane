@@ -8,7 +8,7 @@ Lesson documents are **live-collaborative**: the user edits in a Notion-style bl
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
 | CRDT                     | Yjs (pure JS, runs in workerd and the DO)                                                                                             | `yjs` 13.6.x        |
 | Editor                   | **BlockNote** (`@blocknote/core`, `@blocknote/react`)                                                                                 | 0.54.x              |
-| Agent-side doc machinery | `@blocknote/core` + `@blocknote/core/yjs` headless conversions, linkedom DOM shim (server-util rejected at spike: hard jsdom import)   | 0.54.x              |
+| Agent-side doc machinery | `@blocknote/core` + `@blocknote/core/yjs` headless conversions, linkedom DOM shim (server-util rejected at spike: hard jsdom import)  | 0.54.x              |
 | Sync server              | **Alchemy Effect-form Durable Object** (one per document) speaking the y-websocket wire protocol via `y-protocols` (sync + awareness) | `y-protocols` 1.0.x |
 | Client provider          | `y-websocket`'s `WebsocketProvider` (protocol-standard, maintained)                                                                   | `y-websocket` 2.x   |
 | Transport                | WebSocket, browser → API worker route → DO (`Cloudflare.upgrade()`, hibernatable)                                                     | —                   |
