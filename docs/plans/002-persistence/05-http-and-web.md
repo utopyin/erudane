@@ -23,7 +23,7 @@ Error mapping adds `Chat.ThreadNotFound` → 404 and `Chat.RepoError` → 500 (l
 ## Codec changes (`chat/agui.ts`)
 
 - `toChatInput` becomes `toUserMessage` (returns `Prompt.UserMessage`); the multi-message mapping moves to `ui.ts` in the other direction.
-- `encode`: the assistant `messageId` for step `n` comes from the `StepStart.messageId` event instead of `${runId}-${n}`; everything else (tool-call ids, `tool-${id}` result messages, `${messageId}-r${id}` reasoning ids) is unchanged. Hydration must produce the **same ids** for the same stored messages, or a reload shows the last answer twice.
+- `encode`: the assistant `messageId` for step `n` comes from the `StepStart.messageId` event; everything else (tool-call ids, `tool-${id}` result messages, `${messageId}-r${id}` reasoning ids) is unchanged. Hydration must produce the **same ids** for the same stored messages, or a reload shows the last answer twice.
 
 ## Hydration codec (`chat/ui.ts`)
 

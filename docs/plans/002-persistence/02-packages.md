@@ -78,8 +78,7 @@ apps/api/src/
   index.ts            `export default class Api extends Cloudflare.Worker<Api>()("Api", { main: import.meta.url,
                       compatibility: { flags: ["nodejs_compat"] } }, init)`; init = yield* Config…, build app layer,
                       `fetch: yield* HttpRouter.toHttpEffect(app)`; `.pipe(Effect.provide(Db.layer))`
-  model.ts            reads `Config.*` instead of `env` (OPENAI_API_KEY, OPENAI_MODEL, CHATGPT_OAUTH, CHATGPT_MODEL)
-  runtime.ts, env.ts  deleted
+  model.ts            reads `Config.*` (OPENAI_API_KEY, OPENAI_MODEL, CHATGPT_OAUTH, CHATGPT_MODEL)
 ```
 
 `alchemy.run.ts` imports `Api` from `apps/api/src/index.ts` (the class is the resource), keeps `Website`, provides a `ConfigProvider` override for `CHATGPT_OAUTH` in dev (06). Adds `Docker.providers()` to the stack providers.

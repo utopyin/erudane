@@ -17,7 +17,7 @@ import { PREFIX } from "./config.js";
 export const table = pgTableCreator((name) => `${PREFIX}_${name}`, "snake_case");
 ```
 
-`pgTableCreator(fn, casing)` is the rc API (`drizzle-orm/pg-core/table.d.ts:93`); `drizzle({ casing })` no longer exists. Column names are derived from the property names, so schema code never repeats them.
+`pgTableCreator(fn, casing)` (`drizzle-orm/pg-core/table.d.ts:93`) applies both prefix and casing. Column names are derived from the property names, so schema code never repeats them.
 
 ## Schema
 
@@ -46,7 +46,7 @@ export const messages = table(
     content: jsonb().$type<unknown>().notNull(), // Prompt.MessageEncoded (effect owns the codec, not drizzle)
     createdAt: timestamp({ withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },
-  (t) => [index().on(t.threadId, t.seq)],        // array form; the object form is deprecated in rc
+  (t) => [index().on(t.threadId, t.seq)],
 );
 
 export const relations = defineRelations({ threads, messages }, (r) => ({
