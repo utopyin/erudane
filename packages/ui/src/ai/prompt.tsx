@@ -79,8 +79,7 @@ function PromptInput({ status, onSubmit, onStop, className, onClick, ...props }:
         onSubmit={onFormSubmit}
         onClick={onCardClick}
         className={cn(
-          "bg-card text-card-foreground flex cursor-text flex-col gap-2 rounded-3xl border p-3 transition-[color,box-shadow]",
-          "has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-ring/50 has-[textarea:focus-visible]:ring-[3px]",
+          "bg-card text-card-foreground flex cursor-text flex-col gap-2 rounded-3xl border p-3",
           className,
         )}
         {...props}
