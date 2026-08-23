@@ -27,8 +27,10 @@
         "@effect/platform-bun": "catalog:",
         "@erudane/chat": "workspace:*",
         "@erudane/db": "workspace:*",
+        "@erudane/files": "workspace:*",
         "@erudane/firecrawl": "workspace:*",
         "@erudane/http": "workspace:*",
+        "@erudane/storage": "workspace:*",
         "alchemy": "catalog:",
         "effect": "catalog:",
       },
@@ -42,6 +44,7 @@
       "dependencies": {
         "@base-ui/react": "^1.7.0",
         "@erudane/chat": "workspace:*",
+        "@erudane/files": "workspace:*",
         "@erudane/http": "workspace:*",
         "@erudane/research": "workspace:*",
         "@erudane/ui": "workspace:*",
@@ -70,7 +73,20 @@
       "version": "0.0.0",
       "dependencies": {
         "@erudane/db": "workspace:*",
+        "@erudane/files": "workspace:*",
         "drizzle-orm": "catalog:",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "7.0.2",
+      },
+    },
+    "domains/files": {
+      "name": "@erudane/files",
+      "version": "0.0.0",
+      "dependencies": {
+        "@erudane/db": "workspace:*",
+        "@erudane/storage": "workspace:*",
         "effect": "catalog:",
       },
       "devDependencies": {
@@ -94,6 +110,7 @@
       "dependencies": {
         "@erudane/chat": "workspace:*",
         "@erudane/db": "workspace:*",
+        "@erudane/files": "workspace:*",
         "@erudane/research": "workspace:*",
         "effect": "catalog:",
       },
@@ -126,6 +143,18 @@
         "effect": "catalog:",
       },
       "devDependencies": {
+        "typescript": "7.0.2",
+      },
+    },
+    "packages/storage": {
+      "name": "@erudane/storage",
+      "version": "0.0.0",
+      "dependencies": {
+        "alchemy": "catalog:",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260823.1",
         "typescript": "7.0.2",
       },
     },
@@ -398,6 +427,8 @@
 
     "@erudane/db": ["@erudane/db@workspace:packages/db"],
 
+    "@erudane/files": ["@erudane/files@workspace:domains/files"],
+
     "@erudane/firecrawl": ["@erudane/firecrawl@workspace:packages/firecrawl"],
 
     "@erudane/http": ["@erudane/http@workspace:entrypoints/http"],
@@ -405,6 +436,8 @@
     "@erudane/research": ["@erudane/research@workspace:domains/research"],
 
     "@erudane/scripts": ["@erudane/scripts@workspace:scripts"],
+
+    "@erudane/storage": ["@erudane/storage@workspace:packages/storage"],
 
     "@erudane/ui": ["@erudane/ui@workspace:packages/ui"],
 

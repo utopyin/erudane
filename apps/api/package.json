@@ -11,8 +11,10 @@
     "@effect/platform-bun": "catalog:",
     "@erudane/chat": "workspace:*",
     "@erudane/db": "workspace:*",
+    "@erudane/files": "workspace:*",
     "@erudane/firecrawl": "workspace:*",
     "@erudane/http": "workspace:*",
+    "@erudane/storage": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },

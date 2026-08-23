@@ -6,6 +6,7 @@
 import type { UIMessage } from "@tanstack/ai-client";
 import { Fragment, createContext, useContext, type ComponentProps, type ReactNode } from "react";
 
+import { Attachment } from "@erudane/ui/ai/attachment";
 import { Reasoning } from "@erudane/ui/ai/reasoning";
 import { Response } from "@erudane/ui/ai/response";
 import { Tool } from "@erudane/ui/ai/tool";
@@ -60,6 +61,21 @@ function MessageContent({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
+const attachmentMetadata = (metadata: unknown) => {
+  if (typeof metadata !== "object" || metadata === null) return {};
+  const fileName = "fileName" in metadata ? metadata.fileName : undefined;
+  const size = "size" in metadata ? metadata.size : undefined;
+  return {
+    fileName: typeof fileName === "string" ? fileName : undefined,
+    size: typeof size === "number" ? size : undefined,
+  };
+};
+
+const mediaSource = (part: PartOf<"image"> | PartOf<"document">): string =>
+  part.source.type === "url"
+    ? part.source.value
+    : `data:${part.source.mimeType};base64,${part.source.value}`;
+
 const defaults: PartRenderers = {
   // User text is shown verbatim; only the model's text is markdown.
   text: (part, { role, streaming }) =>
@@ -68,6 +84,28 @@ const defaults: PartRenderers = {
     ) : (
       <Response streaming={streaming}>{part.content}</Response>
     ),
+  image: (part) => {
+    const source = mediaSource(part);
+    return (
+      <Attachment
+        type="image"
+        source={source}
+        href={source}
+        {...attachmentMetadata(part.metadata)}
+      />
+    );
+  },
+  document: (part) => {
+    const source = mediaSource(part);
+    return (
+      <Attachment
+        type="document"
+        source={source}
+        href={source}
+        {...attachmentMetadata(part.metadata)}
+      />
+    );
+  },
   thinking: (part, { streaming }) => <Reasoning content={part.content} streaming={streaming} />,
   "tool-call": (part) => <Tool part={part} />,
 };
@@ -81,10 +119,18 @@ interface MessagePartsProps {
 
 function MessageParts({ message, streaming = false, renderers }: MessagePartsProps) {
   const role = useContext(RoleContext);
+  const indexed = message.parts.map((part, index) => ({ part, index }));
+  const parts =
+    role === "user"
+      ? [
+          ...indexed.filter(({ part }) => part.type === "image" || part.type === "document"),
+          ...indexed.filter(({ part }) => part.type !== "image" && part.type !== "document"),
+        ]
+      : indexed;
   const last = message.parts.length - 1;
   return (
     <>
-      {message.parts.map((part, index) => {
+      {parts.map(({ part, index }) => {
         const ctx: PartContext = { message, role, index, streaming: streaming && index === last };
         const node = render(renderers, part, ctx) ?? render(defaults, part, ctx);
         if (node === undefined || node === null) return null;

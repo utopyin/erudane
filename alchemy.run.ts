@@ -11,6 +11,7 @@ import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import Api from "./apps/api/src/index";
 import { Hyperdrive } from "./packages/db/infra";
+import { Bucket } from "./packages/storage/r2";
 import * as ChatGpt from "./scripts/chatgpt/token";
 
 /**
@@ -53,11 +54,13 @@ export default Alchemy.Stack(
     const api = yield* Api;
     const website = yield* Website;
     const hyperdrive = yield* Hyperdrive;
+    const bucket = yield* Bucket;
 
     return {
       apiUrl: api.url.as<string>(),
       websiteUrl: website.url.as<string>(),
       hyperdriveId: hyperdrive.hyperdriveId,
+      filesBucket: bucket.bucketName,
     };
   }).pipe(Effect.provide(chatGptConfig)),
 );

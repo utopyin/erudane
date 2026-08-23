@@ -1,0 +1,21 @@
+{
+  "name": "@erudane/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./file-store": "./file-store.ts",
+    "./r2": "./r2.ts"
+  },
+  "scripts": {
+    "check:types": "tsc"
+  },
+  "dependencies": {
+    "alchemy": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260823.1",
+    "typescript": "7.0.2"
+  }
+}

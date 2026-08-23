@@ -1,25 +1,19 @@
 {
-  "name": "@erudane/chat",
+  "name": "@erudane/files",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    "./tools": "./tools.ts",
-    "./handlers": "./handlers.ts",
-    "./service": "./service.ts",
     "./types": "./types.ts",
     "./errors": "./errors.ts",
-    "./threads": "./threads.ts",
-    "./run": "./run.ts",
-    "./ids": "./ids.ts"
+    "./service": "./service.ts"
   },
   "scripts": {
     "check:types": "tsc"
   },
   "dependencies": {
     "@erudane/db": "workspace:*",
-    "@erudane/files": "workspace:*",
-    "drizzle-orm": "catalog:",
+    "@erudane/storage": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

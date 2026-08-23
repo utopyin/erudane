@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiFilesRouteImport } from './routes/api/files_'
 import { Route as ApiThreadsRouteImport } from './routes/api/threads'
 import { Route as ChatIndexRouteImport } from './routes/chat.index'
 import { Route as ChatThreadIdRouteImport } from './routes/chat.$threadId'
+import { Route as ApiFilesSplatRouteImport } from './routes/api/files_.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,6 +31,11 @@ const ChatRoute = ChatRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFilesRoute = ApiFilesRouteImport.update({
+  id: '/api/files_',
+  path: '/api/files',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiThreadsRoute = ApiThreadsRouteImport.update({
@@ -46,51 +53,79 @@ const ChatThreadIdRoute = ChatThreadIdRouteImport.update({
   path: '/$threadId',
   getParentRoute: () => ChatRoute,
 } as any)
+const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => ApiFilesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof ChatRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
   '/api/threads': typeof ApiThreadsRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
   '/chat/': typeof ChatIndexRoute
+  '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/files': typeof ApiFilesRouteWithChildren
   '/api/threads': typeof ApiThreadsRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
   '/chat': typeof ChatIndexRoute
+  '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chat': typeof ChatRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/files_': typeof ApiFilesRouteWithChildren
   '/api/threads': typeof ApiThreadsRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
   '/chat/': typeof ChatIndexRoute
+  '/api/files_/$': typeof ApiFilesSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/chat' | '/api/chat' | '/api/threads' | '/chat/$threadId' | '/chat/'
+    | '/'
+    | '/chat'
+    | '/api/chat'
+    | '/api/files'
+    | '/api/threads'
+    | '/chat/$threadId'
+    | '/chat/'
+    | '/api/files/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/chat' | '/api/threads' | '/chat/$threadId' | '/chat'
+  to:
+    | '/'
+    | '/api/chat'
+    | '/api/files'
+    | '/api/threads'
+    | '/chat/$threadId'
+    | '/chat'
+    | '/api/files/$'
   id:
     | '__root__'
     | '/'
     | '/chat'
     | '/api/chat'
+    | '/api/files_'
     | '/api/threads'
     | '/chat/$threadId'
     | '/chat/'
+    | '/api/files_/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatRoute: typeof ChatRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  ApiFilesRoute: typeof ApiFilesRouteWithChildren
   ApiThreadsRoute: typeof ApiThreadsRoute
 }
 
@@ -117,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/files_': {
+      id: '/api/files_'
+      path: '/api/files'
+      fullPath: '/api/files'
+      preLoaderRoute: typeof ApiFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/threads': {
       id: '/api/threads'
       path: '/api/threads'
@@ -138,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatThreadIdRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/api/files_/$': {
+      id: '/api/files_/$'
+      path: '/$'
+      fullPath: '/api/files/$'
+      preLoaderRoute: typeof ApiFilesSplatRouteImport
+      parentRoute: typeof ApiFilesRoute
+    }
   }
 }
 
@@ -153,10 +202,23 @@ const ChatRouteChildren: ChatRouteChildren = {
 
 const ChatRouteWithChildren = ChatRoute._addFileChildren(ChatRouteChildren)
 
+interface ApiFilesRouteChildren {
+  ApiFilesSplatRoute: typeof ApiFilesSplatRoute
+}
+
+const ApiFilesRouteChildren: ApiFilesRouteChildren = {
+  ApiFilesSplatRoute: ApiFilesSplatRoute,
+}
+
+const ApiFilesRouteWithChildren = ApiFilesRoute._addFileChildren(
+  ApiFilesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  ApiFilesRoute: ApiFilesRouteWithChildren,
   ApiThreadsRoute: ApiThreadsRoute,
 }
 export const routeTree = rootRouteImport

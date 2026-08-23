@@ -11,6 +11,7 @@
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@erudane/chat": "workspace:*",
+    "@erudane/files": "workspace:*",
     "@erudane/http": "workspace:*",
     "@erudane/research": "workspace:*",
     "@erudane/ui": "workspace:*",

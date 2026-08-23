@@ -17,6 +17,15 @@ export const messageRole = pgEnum(`${PREFIX}_message_role`, [
   "tool",
 ]);
 
+export const files = table("files", {
+  id: uuid().primaryKey(),
+  key: text().notNull().unique(),
+  mediaType: text().notNull(),
+  fileName: text(),
+  size: integer().notNull(),
+  createdAt: timestamp({ withTimezone: true, mode: "string" }).notNull().defaultNow(),
+});
+
 export const messages = table(
   "messages",
   {
@@ -34,10 +43,11 @@ export const messages = table(
   (t) => [index().on(t.threadId, t.seq)],
 );
 
-export const relations = defineRelations({ threads, messages }, (r) => ({
+export const relations = defineRelations({ files, threads, messages }, (r) => ({
   threads: { messages: r.many.messages() },
   messages: { thread: r.one.threads({ from: r.messages.threadId, to: r.threads.id }) },
 }));
 
+export type File = typeof files.$inferSelect;
 export type Thread = typeof threads.$inferSelect;
 export type Message = typeof messages.$inferSelect;
