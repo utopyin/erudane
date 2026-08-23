@@ -22,8 +22,8 @@ export default class Api extends Cloudflare.Worker<Api>()(
   "Api",
   { main: import.meta.url, compatibility: { flags: ["nodejs_compat"] } },
   Effect.gen(function* () {
-    const db = yield* Db.Service;                       // init: binds Hyperdrive (plan) / resolves it (runtime)
-    const model = yield* Model.layer;                   // init: Config reads (auto-bound as secrets at plan time)
+    const db = yield* Db.Service; // init: binds Hyperdrive (plan) / resolves it (runtime)
+    const model = yield* Model.layer; // init: Config reads (auto-bound as secrets at plan time)
 
     const app = Http.layer.pipe(
       Layer.provideMerge(Layer.mergeAll(Chat.layer, Run.layer)),
@@ -31,7 +31,7 @@ export default class Api extends Cloudflare.Worker<Api>()(
       Layer.provide(Layer.mergeAll(model, registry, Layer.succeed(Db.Service, db))),
     );
 
-    return { fetch: yield* HttpRouter.toHttpEffect(app) };   // HttpRouter.ts:617
+    return { fetch: yield* HttpRouter.toHttpEffect(app) }; // HttpRouter.ts:617
   }).pipe(Effect.provide(Db.layer)),
 ) {}
 ```

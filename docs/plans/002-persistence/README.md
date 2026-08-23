@@ -6,15 +6,15 @@ The slice also lays the database foundation every later domain will use: one sha
 
 Read in order:
 
-| Doc                                          | What it fixes                                                                                 |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [01-decisions.md](./01-decisions.md)         | Decisions D12–D22 and what was verified in `repos/alchemy`, drizzle rc.5, TanStack AI 0.48 |
-| [02-packages.md](./02-packages.md)           | Package map, every file, exports, closures                                                    |
-| [03-db-package.md](./03-db-package.md)       | `@erudane/db`: schema + prefix, Drizzle config/migrations, the `Db` service and its infra Layer |
-| [04-chat-persistence.md](./04-chat-persistence.md) | `@erudane/chat`: `ThreadRepo` (drizzle + memory layers), `Run` orchestration around `Chat.stream` |
-| [05-http-and-web.md](./05-http-and-web.md)   | Routes (`POST /chat`, `GET /chat?threadId`, `GET /threads`), Prompt → UIMessage codec, web pages |
-| [06-infra.md](./06-infra.md)                 | Hyperdrive adoption, PlanetScale origin, local Postgres in Docker, migrations at deploy, the Effect-form API worker |
-| [07-phases.md](./07-phases.md)               | Implementation order, verification, deferred                                                  |
+| Doc                                                | What it fixes                                                                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [01-decisions.md](./01-decisions.md)               | Decisions D12–D22 and what was verified in `repos/alchemy`, drizzle rc.5, TanStack AI 0.48                          |
+| [02-packages.md](./02-packages.md)                 | Package map, every file, exports, closures                                                                          |
+| [03-db-package.md](./03-db-package.md)             | `@erudane/db`: schema + prefix, Drizzle config/migrations, the `Db` service and its infra Layer                     |
+| [04-chat-persistence.md](./04-chat-persistence.md) | `@erudane/chat`: `ThreadRepo` (drizzle + memory layers), `Run` orchestration around `Chat.stream`                   |
+| [05-http-and-web.md](./05-http-and-web.md)         | Routes (`POST /chat`, `GET /chat?threadId`, `GET /threads`), Prompt → UIMessage codec, web pages                    |
+| [06-infra.md](./06-infra.md)                       | Hyperdrive adoption, PlanetScale origin, local Postgres in Docker, migrations at deploy, the Effect-form API worker |
+| [07-phases.md](./07-phases.md)                     | Implementation order, verification, deferred                                                                        |
 
 Related: [001-chat](../001-chat/README.md) (the seams this plan builds on), [docs/architecture/CONTEXT.md](../../architecture/CONTEXT.md).
 

@@ -20,7 +20,12 @@
       "@effect/ai-openai": "4.0.0-rc.111",
       "@tanstack/ai": "^0.48.0",
       "@tanstack/ai-react": "^0.21.3",
-      "@tanstack/ai-client": "^0.26.0"
+      "@tanstack/ai-client": "^0.26.0",
+      "drizzle-orm": "1.0.0-rc.5-ab785fc",
+      "drizzle-kit": "1.0.0-rc.5-ab785fc",
+      "@effect/sql-pg": "4.0.0-rc.111",
+      "pg": "^8.23.0",
+      "@types/pg": "^8.20.0"
     }
   },
   "type": "module",
@@ -33,7 +38,10 @@
     "prepare": "effect-tsgo patch --typescript --oxlint",
     "deploy": "alchemy deploy --env-file .env.production",
     "destroy": "alchemy destroy --env-file .env.production",
-    "login:chatgpt": "bun run scripts/chatgpt/login.ts"
+    "login:chatgpt": "bun run scripts/chatgpt/login.ts",
+    "db:generate": "bun run --cwd packages/db generate",
+    "db:migrate": "bun run --cwd packages/db migrate",
+    "db:studio": "bun run --cwd packages/db studio"
   },
   "dependencies": {
     "@effect/platform-bun": "catalog:",

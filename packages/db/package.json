@@ -1,0 +1,31 @@
+{
+  "name": "@erudane/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./config": "./config.ts",
+    "./schema": "./schema.ts",
+    "./infra": "./infra.ts",
+    "./service": "./service.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@effect/sql-pg": "catalog:",
+    "alchemy": "catalog:",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:",
+    "pg": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260823.1",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
+    "typescript": "7.0.2"
+  }
+}

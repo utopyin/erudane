@@ -21,13 +21,13 @@ export class StoredMessage extends Schema.Class<StoredMessage>("Chat.StoredMessa
   id: MessageId,
   threadId: ThreadId,
   seq: Schema.Int,
-  message: Prompt.Message,          // Schema.Codec<Message, MessageEncoded> — Prompt.ts:1776
+  message: Prompt.Message, // Schema.Codec<Message, MessageEncoded> — Prompt.ts:1776
   createdAt: Schema.DateTimeUtc,
 }) {}
 
 export interface RunInput {
   readonly threadId: ThreadId;
-  readonly message: Prompt.UserMessage;    // the one new message
+  readonly message: Prompt.UserMessage; // the one new message
   readonly system?: string;
   readonly maxSteps?: number;
 }
@@ -38,21 +38,35 @@ export interface RunInput {
 ## Errors (`errors.ts`, additions)
 
 ```ts
-export class ThreadNotFound extends Schema.TaggedError<ThreadNotFound>()("Chat.ThreadNotFound", { threadId: ThreadId }) {}
-export class RepoError extends Schema.TaggedError<RepoError>()("Chat.RepoError", { message: Schema.String, cause: Schema.Defect }) {}
+export class ThreadNotFound extends Schema.TaggedError<ThreadNotFound>()("Chat.ThreadNotFound", {
+  threadId: ThreadId,
+}) {}
+export class RepoError extends Schema.TaggedError<RepoError>()("Chat.RepoError", {
+  message: Schema.String,
+  cause: Schema.Defect,
+}) {}
 ```
 
 ## `ThreadRepo` (`threads.ts`)
 
 ```ts
 export interface Interface {
-  readonly create: (thread: { id: ThreadId; title?: string }) => Effect.Effect<Thread, RepoError, Db.Runtime>;
+  readonly create: (thread: {
+    id: ThreadId;
+    title?: string;
+  }) => Effect.Effect<Thread, RepoError, Db.Runtime>;
   readonly get: (id: ThreadId) => Effect.Effect<Option.Option<Thread>, RepoError, Db.Runtime>;
-  readonly list: (options: { limit: number }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Db.Runtime>;
-  readonly messages: (id: ThreadId) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Db.Runtime>;
+  readonly list: (options: {
+    limit: number;
+  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Db.Runtime>;
+  readonly messages: (
+    id: ThreadId,
+  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Db.Runtime>;
   /** Appends in order, assigning `seq` after the current max; bumps `updatedAt`. One transaction. */
-  readonly append: (id: ThreadId, messages: ReadonlyArray<{ id: MessageId; message: Prompt.Message }>) =>
-    Effect.Effect<ReadonlyArray<StoredMessage>, RepoError | ThreadNotFound, Db.Runtime>;
+  readonly append: (
+    id: ThreadId,
+    messages: ReadonlyArray<{ id: MessageId; message: Prompt.Message }>,
+  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError | ThreadNotFound, Db.Runtime>;
 }
 
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/ThreadRepo") {}
@@ -77,26 +91,34 @@ Row ↔ domain mapping lives in this file only (`timestamp mode: "string"` → `
 
 ```ts
 export interface Interface {
-  readonly start: (input: RunInput) => Stream.Stream<ChatEvent, ChatError | ThreadNotFound | RepoError, Db.Runtime>;
+  readonly start: (
+    input: RunInput,
+  ) => Stream.Stream<ChatEvent, ChatError | ThreadNotFound | RepoError, Db.Runtime>;
 }
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/Run") {}
 
-export const layer = Layer.effect(Service, Effect.gen(function* () {
-  const chat = yield* Chat.Service;
-  const repo = yield* ThreadRepo.Service;
-  const start = (input: RunInput) => Stream.unwrap(Effect.gen(function* () {
-    const history = yield* repo.messages(input.threadId);        // [] is fine; ThreadNotFound comes from append
-    yield* repo.append(input.threadId, [{ id: mintId(), message: input.message }]);
-    const messages = [...history.map((m) => m.message), input.message];
-    const parts: Array<Array<Response.StreamPart<any>>> = [];   // per step
-    return chat.stream({ messages, system: input.system, maxSteps: input.maxSteps }).pipe(
-      Stream.map(attachMessageIds),                              // StepStart gets a minted assistant message id
-      Stream.tap(collectParts(parts)),                           // Part events by step
-      Stream.onEnd(persist(input.threadId, parts)),                  // Stream.ts:10432 — runs after a *successful* end only
-    );
-  }));
-  return { start };
-}));
+export const layer = Layer.effect(
+  Service,
+  Effect.gen(function* () {
+    const chat = yield* Chat.Service;
+    const repo = yield* ThreadRepo.Service;
+    const start = (input: RunInput) =>
+      Stream.unwrap(
+        Effect.gen(function* () {
+          const history = yield* repo.messages(input.threadId); // [] is fine; ThreadNotFound comes from append
+          yield* repo.append(input.threadId, [{ id: mintId(), message: input.message }]);
+          const messages = [...history.map((m) => m.message), input.message];
+          const parts: Array<Array<Response.StreamPart<any>>> = []; // per step
+          return chat.stream({ messages, system: input.system, maxSteps: input.maxSteps }).pipe(
+            Stream.map(attachMessageIds), // StepStart gets a minted assistant message id
+            Stream.tap(collectParts(parts)), // Part events by step
+            Stream.onEnd(persist(input.threadId, parts)), // Stream.ts:10432 — runs after a *successful* end only
+          );
+        }),
+      );
+    return { start };
+  }),
+);
 ```
 
 `persist` turns each step's parts into `Prompt.fromResponseParts(parts)` (one `AssistantMessage` and, if tools ran, one `ToolMessage` — `Prompt.ts:2052`) and calls `repo.append` once with all of them, using the minted ids for the assistant messages. Partial runs (failure, interruption/stop) persist nothing beyond the user message in v1 — the next run replays cleanly; storing partial assistant text is a follow-up (`Stream.ensuring` and a `status` column).

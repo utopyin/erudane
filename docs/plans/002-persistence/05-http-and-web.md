@@ -2,12 +2,12 @@
 
 ## Routes
 
-| Method | Path                 | Body / query              | Response                                  | Service        |
-| ------ | -------------------- | ------------------------- | ----------------------------------------- | -------------- |
-| POST   | `/chat`              | AG-UI `RunAgentInput`     | AG-UI SSE (unchanged format)              | `Run.start`    |
-| GET    | `/chat?threadId=`    | `threadId` (UUID)         | `{ messages: UIMessage[], activeRun: null, interrupts: null }` | `ThreadRepo.messages` |
-| GET    | `/threads?limit=`    | `limit` (default 50, max 200) | `{ threads: [{ id, title, createdAt, updatedAt }] }` | `ThreadRepo.list` |
-| POST   | `/threads`           | `{ title? }`              | `201 { id, … }` (server-minted UUID)      | `ThreadRepo.create` |
+| Method | Path              | Body / query                  | Response                                                       | Service               |
+| ------ | ----------------- | ----------------------------- | -------------------------------------------------------------- | --------------------- |
+| POST   | `/chat`           | AG-UI `RunAgentInput`         | AG-UI SSE (unchanged format)                                   | `Run.start`           |
+| GET    | `/chat?threadId=` | `threadId` (UUID)             | `{ messages: UIMessage[], activeRun: null, interrupts: null }` | `ThreadRepo.messages` |
+| GET    | `/threads?limit=` | `limit` (default 50, max 200) | `{ threads: [{ id, title, createdAt, updatedAt }] }`           | `ThreadRepo.list`     |
+| POST   | `/threads`        | `{ title? }`                  | `201 { id, … }` (server-minted UUID)                           | `ThreadRepo.create`   |
 
 `GET /chat` is the **hydration** endpoint: `fetchServerSentEvents(url)` issues `GET url?threadId=…` with `Accept: application/json` when `persistence: true` and the page mounts (`@tanstack/ai-client/dist/esm/connection-adapters.js:300,622`). Same path as the POST, different method — exactly what the `ANY` proxy in `apps/web/src/routes/api/chat.ts` already forwards. The response contract is `ChatHydrationResult` (`connection-adapters.d.ts:173`): `activeRun`/`interrupts` are `null` until D22's resume work.
 
@@ -29,14 +29,14 @@ Error mapping adds `Chat.ThreadNotFound` → 404 and `Chat.RepoError` → 500 (l
 
 `toUiMessages(stored: ReadonlyArray<StoredMessage>): ReadonlyArray<UIMessage>` — `UIMessage { id, role: 'system'|'user'|'assistant', parts, createdAt?, metadata? }` (`@tanstack/ai/dist/esm/types.d.ts:419`), parts (`:277-323`):
 
-| Stored                                      | UI part                                                                                   |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `UserMessage` text parts                    | `{ type: 'text', content }` on a `role: 'user'` message, id = row id                      |
-| `AssistantMessage` `text`                   | `{ type: 'text', content }`                                                               |
-| `AssistantMessage` `reasoning`              | `{ type: 'thinking', content }`                                                           |
-| `AssistantMessage` `tool-call`              | `{ type: 'tool-call', id, name, arguments: JSON.stringify(params), input: params, state: 'complete' }` |
-| following `ToolMessage` `tool-result`       | merged into the matching `tool-call` part: `output: result`, and a `{ type: 'tool-result', toolCallId, content: JSON.stringify(result), state: 'complete' }` part |
-| `SystemMessage`                             | skipped (we set the system prompt server-side)                                            |
+| Stored                                | UI part                                                                                                                                                           |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `UserMessage` text parts              | `{ type: 'text', content }` on a `role: 'user'` message, id = row id                                                                                              |
+| `AssistantMessage` `text`             | `{ type: 'text', content }`                                                                                                                                       |
+| `AssistantMessage` `reasoning`        | `{ type: 'thinking', content }`                                                                                                                                   |
+| `AssistantMessage` `tool-call`        | `{ type: 'tool-call', id, name, arguments: JSON.stringify(params), input: params, state: 'complete' }`                                                            |
+| following `ToolMessage` `tool-result` | merged into the matching `tool-call` part: `output: result`, and a `{ type: 'tool-result', toolCallId, content: JSON.stringify(result), state: 'complete' }` part |
+| `SystemMessage`                       | skipped (we set the system prompt server-side)                                                                                                                    |
 
 `ToolCallState` values: `'awaiting-input' | 'input-streaming' | 'input-complete' | 'approval-requested' | 'approval-responded' | 'complete' | 'error'` (`types.d.ts:13`); stored calls are always `complete` (or `error` when the stored result is an error). `metadata.tanstack.createdAt` carries the ISO timestamp. Verified by reading what the client's own stream reducer builds so the hydrated and streamed shapes match; phase 3 compares a hydrated transcript against the live one in DevTools.
 

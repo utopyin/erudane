@@ -26,7 +26,7 @@ Sub-paths are leaf submodules: `@erudane/db/schema` (tables + relations; closure
 
 ## D14 — Table prefix at the config level: `eru_`
 
-A single constant `PREFIX = "eru"` in `packages/db/config.ts` feeds both `pgTableCreator((name) => \`${PREFIX}_${name}\`, "snake_case")` (`packages/db/table.ts`, the only table factory the schema may use) and `drizzle.config.ts` `tablesFilter: [\`${PREFIX}_*\`]`. Another app sharing the database (`acm`) gets its own `packages/db`-equivalent with its own prefix; `tablesFilter` keeps `push`/`pull`/`generate` blind to the other app's tables. Verified: `drizzle-kit generate` emits `CREATE TABLE "eru_threads"` and carries the prefix into FK/index names; `schemaFilter` now defaults to all schemas in rc (irrelevant here, we stay in `public`).
+A single constant `PREFIX = "eru"` in `packages/db/config.ts` feeds both `pgTableCreator((name) => \`${PREFIX}_${name}\`, "snake_case")` (`packages/db/table.ts`, the only table factory the schema may use) and `drizzle.config.ts` `tablesFilter: [\`${PREFIX}_*\`]`. Another app sharing the database (`acm`) gets its own `packages/db`-equivalent with its own prefix; `tablesFilter`keeps`push`/`pull`/`generate`blind to the other app's tables. Verified:`drizzle-kit generate`emits`CREATE TABLE "eru_threads"`and carries the prefix into FK/index names;`schemaFilter`now defaults to all schemas in rc (irrelevant here, we stay in`public`).
 
 ## D15 — Persistence is modelled as repository services owned by their domain
 

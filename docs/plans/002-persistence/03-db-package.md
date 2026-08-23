@@ -28,20 +28,27 @@ import { index, integer, jsonb, pgEnum, text, timestamp, uuid } from "drizzle-or
 import { table } from "./table.js";
 
 export const threads = table("threads", {
-  id: uuid().primaryKey(),                       // client-minted or server-minted, never DEFAULT — see 05
+  id: uuid().primaryKey(), // client-minted or server-minted, never DEFAULT — see 05
   title: text(),
   createdAt: timestamp({ withTimezone: true, mode: "string" }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true, mode: "string" }).notNull().defaultNow(),
 });
 
-export const messageRole = pgEnum(`${PREFIX}_message_role`, ["system", "user", "assistant", "tool"]);
+export const messageRole = pgEnum(`${PREFIX}_message_role`, [
+  "system",
+  "user",
+  "assistant",
+  "tool",
+]);
 
 export const messages = table(
   "messages",
   {
     id: uuid().primaryKey(),
-    threadId: uuid().notNull().references(() => threads.id, { onDelete: "cascade" }),
-    seq: integer().notNull(),                    // position in the thread; assigned by the repo
+    threadId: uuid()
+      .notNull()
+      .references(() => threads.id, { onDelete: "cascade" }),
+    seq: integer().notNull(), // position in the thread; assigned by the repo
     role: messageRole().notNull(),
     content: jsonb().$type<unknown>().notNull(), // Prompt.MessageEncoded (effect owns the codec, not drizzle)
     createdAt: timestamp({ withTimezone: true, mode: "string" }).notNull().defaultNow(),
@@ -149,7 +156,7 @@ import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 
 const LOCAL = { user: "erudane", password: "erudane", database: "erudane", port: 54329 } as const;
-const PG_IMAGE_TAG = "18";          // = PlanetScale major (confirmed)
+const PG_IMAGE_TAG = "18"; // = PlanetScale major (confirmed)
 
 const local = Effect.gen(function* () {
   const image = yield* Docker.RemoteImage("DbImage", { name: "postgres", tag: PG_IMAGE_TAG });
@@ -157,10 +164,19 @@ const local = Effect.gen(function* () {
   yield* Docker.Container("DbLocal", {
     name: "erudane-postgres",
     image,
-    environment: { POSTGRES_DB: LOCAL.database, POSTGRES_USER: LOCAL.user, POSTGRES_PASSWORD: LOCAL.password },
+    environment: {
+      POSTGRES_DB: LOCAL.database,
+      POSTGRES_USER: LOCAL.user,
+      POSTGRES_PASSWORD: LOCAL.password,
+    },
     ports: [{ external: LOCAL.port, internal: 5432 }],
     volumes: [{ hostPath: data.name, containerPath: "/var/lib/postgresql/data" }],
-    healthcheck: { cmd: ["CMD-SHELL", `pg_isready -U ${LOCAL.user} -d ${LOCAL.database}`], interval: "2 seconds", timeout: "5 seconds", retries: 15 },
+    healthcheck: {
+      cmd: ["CMD-SHELL", `pg_isready -U ${LOCAL.user} -d ${LOCAL.database}`],
+      interval: "2 seconds",
+      timeout: "5 seconds",
+      retries: 15,
+    },
     start: true,
   });
   return `postgres://${LOCAL.user}:${LOCAL.password}@localhost:${LOCAL.port}/${LOCAL.database}`;
@@ -194,11 +210,26 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
         origin,
         caching: { disabled: true },
         originConnectionLimit: 15,
-        dev: { scheme: "postgres", host: "localhost", port: LOCAL.port, database: LOCAL.database, user: LOCAL.user, password: Redacted.make(LOCAL.password), sslmode: "disable" },
+        dev: {
+          scheme: "postgres",
+          host: "localhost",
+          port: LOCAL.port,
+          database: LOCAL.database,
+          user: LOCAL.user,
+          password: Redacted.make(LOCAL.password),
+          sslmode: "disable",
+        },
       };
     }
-    yield* migrate(`postgres://${origin.user}:${Redacted.value(origin.password)}@${origin.host}:${origin.port}/${origin.database}?sslmode=verify-full`);
-    return { name: yield* Config.string("HYPERDRIVE_NAME"), origin, caching: { disabled: true }, originConnectionLimit: 15 };
+    yield* migrate(
+      `postgres://${origin.user}:${Redacted.value(origin.password)}@${origin.host}:${origin.port}/${origin.database}?sslmode=verify-full`,
+    );
+    return {
+      name: yield* Config.string("HYPERDRIVE_NAME"),
+      origin,
+      caching: { disabled: true },
+      originConnectionLimit: 15,
+    };
   }),
 ).pipe(Alchemy.retain());
 ```
