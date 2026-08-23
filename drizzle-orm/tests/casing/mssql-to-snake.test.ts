@@ -1,0 +1,292 @@
+import mssql from 'mssql';
+import { describe, it } from 'vitest';
+import { alias, bit, int, snakeCase, text, union } from '~/mssql-core';
+import { drizzle } from '~/node-mssql';
+import { asc, eq, sql } from '~/sql';
+
+const testSchema = snakeCase.schema('test');
+const users = snakeCase.table('users', {
+	// TODO: Investigate reasons for existence of next commented line
+	// id: int().primaryKey().identity(1, 1),
+	id: int().primaryKey().identity({
+		seed: 1,
+		increment: 1,
+	}),
+	firstName: text().notNull(),
+	lastName: text().notNull(),
+	// Test that custom aliases remain
+	age: int('AGE'),
+});
+
+const developers = testSchema.table('developers', {
+	// TODO: Investigate reasons for existence of next commented line
+	// userId: int().primaryKey().references('name1', () => users.id),
+	userId: int().primaryKey().references(() => users.id),
+	usesDrizzleORM: bit().notNull(),
+});
+
+const devs = alias(developers, 'devs');
+const db = drizzle({ client: new mssql.ConnectionPool({ server: '' }) });
+
+const fullName = sql`${users.firstName} || ' ' || ${users.lastName}`.as('name');
+
+describe('mssql to snake case', () => {
+	it('unicode column names', ({ expect }) => {
+		const unicode = snakeCase.table('unicode', {
+			칼럼명: text(),
+		});
+
+		expect(db.select().from(unicode).toSQL().sql).toEqual(
+			'select [칼럼명] from [unicode]',
+		);
+	});
+
+	it('qualifier preservation for sql fields', ({ expect }) => {
+		const a = snakeCase.table('a', { id: int('id').primaryKey(), cId: int().notNull() });
+		const b = snakeCase.table('b', { id: int('id').primaryKey(), cId: int().notNull(), label: text() });
+		const corr = sql`(select ${b.label} from ${b} where ${b.cId} = ${a.cId})`;
+
+		expect(db.select({ id: a.id, bRaw: corr }).from(a).toSQL().sql).toEqual(
+			'select [id], (select [b].[label] from [b] where [b].[c_id] = [a].[c_id]) from [a]',
+		);
+		expect(db.select({ id: a.id, bRaw: corr.as('b_raw') }).from(a).toSQL().sql).toEqual(
+			'select [id], (select [b].[label] from [b] where [b].[c_id] = [a].[c_id]) as [b_raw] from [a]',
+		);
+		expect(db.select({ id: a.id }).from(a).where(corr).toSQL().sql).toEqual(
+			'select [id] from [a] where (select [b].[label] from [b] where [b].[c_id] = [a].[c_id])',
+		);
+	});
+
+	it('qualifier preservation for subquery fields', ({ expect }) => {
+		const sq = db.select({ id: users.id, name: fullName }).from(users).as('sq');
+		const query = db
+			.select({ id: sq.id, name: sq.name })
+			.from(users)
+			.leftJoin(sq, eq(users.id, sq.id));
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				"select [sq].[id], [sq].[name] from [users] left join (select [id], [first_name] || ' ' || [last_name] as [name] from [users]) [sq] on [users].[id] = [sq].[id]",
+			params: [],
+		});
+	});
+
+	it('select', ({ expect }) => {
+		const query = db
+			.select({ name: fullName, age: users.age })
+			.from(users)
+			.leftJoin(developers, eq(users.id, developers.userId))
+			.orderBy(asc(users.firstName));
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				"select [users].[first_name] || ' ' || [users].[last_name] as [name], [users].[AGE] from [users] left join [test].[developers] on [users].[id] = [test].[developers].[user_id] order by [users].[first_name] asc",
+			params: [],
+		});
+	});
+
+	it('select (with alias)', ({ expect }) => {
+		const query = db
+			.select({ firstName: users.firstName })
+			.from(users)
+			.leftJoin(devs, eq(users.id, devs.userId));
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				'select [users].[first_name] from [users] left join [test].[developers] [devs] on [users].[id] = [devs].[user_id]',
+			params: [],
+		});
+	});
+
+	it('with CTE', ({ expect }) => {
+		const cte = db.$with('cte').as(db.select({ name: fullName }).from(users));
+		const query = db.with(cte).select().from(cte);
+
+		expect(query.toSQL()).toEqual({
+			sql: "with [cte] as (select [first_name] || ' ' || [last_name] as [name] from [users]) select [name] from [cte]",
+			params: [],
+		});
+	});
+
+	it('with CTE (with query builder)', ({ expect }) => {
+		const cte = db.$with('cte').as((qb) => qb.select({ name: fullName }).from(users));
+		const query = db.with(cte).select().from(cte);
+
+		expect(query.toSQL()).toEqual({
+			sql: "with [cte] as (select [first_name] || ' ' || [last_name] as [name] from [users]) select [name] from [cte]",
+			params: [],
+		});
+	});
+
+	it('set operator', ({ expect }) => {
+		const query = db
+			.select({ firstName: users.firstName })
+			.from(users)
+			.union(db.select({ firstName: users.firstName }).from(users));
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				'select [first_name] from ((select [first_name] from [users]) union (select [first_name] from [users])) [drizzle_union]',
+			params: [],
+		});
+	});
+
+	it('set operator (function)', ({ expect }) => {
+		const query = union(
+			db.select({ firstName: users.firstName }).from(users),
+			db.select({ firstName: users.firstName }).from(users),
+		);
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				'select [first_name] from ((select [first_name] from [users]) union (select [first_name] from [users])) [drizzle_union]',
+			params: [],
+		});
+	});
+
+	it('insert', ({ expect }) => {
+		const query = db
+			.insert(users)
+			.values({ firstName: 'John', lastName: 'Doe', age: 30 });
+
+		expect(query.toSQL()).toEqual({
+			sql: 'insert into [users] ([first_name], [last_name], [AGE]) values (@par0, @par1, @par2)',
+			params: ['John', 'Doe', 30],
+		});
+	});
+
+	it('insert (column selection)', ({ expect }) => {
+		const query = db
+			.insert(users, 'firstName', 'lastName', 'age')
+			.values({ firstName: 'John', lastName: 'Doe', age: 30 });
+
+		expect(query.toSQL()).toEqual({
+			sql: 'insert into [users] ([first_name], [last_name], [AGE]) values (@par0, @par1, @par2)',
+			params: ['John', 'Doe', 30],
+		});
+	});
+
+	it('insert (column selection, multiple rows)', ({ expect }) => {
+		const query = db
+			.insert(users, 'firstName', 'lastName')
+			.values([{ firstName: 'John', lastName: 'Doe' }, { firstName: 'Jane', lastName: 'Roe' }]);
+
+		expect(query.toSQL()).toEqual({
+			sql: 'insert into [users] ([first_name], [last_name]) values (@par0, @par1), (@par2, @par3)',
+			params: ['John', 'Doe', 'Jane', 'Roe'],
+		});
+	});
+
+	it('insert (column selection, omitted optional column)', ({ expect }) => {
+		const query = db
+			.insert(users, 'firstName', 'lastName', 'age')
+			.values({ firstName: 'John', lastName: 'Doe' });
+
+		expect(query.toSQL()).toEqual({
+			sql: 'insert into [users] ([first_name], [last_name], [AGE]) values (@par0, @par1, default)',
+			params: ['John', 'Doe'],
+		});
+	});
+
+	it('insert (column selection) emits columns in list order', ({ expect }) => {
+		const query = db
+			.insert(users, 'age', 'lastName', 'firstName')
+			.values({ firstName: 'John', lastName: 'Doe', age: 30 });
+
+		expect(query.toSQL()).toEqual({
+			sql: 'insert into [users] ([AGE], [last_name], [first_name]) values (@par0, @par1, @par2)',
+			params: [30, 'Doe', 'John'],
+		});
+	});
+
+	it('update', ({ expect }) => {
+		const query = db
+			.update(users)
+			.set({ firstName: 'John', lastName: 'Doe', age: 30 })
+			.where(eq(users.id, 1));
+
+		expect(query.toSQL()).toEqual({
+			sql: 'update [users] set [first_name] = @par0, [last_name] = @par1, [AGE] = @par2 where [users].[id] = @par3',
+			params: ['John', 'Doe', 30, 1],
+		});
+	});
+
+	it('delete', ({ expect }) => {
+		const query = db
+			.delete(users)
+			.where(eq(users.id, 1));
+
+		expect(query.toSQL()).toEqual({
+			sql: 'delete from [users] where [users].[id] = @par0',
+			params: [1],
+		});
+	});
+
+	it('select columns as', ({ expect }) => {
+		const query = db
+			.select({ age: users.age.as('ageOfUser'), id: users.id.as('userId') })
+			.from(users)
+			.orderBy(asc(users.id.as('userId')));
+
+		expect(query.toSQL()).toEqual({
+			sql: 'select [AGE] as [ageOfUser], [id] as [userId] from [users] order by [userId] asc',
+			params: [],
+		});
+	});
+
+	it('select join columns as', ({ expect }) => {
+		const query = db
+			.select({ name: fullName, age: users.age.as('ageOfUser'), id: users.id.as('userId') })
+			.from(users)
+			.leftJoin(developers, eq(users.id.as('userId'), developers.userId))
+			.orderBy(asc(users.firstName));
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				"select [users].[first_name] || ' ' || [users].[last_name] as [name], [users].[AGE] as [ageOfUser], [users].[id] as [userId] from [users] left join [test].[developers] on [userId] = [test].[developers].[user_id] order by [users].[first_name] asc",
+			params: [],
+		});
+	});
+
+	it('insert output as', ({ expect }) => {
+		const query = db
+			.insert(users)
+			.output({ firstName: users.firstName, age: users.age.as('userAge') })
+			.values({ firstName: 'John', lastName: 'Doe', age: 30 });
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				'insert into [users] ([first_name], [last_name], [AGE]) output INSERTED.[first_name], INSERTED.[AGE] as [userAge] values (@par0, @par1, @par2)',
+			params: ['John', 'Doe', 30],
+		});
+	});
+
+	it('update output as', ({ expect }) => {
+		const query = db
+			.update(users)
+			.set({ firstName: 'John', lastName: 'Doe', age: 30 })
+			.output({
+				inserted: { firstName: users.firstName.as('usersNameIn'), age: users.age.as('ageIn') },
+				deleted: { firstName: users.firstName.as('usersNameOut'), age: users.age.as('ageOut') },
+			})
+			.where(eq(users.id, 1));
+
+		expect(query.toSQL()).toEqual({
+			sql:
+				'update [users] set [first_name] = @par0, [last_name] = @par1, [AGE] = @par2 output INSERTED.[first_name] as [usersNameIn], INSERTED.[AGE] as [ageIn], DELETED.[first_name] as [usersNameOut], DELETED.[AGE] as [ageOut] where [users].[id] = @par3',
+			params: ['John', 'Doe', 30, 1],
+		});
+	});
+
+	it('delete output as', ({ expect }) => {
+		const query = db
+			.delete(users)
+			.output({ firstName: users.firstName, age: users.age.as('usersAge') })
+			.where(eq(users.id, 1));
+
+		expect(query.toSQL()).toEqual({
+			sql: 'delete from [users] output DELETED.[first_name], DELETED.[AGE] as [usersAge] where [users].[id] = @par0',
+			params: [1],
+		});
+	});
+});
