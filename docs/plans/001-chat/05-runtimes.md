@@ -57,8 +57,10 @@ const make = (env: ApiEnv) => {
     Layer.provide(OpenAiClient.layer({ apiKey: Redacted.make(env.OPENAI_API_KEY) })),
     Layer.provide(FetchHttpClient.layer),
   );
+  // provideMerge, not provide: toWebHandler satisfies route requirements from
+  // the app layer's *outputs*, so Chat.Service must stay exposed.
   const app = Http.layer.pipe(
-    Layer.provide(Chat.layer),
+    Layer.provideMerge(Chat.layer),
     Layer.provide(Layer.mergeAll(model, Registry.layer)),
   );
   return HttpRouter.toWebHandler(app, { disableLogger: true });

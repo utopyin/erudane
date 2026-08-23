@@ -38,17 +38,24 @@ export type RegistryTool = Tool.Tool<
   never
 >;
 
-/** The tool registry this domain talks to. Assembled and provided by an entrypoint. */
-export class Toolkit extends Context.Service<
-  Toolkit,
-  ToolkitModule.WithHandler<Record<string, RegistryTool>>
->()("@erudane/chat/Toolkit") {}
+/**
+ * The tool registry this domain talks to. Assembled and provided by an
+ * entrypoint. Typed `any` because `WithHandler` is invariant in its tools;
+ * the service narrows it to `RegistryTool` at the single call site.
+ */
+export class Toolkit extends Context.Service<Toolkit, ToolkitModule.WithHandler<any>>()(
+  "@erudane/chat/Toolkit",
+) {}
+
+const asRegistry = (
+  toolkit: ToolkitModule.WithHandler<any>,
+): ToolkitModule.WithHandler<Record<string, RegistryTool>> => toolkit;
 
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const model = yield* LanguageModel.LanguageModel;
-    const toolkit = yield* Toolkit;
+    const toolkit = asRegistry(yield* Toolkit);
 
     const step = (
       prompt: Prompt.Prompt,
