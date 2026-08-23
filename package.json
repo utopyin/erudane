@@ -19,7 +19,8 @@
       "alchemy": "2.0.0-beta.74",
       "@effect/ai-openai": "4.0.0-rc.111",
       "@tanstack/ai": "^0.48.0",
-      "@tanstack/ai-react": "^0.21.3"
+      "@tanstack/ai-react": "^0.21.3",
+      "@tanstack/ai-client": "^0.26.0"
     }
   },
   "type": "module",
