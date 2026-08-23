@@ -20,7 +20,7 @@ Plans live in `docs/plans/`; the first slice is [001-chat](docs/plans/001-chat/R
 ```bash
 bun install
 cp .env.example .env   # set OPENAI_API_KEY
-bun run dev            # alchemy dev: web on :1337, api on the next port
+bun run dev            # alchemy dev: web on :1337, api on :1338
 ```
 
 `bun run check` lints, formats and type-checks every workspace. `bun run deploy` / `bun run destroy` manage the Cloudflare stack through Alchemy (`CLOUDFLARE_API_TOKEN` or `alchemy login`).

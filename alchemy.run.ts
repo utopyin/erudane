@@ -28,6 +28,7 @@ export const Api = Cloudflare.Worker(
   Effect.gen(function* () {
     return {
       main: "apps/api/src/index.ts",
+      dev: { port: 1338, strictPort: true },
       env: {
         OPENAI_API_KEY: Config.redacted("OPENAI_API_KEY").pipe(
           Config.withDefault(Redacted.make("")),
@@ -44,6 +45,7 @@ export type ApiEnv = Cloudflare.InferEnv<typeof Api>;
 
 export const Website = Cloudflare.Website.Vite("Website", {
   rootDir: "apps/web",
+  dev: { port: 1337, strictPort: true },
   env: { API: Api },
   memo: {
     include: ["**/*", "../../entrypoints/**/*.ts", "../../domains/**/*.ts"],
