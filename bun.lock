@@ -26,6 +26,7 @@
         "@effect/ai-openai": "catalog:",
         "@effect/platform-bun": "catalog:",
         "@erudane/chat": "workspace:*",
+        "@erudane/db": "workspace:*",
         "@erudane/http": "workspace:*",
         "alchemy": "catalog:",
         "effect": "catalog:",
