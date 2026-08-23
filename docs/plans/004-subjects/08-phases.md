@@ -10,14 +10,14 @@ Verify: `bun install`, `bun run check` green.
 
 ## Phase 1 — Collab spike (the risk burn-down)
 
-`domains/documents/room.ts` first, as pure functions: Y.Doc ↔ y-protocols messages, markdown → blocks → `Y.transact` via `@blocknote/server-util`, projection to markdown. Then the minimal `DocumentRoom` DO + `/documents/:id/ws` route + a throwaway web page with BlockNote + `WebsocketProvider`.
+`domains/documents/room.ts` first, as pure functions: Y.Doc ↔ y-protocols messages, markdown → blocks → `Y.transact` via `@blocknote/core` (+ linkedom shim), projection to markdown. Then the minimal `DocumentRoom` DO + `GET /documents/:id` upgrade route + `POST /documents/:id/edit` (the EditDocument write path, HTTP-exposed for the spike) + a throwaway web page (`/doc-spike/$documentId`) with BlockNote + `WebsocketProvider`.
 
 Verify — the four things D34/D35 bet on, in `alchemy dev`:
 
-1. `@blocknote/server-util` markdown↔blocks paths run under **workerd** (no DOM). If not: the named fallback (DOM shim in the DO, or plain-text Yjs ops behind the same contract) — decided here, not later.
-2. Two tabs, one lesson: concurrent edits converge; presence/cursors render.
-3. A scratch DO RPC `edit` (`replaceBlock`) lands **live** in both tabs while they type — the agent loop, minus the agent.
-4. Hibernation wake: idle past the hibernation window, then type — doc reloads from DO SQLite, no content loss, awareness recovers on heartbeat. (The y-partyserver-hardened case; if workerd-local hibernation can't be forced, verify on a deployed preview before phase 6 rides on it.)
+1. ✅ markdown↔blocks under **workerd**: `@blocknote/server-util` rejected (hard jsdom import); the named fallback is the implementation — `@blocknote/core` conversions + linkedom shim, verified live in the DO.
+2. ✅ Convergence verified with two protocol clients (scripted): concurrent edits converge, server projection matches. Two browser tabs on `/doc-spike/$documentId` for presence/cursors — handed off for user review.
+3. ✅ `POST /documents/:id/edit` (`append`, `replaceBlock`) lands **live** in both connected clients mid-session — the agent loop, minus the agent.
+4. ✅ Activation reload: full dev-process restart, reconnect to the same document — all content reloads from DO SQLite (update log + alarm compaction). True hibernation wake still gets a deployed-preview check before phase 6 (workerd-local hibernation can't be forced).
 
 ## Phase 2 — Schema
 

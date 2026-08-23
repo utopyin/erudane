@@ -8,7 +8,7 @@ Lesson documents are **live-collaborative**: the user edits in a Notion-style bl
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
 | CRDT                     | Yjs (pure JS, runs in workerd and the DO)                                                                                             | `yjs` 13.6.x        |
 | Editor                   | **BlockNote** (`@blocknote/core`, `@blocknote/react`)                                                                                 | 0.54.x              |
-| Agent-side doc machinery | `@blocknote/server-util` (`ServerBlockNoteEditor`: markdown ↔ blocks ↔ `Y.XmlFragment`, headless)                                     | 0.54.x              |
+| Agent-side doc machinery | `@blocknote/core` + `@blocknote/core/yjs` headless conversions, linkedom DOM shim (server-util rejected at spike: hard jsdom import)   | 0.54.x              |
 | Sync server              | **Alchemy Effect-form Durable Object** (one per document) speaking the y-websocket wire protocol via `y-protocols` (sync + awareness) | `y-protocols` 1.0.x |
 | Client provider          | `y-websocket`'s `WebsocketProvider` (protocol-standard, maintained)                                                                   | `y-websocket` 2.x   |
 | Transport                | WebSocket, browser → API worker route → DO (`Cloudflare.upgrade()`, hibernatable)                                                     | —                   |
@@ -29,7 +29,7 @@ domains/documents (@erudane/documents)          tier 2
   room.ts     transport-neutral room logic: Y.Doc lifecycle (load/seed/encode), y-protocols message
               handling (sync1/sync2/update, awareness), edit application via ServerBlockNoteEditor,
               markdown projection. Pure functions + a small state shape; imports yjs, y-protocols,
-              @blocknote/server-util. NO cloudflare types, NO alchemy.
+              @blocknote/core with a linkedom shim. NO cloudflare types, NO alchemy.
   service.ts  Documents service: create (row only; the room cold-starts from `state`), meta/markdown
               reads (Postgres), and edit(documentId, ops) — the agent write path, delegated to RoomClient.
   rooms.ts    RoomClient: Context.Service contract `{ edit, snapshot }` the domain requires but tier 4
@@ -62,7 +62,7 @@ Tool _definitions_ (`ReadDocument`, `EditDocument`) live in `subjects/tools.ts` 
 
 1. **Y.Doc in the DO** (persisted to DO SQLite via `storage.sql`, one `updates` log compacted into a `snapshot` row on save) — the authority. All writes, human or agent, are Yjs updates applied here and fanned out to connected sockets.
 2. **Postgres projection** (`eru_documents.markdown` + `state` + `version` + `updatedBy`, 03) — the durable read model, written by the DO on debounced save: `markdown` from `yDocToBlocks` → `blocksToMarkdown`, `state = Y.encodeStateAsUpdate(doc)`. This is what prompts, `ReadDocument`, and future search read — nothing outside the sync path reads the DO.
-3. **Blocks/markdown in flight** — converted at the edges only (`server-util` server-side, BlockNote's model in the editor). No third stored format.
+3. **Blocks/markdown in flight** — converted at the edges only (`@blocknote/core` conversions server-side, BlockNote's model in the editor). No third stored format.
 
 Cold start: a fresh DO activation loads snapshot + tail updates from its SQLite; a _brand-new_ room (first open ever, or storage lost) seeds from `eru_documents.state`. Postgres is thereby also the backup.
 
@@ -92,4 +92,4 @@ CRDT history comes mechanically: the DO keeps its compacted `snapshot` rows (las
 - **Hibernation vs in-memory doc**: sockets survive hibernation, the Y.Doc doesn't — the bridge re-runs the init on wake and `room.ts` reloads from SQLite before handling the message. Awareness state is rebuilt by the clients' own 30s awareness heartbeats. This is the one piece y-partyserver had hardened; it's the part to test explicitly (08).
 - **DO ↔ Postgres divergence**: projection is debounced; a crash loses ≤ one debounce window of _projection_ (never content — DO SQLite has it). Prompts read slightly stale markdown at worst.
 - **Concurrent agent + human on the same block**: block-replace is coarser than text-merge — last writer wins within that block. Accepted for v1; the streaming refinement shrinks the window.
-- **workerd bundle**: `@blocknote/server-util` pulls ProseMirror internals; verify at spike time that the markdown↔blocks paths are DOM-free under workerd. Fallback that keeps every contract intact: run conversions in the DO with a minimal DOM shim, or temporarily downgrade agent ops to plain-text Yjs edits.
+- **workerd bundle**: resolved at spike time. `@blocknote/server-util` imports jsdom unconditionally and never bundles for workerd; the plan's named fallback became the primary: `@blocknote/core`'s conversions with a linkedom `document` shim (`room.ts`), verified live in the DO (markdown → blocks → transact, and blocks → markdown projection).

@@ -24,7 +24,7 @@ api  ──▶ http + all domains + db      web ──▶ leaf submodules only (
 
 ## Root
 
-- Catalog additions: `yjs ^13.6`, `y-protocols ^1.0`, `y-websocket ^3` (web only; the 3.0 major only dropped the bundled Node server we never use), `lib0` (transitive, pinned via catalog for encode/decode helpers), `@blocknote/core 0.54.x`, `@blocknote/react 0.54.x` (web), `@blocknote/server-util 0.54.x` (documents domain + api).
+- Catalog additions: `yjs ^13.6`, `y-protocols ^1.0`, `y-websocket ^3` (web only; the 3.0 major only dropped the bundled Node server we never use), `lib0` (transitive, pinned via catalog for encode/decode helpers), `@blocknote/core 0.54.x` (documents domain + web), `@blocknote/react 0.54.x` (web), `y-prosemirror ^1.3` (core/yjs peer), `linkedom ^0.18` (DOM shim for the parsers under workerd — server-util rejected at spike: hard jsdom import).
 - No new scripts; `db:generate` produces this plan's one migration.
 
 ## `domains/subjects` — `@erudane/subjects` (04)
@@ -47,12 +47,12 @@ Exports: `./types`, `./errors`, `./tools`, `./rpc` (leaves, web-importable), `./
 ```
 types.ts  errors.ts                LEAF (effect only): DocumentId, DocumentMeta, RoomEdit ops
 repo.ts                            DocumentRepo: eru_documents row, drizzle + memory layers
-room.ts                            transport-neutral Yjs room logic (yjs, y-protocols, server-util; NO cloudflare)
+room.ts                            transport-neutral Yjs room logic (yjs, y-protocols, @blocknote/core + linkedom shim; NO cloudflare)
 rooms.ts                           RoomClient contract (Context.Service; implemented in apps/api)
 service.ts                         Documents: create, meta/markdown reads, edit → RoomClient
 ```
 
-Deps: `@erudane/db`, `effect`, `yjs`, `y-protocols`, `lib0`, `@blocknote/server-util`.
+Deps: `@erudane/db`, `effect`, `yjs`, `y-protocols`, `y-prosemirror`, `lib0`, `@blocknote/core`, `linkedom`.
 
 ## `packages/db` (03)
 
