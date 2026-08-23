@@ -59,6 +59,10 @@ const migrate = (url: string, after: string | Output.Output<string>) =>
     memo: { include: ["migrations/**", "migrate.ts"] },
   });
 
+/**
+ * Runtime traffic (Hyperdrive) uses the data-only app role; migrations use a
+ * separate admin URL, since DDL needs rights the app role must not have.
+ */
 const production = Effect.gen(function* () {
   const origin = {
     scheme: "postgres" as const,
@@ -68,8 +72,8 @@ const production = Effect.gen(function* () {
     user: yield* Config.string("DB_USER"),
     password: yield* Config.redacted("DB_PASSWORD"),
   };
-  const url = `postgres://${origin.user}:${Redacted.value(origin.password)}@${origin.host}:${origin.port}/${origin.database}?sslmode=verify-full`;
-  return { origin, url };
+  const migrateUrl = Redacted.value(yield* Config.redacted("DB_MIGRATE_URL"));
+  return { origin, migrateUrl };
 });
 
 /**
@@ -109,8 +113,8 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
         },
       };
     }
-    const { origin, url } = yield* production;
-    yield* migrate(url, origin.host);
+    const { origin, migrateUrl } = yield* production;
+    yield* migrate(migrateUrl, origin.host);
     return {
       name,
       origin,
