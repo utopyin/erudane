@@ -6,10 +6,13 @@ import type { ChatClientState } from "@tanstack/ai-client";
 import {
   createContext,
   useContext,
+  useRef,
   useState,
   type ComponentProps,
   type FormEvent,
   type KeyboardEvent,
+  type MouseEvent,
+  type RefObject,
 } from "react";
 
 import { Button } from "@erudane/ui/button";
@@ -22,6 +25,7 @@ interface PromptState {
   readonly setText: (text: string) => void;
   readonly submit: () => void;
   readonly stop: () => void;
+  readonly textareaRef: RefObject<HTMLTextAreaElement | null>;
 }
 
 const Context = createContext<PromptState | null>(null);
@@ -40,8 +44,9 @@ interface PromptInputProps extends Omit<ComponentProps<"form">, "onSubmit"> {
   readonly onStop?: () => void;
 }
 
-function PromptInput({ status, onSubmit, onStop, className, ...props }: PromptInputProps) {
+function PromptInput({ status, onSubmit, onStop, className, onClick, ...props }: PromptInputProps) {
   const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const submit = () => {
     const trimmed = text.trim();
@@ -55,13 +60,27 @@ function PromptInput({ status, onSubmit, onStop, className, ...props }: PromptIn
     submit();
   };
 
+  // Clicking the card's padding or toolbar gap focuses the textarea, so the
+  // whole box behaves as the input. Clicks on controls keep their own focus.
+  const onCardClick = (event: MouseEvent<HTMLFormElement>) => {
+    onClick?.(event);
+    if (event.defaultPrevented) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a, input, select, textarea, [tabindex]")) return;
+    textareaRef.current?.focus();
+  };
+
   return (
-    <Context.Provider value={{ status, text, setText, submit, stop: onStop ?? (() => {}) }}>
+    <Context.Provider
+      value={{ status, text, setText, submit, stop: onStop ?? (() => {}), textareaRef }}
+    >
       <form
         data-slot="prompt-input"
         onSubmit={onFormSubmit}
+        onClick={onCardClick}
         className={cn(
-          "bg-secondary/50 text-card-foreground flex flex-col gap-2 rounded-3xl border p-3",
+          "bg-card text-card-foreground flex cursor-text flex-col gap-2 rounded-3xl border p-3 transition-[color,box-shadow]",
+          "has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-ring/50 has-[textarea:focus-visible]:ring-[3px]",
           className,
         )}
         {...props}
@@ -75,7 +94,7 @@ function PromptInputTextarea({
   onKeyDown,
   ...props
 }: Omit<ComponentProps<"textarea">, "value" | "onChange">) {
-  const { text, setText, submit } = usePrompt();
+  const { text, setText, submit, textareaRef } = usePrompt();
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     onKeyDown?.(event);
@@ -88,6 +107,7 @@ function PromptInputTextarea({
 
   return (
     <textarea
+      ref={textareaRef}
       data-slot="prompt-input-textarea"
       value={text}
       onChange={(event) => setText(event.target.value)}
@@ -121,7 +141,6 @@ function PromptInputSubmit({ className, ...props }: ComponentProps<typeof Button
     return (
       <Button
         type="button"
-        variant="secondary"
         size="icon-sm"
         aria-label="Stop"
         className={cn("rounded-full", className)}
