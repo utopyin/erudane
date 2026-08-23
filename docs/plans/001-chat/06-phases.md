@@ -46,3 +46,20 @@ Verify: in the browser at `/chat`, send a message, see streaming text; ask for t
 ## Explicitly deferred (tracked in [01-decisions.md](./01-decisions.md#d9--deferred-with-the-seam-named))
 
 Client tools / approvals, persistence + resume, structured output, reasoning UI, `@erudane/tool` package, `scripts/dep-map.ts`.
+
+## Status (2026-08-23)
+
+All five phases implemented and deployed to stage `dev_utopy` (`apiUrl` / `websiteUrl` from `bun run deploy`). Verified: loop with fake model (phase 1), AG-UI sequence through `toWebHandler` (2), Effect runtime + OpenAI client inside workerd locally and in production (3), SSR page + TanStack client parsing our stream (4), CSRF (cross-origin POST → 403, GET unaffected) and 413 on oversized transcripts (5).
+
+**Not yet verified with a real model**: no `OPENAI_API_KEY` was available; every run ends in `RUN_ERROR: InvalidKey`, which exercises the error path. Set the key in `.env`, `bun run dev` or `bun run deploy`, and ask "what time is it?" to exercise the tool loop.
+
+Findings that changed the plan during implementation:
+
+- `Toolkit.WithHandler` is invariant, so `Chat.Toolkit` is typed `WithHandler<any>` and narrowed to `RegistryTool` (now in `@erudane/chat/types`, a leaf) at the `streamText` call site.
+- `HttpRouter.toWebHandler` satisfies route requirements from the app layer's **outputs**: `Layer.provideMerge(Chat.layer)`, not `provide`.
+- `Stream.mapAccum`'s `onHalt` also fires on failure; failures are folded into the accumulator (`Result`) so `RUN_ERROR` is terminal and `RUN_FINISHED` is not emitted after it.
+- `Schema.Struct({})` tool params produce `anyOf[object,array]`, rejected by OpenAI; parameterless tools omit `parameters`.
+- TanStack's client needs Standard **JSON** Schema for tool advertisement: `Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(schema))`.
+- Vite SSR pre-bundling duplicated React for `@base-ui/react`; `resolve.dedupe: ["react", "react-dom"]` fixes `useId` on null.
+- `createCsrfMiddleware()` defaults reject top-level navigations (`Sec-Fetch-Site: none`); it is scoped to unsafe methods.
+- `workersDev` left on (D6); flip to `false` once the binding-only path is the only consumer.
