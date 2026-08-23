@@ -1,0 +1,25 @@
+{
+  "name": "seneca",
+  "version": "0.0.0",
+  "description": "Seneca is a learning platform that empowers you to learn anything.",
+  "type": "module",
+  "scripts": {
+    "prepare": "effect-tsgo patch --typescript --oxlint"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "catalog": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    }
+  },
+  "devDependencies": {
+    "oxfmt": "^0.64.0",
+    "oxlint": "1.78.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "typescript": "7.0.2",
+    "@effect/tsgo": "0.36.5"
+  }
+}
