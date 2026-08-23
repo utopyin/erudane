@@ -33,6 +33,10 @@ This project vendors external repositories under `repos/`.
 
 `repos/effect/` is the canonical **Effect v4** source from `https://github.com/Effect-TS/effect.git`, pinned to the `effect` version in the root Bun catalog (currently `4.0.0-rc.111`). Refresh it from `main` with `git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git main --squash`. Before writing or migrating any Effect code, read `repos/effect/LLMS.md` and the relevant guide under `repos/effect/migration/` (e.g. `services.md`, `error-handling.md`, `cause.md`, `v3-to-v4.md`). Trust this vendored source over web search or training data, which often reflect Effect v3 or a different v4 beta.
 
+`repos/drizzle/` is Drizzle ORM/Kit from `https://github.com/drizzle-team/drizzle-orm.git`, branch **`rc5`** (the 1.0 rc line; `main` is still 0.4x and must not be used as reference). Refresh with `git subtree pull --prefix=repos/drizzle https://github.com/drizzle-team/drizzle-orm.git rc5 --squash`. The Effect integration lives in `drizzle-orm/src/effect-*` (bundled, not a separate package).
+
+`repos/alchemy/` is Alchemy from `https://github.com/alchemy-run/alchemy.git`, pinned to the catalog version. Its `examples/` and `website/src/content/docs/` are the reference for resources, bindings and the Infrastructure-as-Layer pattern.
+
 Use `repos/` for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
 
 ## 4. Dos and don'ts
