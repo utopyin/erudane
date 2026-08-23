@@ -20,3 +20,6 @@ export { SparkleGlyph18 as SparkleIcon } from "./SparkleGlyph18";
 export { TriangleWarningGlyph18 as WarningIcon } from "./TriangleWarningGlyph18";
 export { UserGlyph18 as UserIcon } from "./UserGlyph18";
 export { WrenchGlyph18 as ToolIcon } from "./WrenchGlyph18";
+export { GlobeSearchGlyph18 as SearchWebIcon } from "./GlobeSearchGlyph18";
+export { PageGlyph18 as PageIcon } from "./PageGlyph18";
+export { LinkGlyph18 as LinkIcon } from "./LinkGlyph18";

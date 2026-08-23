@@ -12,6 +12,7 @@
     "@base-ui/react": "^1.7.0",
     "@erudane/chat": "workspace:*",
     "@erudane/http": "workspace:*",
+    "@erudane/research": "workspace:*",
     "@erudane/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/ai": "catalog:",
