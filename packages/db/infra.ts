@@ -114,7 +114,6 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
     return {
       name,
       origin,
-      mtls: { sslmode: "verify-full" as const },
       caching: { disabled: true },
       originConnectionLimit: 15,
     };

@@ -9,7 +9,7 @@ export default defineConfig({
   schema: "./schema.ts",
   out: "./migrations",
   tablesFilter: [`${PREFIX}_*`],
-  migrations: { table: MIGRATIONS_TABLE },
+  migrations: { table: MIGRATIONS_TABLE, schema: "public" },
   dbCredentials: { url },
   verbose: true,
 });
