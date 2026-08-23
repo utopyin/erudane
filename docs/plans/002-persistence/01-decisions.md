@@ -28,7 +28,6 @@ Sub-paths are leaf submodules: `@erudane/db/schema` (tables + relations; closure
 
 A single constant `PREFIX = "eru"` in `packages/db/config.ts` feeds both `pgTableCreator((name) => \`${PREFIX}_${name}\`, "snake_case")` (`packages/db/table.ts`, the only table factory the schema may use) and `drizzle.config.ts` `tablesFilter: [\`${PREFIX}_*\`]`. Another app sharing the database (`acm`) gets its own `packages/db`-equivalent with its own prefix; `tablesFilter` keeps `push`/`pull`/`generate` blind to the other app's tables. Verified: `drizzle-kit generate` emits `CREATE TABLE "eru_threads"` and carries the prefix into FK/index names; `schemaFilter` now defaults to all schemas in rc (irrelevant here, we stay in `public`).
 
-
 ## D15 — Persistence is modelled as repository services owned by their domain
 
 `domains/chat/threads.ts` declares `ThreadRepo.Service` (`Context.Service`) with an interface in domain terms (`Thread`, `Prompt.Message`, `Option`, typed `RepoError`/`ThreadNotFound`) and two layers: `layer` (Drizzle, requires `Db.Service`) and `memory` (a `Ref`-backed map, requires nothing). Domain logic (`Run`, later summaries/grading) depends on the interface only. Tier-3/4 never touch Drizzle directly.
@@ -52,16 +51,13 @@ Consequences, all verified in source:
 
 Guard rails: `Alchemy.retain()` wraps the Connection so `alchemy destroy` leaves it in place; `caching: { disabled: true }` because chat reads must be fresh (Hyperdrive's query cache is not invalidated on writes). Origin port is the direct **5432** (Hyperdrive already pools in transaction mode) with `sslmode=verify-full`. Role: a PlanetScale role limited to `pg_read_all_data`/`pg_write_all_data`.
 
-
 ## D18 — Local development: Postgres 18 in Docker, started by `alchemy dev`, reached through the Hyperdrive `dev` origin
 
 In `alchemy dev` the Connection provider is local: no API call, and the worker's `env.HYPERDRIVE.connectionString` is a passthrough to the `dev` origin (`Hyperdrive/ConnectBinding.ts:52-89`, `cloudflare/local-development.mdx`). We point `dev` at a `Docker.Container` (`Docker/Container.ts`, example `examples/docker-postgres/alchemy.run.ts`) created only when `Alchemy.ALCHEMY_DEV` is true — Docker providers are single-mode, so the gate is ours. Image `postgres:18` — the PlanetScale database runs 18 (confirmed); PlanetScale offers 17.11 and 18.6 (`planetscale.com/docs/postgres/cluster-configuration/versions`). Port `54329` on the host to avoid colliding with a system Postgres; a named volume keeps data across restarts.
 
-
 ## D19 — Migrations are generated explicitly and applied by the stack
 
-`bun run db:generate` (drizzle-kit) produces v3 migration folders under `packages/db/migrations/`, committed and reviewed. Applying happens inside `Db.layer`'s resource build as `Command.Exec("DbMigrate", { command: "bun run db:migrate", cwd: "packages/db", env: { DATABASE_URL }, memo: { include: ["migrations/**"] } })` (`Command/Exec.ts`) — dev runs it against the Docker database after the container is healthy, deploy runs it against the PlanetScale origin directly (not through Hyperdrive) before the Worker is put. `bun run db:migrate` is `drizzle-kit migrate`, which reads `DATABASE_URL` through `drizzle.config.ts`.
-
+`bun run db:generate` (drizzle-kit) produces v3 migration folders under `packages/db/migrations/`, committed and reviewed. Applying happens inside `Db.layer`'s resource build as `Command.Exec("DbMigrate", { command: "bun run db:migrate", cwd: "packages/db", env: { DATABASE_URL }, memo: { include: ["migrations/**"] } })` (`Command/Exec.ts`) — dev runs it against the Docker database after the container is healthy, deploy runs it against the PlanetScale origin directly before the Worker is put. `bun run db:migrate` is `drizzle-kit migrate`, which reads `DATABASE_URL` through `drizzle.config.ts`.
 
 ## D20 — Stored form is Effect AI's `Prompt.Message`; the server is the authority on the transcript
 
@@ -69,7 +65,7 @@ In `alchemy dev` the Connection provider is local: no API call, and the worker's
 
 Each run persists: the incoming user message, then after the stream completes, one assistant message and one tool message per step (what `Prompt.fromResponseParts` yields). The request's `messages` array is still sent whole by the client (TanStack always does) but the server only takes the **last user message** from it; history comes from the repository. That is what makes "same thread on another device" correct.
 
-Tier 3 converts stored messages to TanStack `UIMessage`s for hydration (`GET /chat?threadId=`, the `hydrate` handler `fetchServerSentEvents` already exposes — `ai-client/connection-adapters.js:300,622`; response shape `{ messages, activeRun, interrupts }`, `connection-adapters.d.ts:173`). Message ids must be stable across hydration and streaming so a reload does not duplicate bubbles: we use the stored row id as the AG-UI message id, which means the AG-UI codec gets the ids from the `Run` events instead of deriving `${runId}-${step}` (05).
+Tier 3 converts stored messages to TanStack `UIMessage`s for hydration (`GET /chat?threadId=`, the `hydrate` handler `fetchServerSentEvents` already exposes — `ai-client/connection-adapters.js:300,622`; response shape `{ messages, activeRun, interrupts }`, `connection-adapters.d.ts:173`). Message ids must be stable across hydration and streaming so a reload does not duplicate bubbles: we use the stored row id as the AG-UI message id, so the AG-UI codec takes its ids from the `Run` events (05).
 
 ## D21 — Threads have no owner yet
 
