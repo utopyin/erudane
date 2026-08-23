@@ -149,7 +149,7 @@ import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 
 const LOCAL = { user: "erudane", password: "erudane", database: "erudane", port: 54329 } as const;
-const PG_IMAGE_TAG = "18";          // = PlanetScale major; confirmed in phase 0
+const PG_IMAGE_TAG = "18";          // = PlanetScale major (confirmed)
 
 const local = Effect.gen(function* () {
   const image = yield* Docker.RemoteImage("DbImage", { name: "postgres", tag: PG_IMAGE_TAG });
@@ -193,11 +193,12 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
         name: yield* Config.string("HYPERDRIVE_NAME"),
         origin,
         caching: { disabled: true },
+        originConnectionLimit: 15,
         dev: { scheme: "postgres", host: "localhost", port: LOCAL.port, database: LOCAL.database, user: LOCAL.user, password: Redacted.make(LOCAL.password), sslmode: "disable" },
       };
     }
     yield* migrate(`postgres://${origin.user}:${Redacted.value(origin.password)}@${origin.host}:${origin.port}/${origin.database}?sslmode=verify-full`);
-    return { name: yield* Config.string("HYPERDRIVE_NAME"), origin, caching: { disabled: true } };
+    return { name: yield* Config.string("HYPERDRIVE_NAME"), origin, caching: { disabled: true }, originConnectionLimit: 15 };
   }),
 ).pipe(Alchemy.retain());
 ```

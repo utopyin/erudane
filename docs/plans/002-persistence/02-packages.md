@@ -14,7 +14,7 @@ apps/web                @erudane/web         tier 4  (thread routes, persistence
 
 - Catalog: `drizzle-orm: 1.0.0-rc.5-ab785fc`, `drizzle-kit: 1.0.0-rc.5-ab785fc`, `@effect/sql-pg: 4.0.0-rc.111`, `pg: ^8.23.0`, `@types/pg: ^8.20.0`.
 - Scripts: `db:generate` → `bun run --cwd packages/db generate`, `db:migrate`, `db:studio` pass-throughs.
-- `.env.example` gains `HYPERDRIVE_NAME`, `DB_HOST`, `DB_PORT=5432`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DATABASE_URL` (local: `postgres://erudane:erudane@localhost:54329/erudane`, used only by drizzle-kit CLI on the developer machine).
+- `.env.example` (done) carries `HYPERDRIVE_NAME=main-eu`, the PlanetScale origin (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`), an empty `DB_PASSWORD`, and `DATABASE_URL` for the local Docker database (drizzle-kit CLI only).
 - `.gitignore`: nothing new (migrations are committed).
 
 ## `packages/db` — `@erudane/db`

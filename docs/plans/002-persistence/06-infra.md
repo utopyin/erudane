@@ -51,14 +51,14 @@ providers: Layer.mergeAll(Cloudflare.providers(), Docker.providers(), Command.pr
 
 ChatGPT dev credentials (001 D11) move from an `env` prop to the Config path: before `yield* Api` the stack provides a `ConfigProvider` layered over the default one with `CHATGPT_OAUTH` = the JSON from `ChatGpt.fresh` when `ALCHEMY_DEV` (`ConfigProvider.layerAdd(ConfigProvider.fromUnknown({ CHATGPT_OAUTH }))` — `ConfigProvider.ts:704`, which composes onto the current provider with `orElse`). The init's `Config.redacted("CHATGPT_OAUTH")` read then sees it at plan time and binds it. If the interceptor turns out to read only the process-env provider, fall back to `process.env.CHATGPT_OAUTH = …` before yielding the worker; phase 2 decides.
 
-Stack outputs add `hyperdriveId: hyperdrive.hyperdriveId` (from `Hyperdrive` in `@erudane/db/infra`) so the first deploy visibly prints `7986575e…` — the proof that adoption, not creation, happened.
+Stack outputs add `hyperdriveId: hyperdrive.hyperdriveId` (from `Hyperdrive` in `@erudane/db/infra`) so the first deploy visibly prints `b08010000ce747df8ee0ff4f415884e5` — the proof that adoption, not creation, happened.
 
 ## Hyperdrive adoption checklist (phase 0, manual)
 
-1. `bunx wrangler hyperdrive get 7986575ea58343eaa80f040ef5c83f27` → `name`, `origin.host`, `origin.port`, `origin.database`, `origin.user`. Put them in `.env` as `HYPERDRIVE_NAME`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`.
-2. The password is write-only on the Cloudflare side. Use the PlanetScale role the config was created with, or create a dedicated role (`pg_read_all_data`, `pg_write_all_data`) and accept that the first deploy rotates the Hyperdrive origin to it. `DB_PASSWORD` in `.env`.
-3. Confirm the PlanetScale database major (`SELECT version()` from the PlanetScale console or `psql`): pin `PG_IMAGE_TAG` in `packages/db/infra.ts` to `18` or `17` accordingly.
-4. `alchemy deploy` once with the new stack: expect `Cloudflare.Hyperdrive.Connection "Db"` to **adopt** (no create), `Command.Exec "DbMigrate"` to run against PlanetScale, and the Worker to receive the `HYPERDRIVE` binding. The Hyperdrive is `retain`ed — `alchemy destroy` leaves it alone.
+1. Done: config `main-eu` → `.env.example` carries name, host, port, database, user. Copy to `.env`.
+2. `DB_PASSWORD`: the password of `pscale_api_gq62g6daakjh.qir2334nbie2` (the role the PlanetScale integration created). If it is not retrievable, create a dedicated role (`pg_read_all_data`, `pg_write_all_data`), set `DB_USER`/`DB_PASSWORD` to it, and the first deploy rotates the Hyperdrive origin.
+3. Done: Postgres 18 → `PG_IMAGE_TAG = "18"`.
+4. `alchemy deploy` once with the new stack: expect `Cloudflare.Hyperdrive.Connection "Db"` to **adopt** `main-eu` (no create; the config was made by the PlanetScale integration — if the update is rejected because of `integration_name`, fall back to a new alchemy-owned config on the same origin), `Command.Exec "DbMigrate"` to run against PlanetScale, and the Worker to receive the `HYPERDRIVE` binding. The Hyperdrive is `retain`ed — `alchemy destroy` leaves it alone.
 
 Hyperdrive specifics honoured: transaction-mode pooling (no session state across queries — Drizzle's `db.transaction` is fine, `SET` is not), `caching: { disabled: true }` (D17), statement timeout 60 s, direct port 5432 with `sslmode=verify-full` (`developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-database-providers/planetscale-postgres/`).
 
