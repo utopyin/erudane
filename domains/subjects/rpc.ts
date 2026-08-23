@@ -26,6 +26,7 @@ import {
 } from "./errors";
 import {
   AnchoredThread,
+  ChapterId,
   ExerciseId,
   ItemStatus,
   LessonId,
@@ -95,6 +96,18 @@ export const SubjectRpcs = RpcGroup.make(
     payload: { id: SubjectId },
     success: Schema.Array(AnchoredThread),
     error: RepoError,
+  }),
+  /** Attach a thread at one level (exactly one of the four ids). */
+  Rpc.make("subjects.anchorThread", {
+    payload: {
+      threadId: ThreadId,
+      subjectId: Schema.optionalKey(SubjectId),
+      chapterId: Schema.optionalKey(ChapterId),
+      lessonId: Schema.optionalKey(LessonId),
+      exerciseId: Schema.optionalKey(ExerciseId),
+    },
+    success: Schema.Void,
+    error: Schema.Union([...NotFound.members, RepoError, ThreadNotFound]),
   }),
   /** The agent's note — hidden in the UI by default, revealed only through this. */
   Rpc.make("subjects.note", {

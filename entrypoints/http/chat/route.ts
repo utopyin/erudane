@@ -2,8 +2,12 @@ import { Run } from "@erudane/chat/run";
 import { ThreadRepo } from "@erudane/chat/threads";
 import { ThreadId } from "@erudane/chat/types";
 import * as Alchemy from "alchemy";
+import { Documents } from "@erudane/documents/service";
 import * as Research from "@erudane/research/prompt";
+import * as Memory from "@erudane/subjects/memory";
+import { SubjectRepo } from "@erudane/subjects/repo";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
@@ -18,7 +22,56 @@ const MAX_MESSAGES = 200;
 const MAX_CHARS = 100_000;
 const SYSTEM = `You are Erudane, a learning assistant.
 
+When the user is seriously learning something (or wants to start), use the subject tools:
+create the subject with its outline, keep statuses and deadlines honest, record strengths
+and weaknesses as you observe them, and save your private note whenever this conversation
+taught you something worth remembering for the next one.
+
 ${Research.guidance}`;
+
+/**
+ * The subject fragment of the run's system prompt, composed from the thread's
+ * anchors (D39): subject memory, plus the anchored lesson's markdown and/or
+ * the exercise brief. An unanchored thread gets none of it — lesson-less mode.
+ * A failed read logs and degrades to the plain prompt; it never blocks a run.
+ */
+const subjectSystem = (threadId: ThreadId) =>
+  Effect.gen(function* () {
+    const repo = yield* SubjectRepo.Service;
+    const documents = yield* Documents.Service;
+    const anchors = Option.getOrUndefined(yield* repo.anchorsOf(threadId));
+    if (anchors?.subjectId == null) return undefined;
+    const memory = yield* repo.memory(anchors.subjectId);
+    const lessons = memory.chapters.flatMap((chapter) => chapter.lessons);
+    const lesson =
+      anchors.lessonId === null
+        ? undefined
+        : lessons.find((candidate) => candidate.id === anchors.lessonId);
+    const exercise =
+      anchors.exerciseId === null
+        ? undefined
+        : lessons
+            .flatMap((candidate) => candidate.exercises)
+            .find((candidate) => candidate.id === anchors.exerciseId);
+    const lessonMarkdown =
+      lesson === undefined
+        ? undefined
+        : yield* documents
+            .markdown(lesson.documentId)
+            .pipe(Effect.catch(() => Effect.succeed(undefined)));
+    return Memory.system({
+      memory,
+      anchors,
+      lessonMarkdown,
+      exerciseBrief: exercise?.brief,
+    });
+  }).pipe(
+    Effect.catch((error) =>
+      Effect.logWarning("subject memory unavailable; running plain", error).pipe(
+        Effect.as(undefined),
+      ),
+    ),
+  );
 
 class TooLarge extends Schema.TaggedError<TooLarge>()("ChatRoute.TooLarge", {
   message: Schema.String,
@@ -60,11 +113,14 @@ const run = HttpRouter.add(
     // A new chat's first run creates the thread under the id the page minted.
     yield* repo.create({ id: threadId });
 
+    const fragment = yield* subjectSystem(threadId);
+    const system = fragment === undefined ? SYSTEM : `${SYSTEM}\n\n${fragment}`;
+
     // The response body streams after this handler returns; it keeps the
     // request's runtime context (the per-request pool lives on it).
     const runtime = yield* Effect.context<Alchemy.RuntimeContext>();
     const sse = runs
-      .start({ threadId, message, system: SYSTEM, maxSteps: MAX_STEPS })
+      .start({ threadId, message, system, maxSteps: MAX_STEPS })
       .pipe(Agui.encode(body), Stream.encodeText, Stream.provideContext(runtime));
 
     return HttpServerResponse.stream(sse, {

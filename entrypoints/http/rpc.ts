@@ -8,6 +8,7 @@ import { ExerciseRuns } from "@erudane/subjects/exercises";
 import { SubjectRpcs } from "@erudane/subjects/rpc";
 import { Subjects } from "@erudane/subjects/service";
 import { SubjectNotFound } from "@erudane/subjects/errors";
+import { Anchor } from "@erudane/subjects/types";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -98,6 +99,25 @@ const handlers = group.toLayer({
         return yield* (yield* Subjects.Service).threadsOf(id);
       }),
     ),
+  "subjects.anchorThread": ({ threadId, subjectId, chapterId, lessonId, exerciseId }) =>
+    ambient(
+      Effect.gen(function* () {
+        const subjects = yield* Subjects.Service;
+        const anchor =
+          subjectId !== undefined
+            ? Anchor.Subject({ subjectId })
+            : chapterId !== undefined
+              ? Anchor.Chapter({ chapterId })
+              : lessonId !== undefined
+                ? Anchor.Lesson({ lessonId })
+                : exerciseId !== undefined
+                  ? Anchor.Exercise({ exerciseId })
+                  : undefined;
+        if (anchor === undefined) return;
+        yield* subjects.anchorThread(threadId, anchor);
+      }),
+    ),
+
   "subjects.note": ({ id }) =>
     ambient(
       Effect.gen(function* () {
