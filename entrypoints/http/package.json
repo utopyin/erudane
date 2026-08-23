@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@erudane/chat": "workspace:*",
+    "@erudane/db": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

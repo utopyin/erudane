@@ -1,13 +1,12 @@
 /**
  * AG-UI codec: the wire protocol spoken by TanStack AI's `useChat`.
  *
- * Inbound: `RunAgentInput` (flat wire messages) → `ChatInput`.
+ * Inbound: `RunAgentInput` (flat wire messages) → the run's new user message.
  * Outbound: `ChatEvent` → AG-UI events → SSE text.
  *
  * Everything TanStack/AG-UI specific lives here.
  */
-import type { ChatError } from "@erudane/chat/errors";
-import type { ChatEvent, ChatInput } from "@erudane/chat/types";
+import type { ChatEvent } from "@erudane/chat/types";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
@@ -67,98 +66,28 @@ export class UnsupportedInput extends Schema.TaggedError<UnsupportedInput>()(
   { message: Schema.String },
 ) {}
 
-const parseJson = (text: string): unknown => {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-};
-
-/** Wire messages → `ChatInput`. System messages become the prompt's system text. */
-export const toChatInput = (
+/**
+ * The run's new message: the last wire message, which must be from the user.
+ * Everything before it is the client's copy of history; the server's is authoritative.
+ */
+export const toUserMessage = (
   input: RunAgentInput,
-  options?: { readonly maxSteps?: number | undefined },
-): Effect.Effect<ChatInput, UnsupportedInput> =>
-  Effect.gen(function* () {
-    const messages: Array<Prompt.Message> = [];
-    const toolNames = new Map<string, string>();
-    let system: string | undefined;
-    let pendingResults: Array<Prompt.ToolResultPart> = [];
-
-    const flushResults = () => {
-      if (pendingResults.length > 0) {
-        messages.push(Prompt.toolMessage({ content: pendingResults }));
-        pendingResults = [];
-      }
-    };
-
-    for (const message of input.messages) {
-      if (message.role !== "tool") flushResults();
-      switch (message.role) {
-        case "system": {
-          if (system !== undefined) {
-            return yield* new UnsupportedInput({ message: "multiple system messages" });
-          }
-          system = message.content;
-          break;
-        }
-        case "reasoning":
-          break;
-        case "user": {
-          messages.push(
-            Prompt.userMessage({
-              content:
-                typeof message.content === "string"
-                  ? [Prompt.textPart({ text: message.content })]
-                  : message.content.map((part) => Prompt.textPart({ text: part.text })),
-            }),
-          );
-          break;
-        }
-        case "assistant": {
-          const content: Array<Prompt.AssistantMessagePart> = [];
-          if (message.content !== undefined && message.content.length > 0) {
-            content.push(Prompt.textPart({ text: message.content }));
-          }
-          for (const call of message.toolCalls ?? []) {
-            toolNames.set(call.id, call.function.name);
-            content.push(
-              Prompt.toolCallPart({
-                id: call.id,
-                name: call.function.name,
-                params: parseJson(call.function.arguments),
-                providerExecuted: false,
-              }),
-            );
-          }
-          if (content.length > 0) messages.push(Prompt.assistantMessage({ content }));
-          break;
-        }
-        case "tool": {
-          const name = toolNames.get(message.toolCallId);
-          if (name === undefined) {
-            return yield* new UnsupportedInput({
-              message: `tool result ${message.toolCallId} without a preceding tool call`,
-            });
-          }
-          pendingResults.push(
-            Prompt.toolResultPart({
-              id: message.toolCallId,
-              name,
-              result: parseJson(message.content),
-              isFailure: message.error !== undefined,
-              providerExecuted: false,
-            }),
-          );
-          break;
-        }
-      }
-    }
-    flushResults();
-
-    return { messages, system, maxSteps: options?.maxSteps };
-  });
+): Effect.Effect<Prompt.UserMessage, UnsupportedInput> => {
+  const last = input.messages[input.messages.length - 1];
+  if (last === undefined || last.role !== "user") {
+    return Effect.fail(
+      new UnsupportedInput({ message: "the last message must be a user message" }),
+    );
+  }
+  return Effect.succeed(
+    Prompt.userMessage({
+      content:
+        typeof last.content === "string"
+          ? [Prompt.textPart({ text: last.content })]
+          : last.content.map((part) => Prompt.textPart({ text: part.text })),
+    }),
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Outbound
@@ -172,7 +101,7 @@ export interface RunIds {
 type Json = Record<string, unknown>;
 
 interface EncoderState {
-  failure: Cause.Cause<ChatError> | undefined;
+  failure: Cause.Cause<unknown> | undefined;
   readonly messageId: string;
   readonly startedToolCalls: Set<string>;
   readonly reasoningIds: Set<string>;
@@ -278,7 +207,7 @@ const partEvents = (state: EncoderState, part: Response.StreamPart<any>): Readon
   }
 };
 
-const errorMessage = (cause: Cause.Cause<ChatError>): string => {
+const errorMessage = (cause: Cause.Cause<unknown>): string => {
   const squashed = Cause.squash(cause);
   return squashed instanceof Error ? squashed.message : String(squashed);
 };
@@ -294,10 +223,10 @@ const toSse = (event: Json): string =>
 /** `ChatEvent` stream → SSE text (`data: {...}\n\n` per AG-UI event). */
 export const encode =
   (ids: RunIds) =>
-  <R>(events: Stream.Stream<ChatEvent, ChatError, R>): Stream.Stream<string, never, R> => {
+  <E, R>(events: Stream.Stream<ChatEvent, E, R>): Stream.Stream<string, never, R> => {
     const initial = (): EncoderState => ({
       failure: undefined,
-      messageId: `${ids.runId}-0`,
+      messageId: ids.runId,
       startedToolCalls: new Set(),
       reasoningIds: new Set(),
       reason: "unknown",
@@ -307,7 +236,7 @@ export const encode =
 
     const step = (
       state: EncoderState,
-      event: Result.Result<ChatEvent, Cause.Cause<ChatError>>,
+      event: Result.Result<ChatEvent, Cause.Cause<E>>,
     ): readonly [EncoderState, ReadonlyArray<Json>] => {
       if (Result.isFailure(event)) {
         state.failure = event.failure;
@@ -316,7 +245,8 @@ export const encode =
       const chatEvent = event.success;
       switch (chatEvent._tag) {
         case "StepStart": {
-          const next = { ...state, messageId: `${ids.runId}-${chatEvent.step}` };
+          // The stored assistant message id, so hydration repaints the same bubble.
+          const next = { ...state, messageId: chatEvent.messageId };
           return [
             next,
             [{ type: "TEXT_MESSAGE_START", messageId: next.messageId, role: "assistant" }],
@@ -347,7 +277,7 @@ export const encode =
       metadata: { tanstack: { finishReason: finishReason(state.reason) } },
     });
 
-    const runError = (cause: Cause.Cause<ChatError>): Json => ({
+    const runError = (cause: Cause.Cause<E>): Json => ({
       type: "RUN_ERROR",
       message: errorMessage(cause),
       metadata: { tanstack: { threadId: ids.threadId, runId: ids.runId } },

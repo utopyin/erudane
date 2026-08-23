@@ -1,4 +1,6 @@
+import { Run } from "@erudane/chat/run";
 import { Chat } from "@erudane/chat/service";
+import { ThreadRepo } from "@erudane/chat/threads";
 import { Db } from "@erudane/db/service";
 import { Http } from "@erudane/http";
 import { layer as registry } from "@erudane/http/chat/registry";
@@ -20,7 +22,8 @@ export default class Api extends Cloudflare.Worker<Api>()(
 
     // Domain services are built once per isolate; routes take them per request.
     const services = yield* Layer.build(
-      Chat.layer.pipe(
+      Run.layer.pipe(
+        Layer.provideMerge(Layer.mergeAll(Chat.layer, ThreadRepo.layer)),
         Layer.provide(Layer.mergeAll(Model.layer, registry)),
         Layer.provideMerge(Layer.succeed(Db.Service, db)),
       ),

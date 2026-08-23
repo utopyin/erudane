@@ -10,7 +10,8 @@
     "./types": "./types.ts",
     "./errors": "./errors.ts",
     "./threads": "./threads.ts",
-    "./run": "./run.ts"
+    "./run": "./run.ts",
+    "./ids": "./ids.ts"
   },
   "scripts": {
     "check:types": "tsc"

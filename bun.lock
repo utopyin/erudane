@@ -79,6 +79,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@erudane/chat": "workspace:*",
+        "@erudane/db": "workspace:*",
         "effect": "catalog:",
       },
       "devDependencies": {
