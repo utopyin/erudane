@@ -10,7 +10,7 @@ Read in order:
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | [01-decisions.md](./01-decisions.md)               | Decisions D12–D22 and what was verified in `repos/alchemy`, drizzle rc.5, TanStack AI 0.48                          |
 | [02-packages.md](./02-packages.md)                 | Package map, every file, exports, closures                                                                          |
-| [03-db-package.md](./03-db-package.md)             | `@erudane/db`: schema + prefix, Drizzle config/migrations, the `Db` service and its infra Layer                     |
+| [03-db-package.md](./03-db-package.md)             | `@erudane/db`: schema + prefix, Drizzle config/migrations, the `Database` service and its infra Layer                     |
 | [04-chat-persistence.md](./04-chat-persistence.md) | `@erudane/chat`: `ThreadRepo` (drizzle + memory layers), `Run` orchestration around `Chat.stream`                   |
 | [05-http-and-web.md](./05-http-and-web.md)         | Routes (`POST /chat`, `GET /chat?threadId`, `GET /threads`), Prompt → UIMessage codec, web pages                    |
 | [06-infra.md](./06-infra.md)                       | Hyperdrive adoption, PlanetScale origin, local Postgres in Docker, migrations at deploy, the Effect-form API worker |
@@ -28,10 +28,10 @@ apps/web                                  apps/api  (Effect-form Cloudflare.Work
 │   persistence: true,         │ ───────▶ │     Http.layer                                    │
 │   threadId })                │          │       .provideMerge(Chat.layer, Run.layer)        │
 │ /api/chat    ANY → /chat     │          │       .provide(ThreadRepo.layer)   ← domains/chat │
-│ /api/threads GET → /threads  │          │       .provide(Db.layer)           ← packages/db  │
+│ /api/threads GET → /threads  │          │       .provide(Database.layer)           ← packages/db  │
 └──────────────────────────────┘          │       .provide(Model.layer, registry))            │
                                           └───────────────────────────────────────────────────┘
-                                                   │ Db.layer yields (at plan time) the Hyperdrive
+                                                   │ Database.layer yields (at plan time) the Hyperdrive
                                                    │ Connection, the dev Docker Postgres and the
                                                    │ migration Exec; (at runtime) Hyperdrive.Connect
                                                    ▼

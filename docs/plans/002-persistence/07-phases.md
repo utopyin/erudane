@@ -10,17 +10,17 @@ Each phase ends green on `bun run check` and the named verification; one commit 
 
 Verify: `bun install`, `bun run check` green; `bunx drizzle-kit --help` runs from `packages/db`.
 
-## Phase 1 — Schema, migrations, `Db` service, infra
+## Phase 1 — Schema, migrations, `Database` service, infra
 
 `schema.ts`, `drizzle.config.ts`, `bun run db:generate` → first migration folder committed; `service.ts`, `infra.ts`.
 
-Verify: `docker run` a throwaway `postgres:18`, `DATABASE_URL=… bun run db:migrate` creates `eru_threads`, `eru_messages`, `eru_message_role`, `eru_migrations` and nothing else; `psql -c '\dt'` shows only `eru_*`. Type-level: `Db.layer` requirements are exactly what `Effect.provide` in a worker init can satisfy (no stray `Scope`/`RuntimeContext` at layer level).
+Verify: `docker run` a throwaway `postgres:18`, `DATABASE_URL=… bun run db:migrate` creates `eru_threads`, `eru_messages`, `eru_message_role`, `eru_migrations` and nothing else; `psql -c '\dt'` shows only `eru_*`. Type-level: `Database.layer` requirements are exactly what `Effect.provide` in a worker init can satisfy (no stray `Scope`/`RuntimeContext` at layer level).
 
 ## Phase 2 — Effect-form worker + dev database
 
 `apps/api/src/index.ts` rewrite, `model.ts` to `Config`, delete `env.ts`/`runtime.ts`, `alchemy.run.ts` providers + ConfigProvider override, `Website` binding check.
 
-Verify: `bun run dev` starts the container, applies migrations, serves `/health`; ChatGPT-sub inference still works (001 D11 path through `Config`); a scratch route or `bun repl` against `Db.Service` runs `db.select().from(threads)` through the local Hyperdrive passthrough. Then `bun run deploy`: adoption of `7986575e…` confirmed in the plan output and in stack outputs; `/health` on production.
+Verify: `bun run dev` starts the container, applies migrations, serves `/health`; ChatGPT-sub inference still works (001 D11 path through `Config`); a scratch route or `bun repl` against `Database.Service` runs `db.select().from(threads)` through the local Hyperdrive passthrough. Then `bun run deploy`: adoption of `7986575e…` confirmed in the plan output and in stack outputs; `/health` on production.
 
 ## Phase 3 — Domain: `ThreadRepo` + `Run`
 

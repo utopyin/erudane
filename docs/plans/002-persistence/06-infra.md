@@ -2,7 +2,7 @@
 
 ## The API worker becomes Effect-form
 
-`Db.layer` is an Effect Layer that yields resources and bindings while it builds, so the API worker is the Effect-form `Cloudflare.Worker<Api>()(id, props, init)` (`Cloudflare/Workers/Worker.ts:1615`): alchemy evaluates its init at plan time **and** at runtime.
+`Database.layer` is an Effect Layer that yields resources and bindings while it builds, so the API worker is the Effect-form `Cloudflare.Worker<Api>()(id, props, init)` (`Cloudflare/Workers/Worker.ts:1615`): alchemy evaluates its init at plan time **and** at runtime.
 
 ```ts
 // apps/api/src/index.ts
@@ -22,22 +22,22 @@ export default class Api extends Cloudflare.Worker<Api>()(
   "Api",
   { main: import.meta.url, compatibility: { flags: ["nodejs_compat"] } },
   Effect.gen(function* () {
-    const db = yield* Db.Service; // init: binds Hyperdrive (plan) / resolves it (runtime)
+    const db = yield* Database.Service; // init: binds Hyperdrive (plan) / resolves it (runtime)
     const model = yield* Model.layer; // init: Config reads (auto-bound as secrets at plan time)
 
     const app = Http.layer.pipe(
       Layer.provideMerge(Layer.mergeAll(Chat.layer, Run.layer)),
       Layer.provideMerge(ThreadRepo.layer),
-      Layer.provide(Layer.mergeAll(model, registry, Layer.succeed(Db.Service, db))),
+      Layer.provide(Layer.mergeAll(model, registry, Layer.succeed(Database.Service, db))),
     );
 
     return { fetch: yield* HttpRouter.toHttpEffect(app) }; // HttpRouter.ts:617
-  }).pipe(Effect.provide(Db.layer)),
+  }).pipe(Effect.provide(Database.layer)),
 ) {}
 ```
 
-- `toHttpEffect` builds the router layer once at boot and yields the per-request `HttpEffect`; route requirements that are not satisfied by the layer (`Db.Runtime` = `Alchemy.RuntimeContext`, `Scope`, `HttpServerRequest`) flow into `fetch`'s requirements, which the worker bridge provides per request.
-- `Layer.succeed(Db.Service, db)`: the service was already built by `Effect.provide(Db.layer)` on the init; re-wrapping it avoids building the layer twice (the resource yields are idempotent, but one is enough).
+- `toHttpEffect` builds the router layer once at boot and yields the per-request `HttpEffect`; route requirements that are not satisfied by the layer (`Database.Runtime` = `Alchemy.RuntimeContext`, `Scope`, `HttpServerRequest`) flow into `fetch`'s requirements, which the worker bridge provides per request.
+- `Layer.succeed(Database.Service, db)`: the service was already built by `Effect.provide(Database.layer)` on the init; re-wrapping it avoids building the layer twice (the resource yields are idempotent, but one is enough).
 - `Model.layer` reads `Config.redacted("OPENAI_API_KEY").pipe(Config.withDefault(Redacted.make("")))`, `Config.string("OPENAI_MODEL").pipe(Config.withDefault("gpt-4.1-mini"))`, `Config.redacted("CHATGPT_OAUTH").pipe(Config.withDefault(Redacted.make("")))`, `Config.string("CHATGPT_MODEL")…`. Any `Config` read during init is intercepted at plan time and bound to the Worker as a secret; at runtime the same read resolves from the env through `WorkerConfigProvider` (`Runtime.ts:85-126`, `Workers/ConfigProvider.ts`).
 - `alchemy.run.ts` imports the class: `import Api from "./apps/api/src/index"`; `Website` keeps `env: { API: Api }` (the class is the resource; verify the env binding accepts the class form — `examples/cloudflare-tanstack-rpc-drizzle` binds a class worker the same way).
 
@@ -68,8 +68,8 @@ Hyperdrive specifics honoured: transaction-mode pooling (no session state across
 2. Runs `bun run migrate` in `packages/db` with `DATABASE_URL` pointing at it (memoised on `migrations/**` — re-runs only when a migration is added).
 3. Registers the local Hyperdrive with the `dev` origin; the worker's `connectionString` is `postgres://erudane:erudane@localhost:54329/erudane?sslmode=disable`.
 
-The developer needs Docker running. `bun run db:generate` after editing `schema.ts`; `bun run db:studio` to look at rows. `.env` holds only `DATABASE_URL` for those CLI commands; the stack computes its own URL and reads no `DB_*` in dev (the origin Config reads sit on the deploy branch of `Db.infra`).
+The developer needs Docker running. `bun run db:generate` after editing `schema.ts`; `bun run db:studio` to look at rows. `.env` holds only `DATABASE_URL` for those CLI commands; the stack computes its own URL and reads no `DB_*` in dev (the origin Config reads sit on the deploy branch of `Database.infra`).
 
 ## Deploy
 
-`bun run deploy` (`alchemy deploy --env-file .env.production`) → migrations run against PlanetScale before the worker is updated (the `Exec` is yielded inside the Connection props, and the Connection is yielded by `Db.layer` inside the worker's init, so the order is Exec → Connection → Worker). A failing migration fails the deploy before any traffic hits the new code.
+`bun run deploy` (`alchemy deploy --env-file .env.production`) → migrations run against PlanetScale before the worker is updated (the `Exec` is yielded inside the Connection props, and the Connection is yielded by `Database.layer` inside the worker's init, so the order is Exec → Connection → Worker). A failing migration fails the deploy before any traffic hits the new code.

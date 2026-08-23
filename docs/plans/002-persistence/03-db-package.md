@@ -95,7 +95,7 @@ Scripts in `packages/db/package.json`: `generate: drizzle-kit generate`, `migrat
 
 Migration folders are v3 (`migrations/20260823120000_init/{migration.sql,snapshot.json}`); the migrations table is `eru_migrations` so a second app's `acm_migrations` does not collide.
 
-## The `Db` service
+## The `Database` service
 
 ```ts
 // packages/db/service.ts
@@ -112,7 +112,7 @@ import { relations } from "./schema";
 /** What every query needs: the worker's per-request runtime (binding access, execution scope). */
 export type Runtime = Alchemy.RuntimeContext;
 
-export class DbError extends Schema.TaggedError<DbError>()("Db.Error", {
+export class DatabaseError extends Schema.TaggedError<DatabaseError>()("Db.Error", {
   message: Schema.String,
   cause: Schema.Defect,
 }) {}
@@ -133,7 +133,7 @@ export const layer = Layer.effect(
   }),
 ).pipe(Layer.provide(Cloudflare.Hyperdrive.ConnectBinding));
 
-export * as Db from "./service";
+export * as Database from "./service";
 ```
 
 How it behaves in the two phases (`infrastructure-as-effects/phases.mdx`):
@@ -141,7 +141,7 @@ How it behaves in the two phases (`infrastructure-as-effects/phases.mdx`):
 - **Plan/deploy** (`alchemy deploy` / `alchemy dev`): building the layer yields `Hyperdrive` (06), which registers the Connection (and in dev the container + migration) in the stack; `Hyperdrive.Connect` records a binding on the Worker. `Drizzle.Postgres` defers everything (no connection attempt without `WorkerEnvironment`).
 - **Runtime**: `Connect` resolves the binding; the first query in a request builds `PgClient.layer({ url })` + `drizzle-orm/effect-postgres` `makeWithDefaults({ relations })` on the execution scope and reuses it for the rest of the request; the pool is ended when the request settles.
 
-The exact `Interface.db` type is the one subtlety: `Drizzle.Postgres` returns a `proxyChain<EffectPgDatabase<Relations> & { $client }>`; phase 1 pins this type with `ReturnType`/`Effect.Success` as sketched, or names it explicitly if inference is unhelpful. Repository code uses `db.query.threads.findFirst({...})`, `db.insert(messages).values(...)`, `db.transaction((tx) => Effect)` — all Effects, errors `EffectDrizzleQueryError | SqlError`, mapped to `DbError` by the repo layer.
+The exact `Interface.db` type is the one subtlety: `Drizzle.Postgres` returns a `proxyChain<EffectPgDatabase<Relations> & { $client }>`; phase 1 pins this type with `ReturnType`/`Effect.Success` as sketched, or names it explicitly if inference is unhelpful. Repository code uses `db.query.threads.findFirst({...})`, `db.insert(messages).values(...)`, `db.transaction((tx) => Effect)` — all Effects, errors `EffectDrizzleQueryError | SqlError`, mapped to `DatabaseError` by the repo layer.
 
 ## Infra (deploy-side)
 
