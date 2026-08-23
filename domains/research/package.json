@@ -1,0 +1,21 @@
+{
+  "name": "@erudane/research",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tools": "./tools.ts",
+    "./handlers": "./handlers.ts",
+    "./prompt": "./prompt.ts"
+  },
+  "scripts": {
+    "check:types": "tsc"
+  },
+  "dependencies": {
+    "@erudane/firecrawl": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

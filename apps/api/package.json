@@ -11,6 +11,7 @@
     "@effect/platform-bun": "catalog:",
     "@erudane/chat": "workspace:*",
     "@erudane/db": "workspace:*",
+    "@erudane/firecrawl": "workspace:*",
     "@erudane/http": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"

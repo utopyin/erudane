@@ -27,6 +27,7 @@
         "@effect/platform-bun": "catalog:",
         "@erudane/chat": "workspace:*",
         "@erudane/db": "workspace:*",
+        "@erudane/firecrawl": "workspace:*",
         "@erudane/http": "workspace:*",
         "alchemy": "catalog:",
         "effect": "catalog:",
@@ -42,6 +43,7 @@
         "@base-ui/react": "^1.7.0",
         "@erudane/chat": "workspace:*",
         "@erudane/http": "workspace:*",
+        "@erudane/research": "workspace:*",
         "@erudane/ui": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/ai": "catalog:",
@@ -74,12 +76,24 @@
         "typescript": "7.0.2",
       },
     },
+    "domains/research": {
+      "name": "@erudane/research",
+      "version": "0.0.0",
+      "dependencies": {
+        "@erudane/firecrawl": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "7.0.2",
+      },
+    },
     "entrypoints/http": {
       "name": "@erudane/http",
       "version": "0.0.0",
       "dependencies": {
         "@erudane/chat": "workspace:*",
         "@erudane/db": "workspace:*",
+        "@erudane/research": "workspace:*",
         "effect": "catalog:",
       },
       "devDependencies": {
@@ -101,6 +115,16 @@
         "@cloudflare/workers-types": "^5.20260823.1",
         "@types/pg": "catalog:",
         "drizzle-kit": "catalog:",
+        "typescript": "7.0.2",
+      },
+    },
+    "packages/firecrawl": {
+      "name": "@erudane/firecrawl",
+      "version": "0.0.0",
+      "dependencies": {
+        "effect": "catalog:",
+      },
+      "devDependencies": {
         "typescript": "7.0.2",
       },
     },
@@ -372,7 +396,11 @@
 
     "@erudane/db": ["@erudane/db@workspace:packages/db"],
 
+    "@erudane/firecrawl": ["@erudane/firecrawl@workspace:packages/firecrawl"],
+
     "@erudane/http": ["@erudane/http@workspace:entrypoints/http"],
+
+    "@erudane/research": ["@erudane/research@workspace:domains/research"],
 
     "@erudane/scripts": ["@erudane/scripts@workspace:scripts"],
 

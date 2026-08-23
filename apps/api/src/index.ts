@@ -2,11 +2,13 @@ import { Run } from "@erudane/chat/run";
 import { Chat } from "@erudane/chat/service";
 import { ThreadRepo } from "@erudane/chat/threads";
 import { Database } from "@erudane/db/service";
+import { Firecrawl } from "@erudane/firecrawl/service";
 import { Http } from "@erudane/http";
 import { layer as registry } from "@erudane/http/chat/registry";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as HttpRouter from "effect/unstable/http/HttpRouter";
 import * as Model from "./model";
 
@@ -25,6 +27,7 @@ export default class Api extends Cloudflare.Worker<Api>()(
       Run.layer.pipe(
         Layer.provideMerge(Layer.mergeAll(Chat.layer, ThreadRepo.layer)),
         Layer.provide(Layer.mergeAll(Model.layer, registry)),
+        Layer.provide(Firecrawl.layer.pipe(Layer.provide(FetchHttpClient.layer))),
         Layer.provideMerge(Layer.succeed(Database.Service, db)),
       ),
     );

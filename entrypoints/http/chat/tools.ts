@@ -6,9 +6,10 @@
  * reach a handler, a service, or a runtime.
  */
 import { ChatTools } from "@erudane/chat/tools";
+import { ResearchTools } from "@erudane/research/tools";
 import * as Toolkit from "effect/unstable/ai/Toolkit";
 
-export const toolkit = Toolkit.merge(ChatTools.toolkit);
+export const toolkit = Toolkit.merge(ChatTools.toolkit, ResearchTools.toolkit);
 
 export type Tools = typeof toolkit.tools;
 

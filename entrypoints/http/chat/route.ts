@@ -2,6 +2,7 @@ import { Run } from "@erudane/chat/run";
 import { ThreadRepo } from "@erudane/chat/threads";
 import { ThreadId } from "@erudane/chat/types";
 import type { Database } from "@erudane/db/service";
+import * as Research from "@erudane/research/prompt";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
@@ -12,10 +13,12 @@ import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
 import * as Agui from "./agui";
 import { toUiMessages } from "./ui";
 
-const MAX_STEPS = 5;
+const MAX_STEPS = 8;
 const MAX_MESSAGES = 200;
 const MAX_CHARS = 100_000;
-const SYSTEM = "You are Erudane, a learning assistant.";
+const SYSTEM = `You are Erudane, a learning assistant.
+
+${Research.guidance}`;
 
 class TooLarge extends Schema.TaggedError<TooLarge>()("ChatRoute.TooLarge", {
   message: Schema.String,
