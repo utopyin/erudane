@@ -728,7 +728,7 @@ const desiredMetadata = (
   props: MachineProps,
   alchemy: Record<string, string>,
 ): Record<string, string> => ({
-  ...(props.metadata ?? {}),
+  ...props.metadata,
   ...alchemy,
 });
 

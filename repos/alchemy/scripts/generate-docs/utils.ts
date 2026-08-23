@@ -222,7 +222,7 @@ export function guessExampleValue(property: PropertyDoc) {
   if (/Record</.test(type)) {
     return "{}";
   }
-  if (/\[\]$/.test(type) || /Array</.test(type)) {
+  if (type.endsWith("[]") || /Array</.test(type)) {
     return "[]";
   }
   if (/boolean/i.test(type)) {

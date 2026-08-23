@@ -104,7 +104,7 @@ test.provider(
         fqn: workerRow.fqn,
         value: {
           ...workerRow.row,
-          attr: { ...(attr ?? {}), workerId: v1.workerName },
+          attr: { ...attr, workerId: v1.workerName },
         },
       });
 

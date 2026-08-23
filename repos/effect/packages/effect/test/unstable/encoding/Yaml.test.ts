@@ -1,5 +1,5 @@
-import { assert, describe, it } from "@effect/vitest"
-import * as Yaml from "effect/unstable/encoding/Yaml"
+import { assert, describe, it } from "@effect/vitest";
+import * as Yaml from "effect/unstable/encoding/Yaml";
 
 describe("Yaml", () => {
   it("parses nested block and flow collections", () => {
@@ -24,12 +24,12 @@ database:
           host: "localhost",
           credentials: [
             { user: "root", roles: ["admin", "writer"] },
-            { user: "guest", roles: [] }
-          ]
-        }
-      }
-    )
-  })
+            { user: "guest", roles: [] },
+          ],
+        },
+      },
+    );
+  });
 
   it("parses quoted and block scalars", () => {
     assert.deepStrictEqual(
@@ -45,10 +45,10 @@ folded: >-
       {
         quoted: "line\nvalue",
         literal: "first\nsecond\n",
-        folded: "first second"
-      }
-    )
-  })
+        folded: "first second",
+      },
+    );
+  });
 
   it("resolves aliases", () => {
     assert.deepStrictEqual(
@@ -61,12 +61,12 @@ development:
 `),
       {
         defaults: { host: "localhost", port: 5432 },
-        development: { settings: { host: "localhost", port: 5432 } }
-      }
-    )
-  })
+        development: { settings: { host: "localhost", port: 5432 } },
+      },
+    );
+  });
 
   it("rejects invalid indentation", () => {
-    assert.throws(() => Yaml.parse("root:\n   child: true\n  sibling: false\n"))
-  })
-})
+    assert.throws(() => Yaml.parse("root:\n   child: true\n  sibling: false\n"));
+  });
+});

@@ -195,5 +195,5 @@ export interface ColoMetadata {
   coloRegion: string;
   coloTier: number;
 }
-export {};
+
 //# sourceMappingURL=types.d.ts.map

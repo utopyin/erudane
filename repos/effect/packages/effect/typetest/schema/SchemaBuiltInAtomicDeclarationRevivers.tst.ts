@@ -1,5 +1,5 @@
-import { Schema, type SchemaRepresentation } from "effect"
-import { describe, expect, it } from "tstyche"
+import { Schema, type SchemaRepresentation } from "effect";
+import { describe, expect, it } from "tstyche";
 
 describe("Schema built-in atomic declaration revivers", () => {
   it("composes every atomic declaration reviver without casts", () => {
@@ -10,12 +10,12 @@ describe("Schema built-in atomic declaration revivers", () => {
       Schema.RegExpReviver,
       Schema.Uint8ArrayReviver,
       Schema.URLReviver,
-      Schema.URLSearchParamsReviver
-    ]
+      Schema.URLSearchParamsReviver,
+    ];
 
-    expect(revivers).type.toBe<ReadonlyArray<SchemaRepresentation.AnyReviver>>()
-    expect(Schema.DateReviver).type.toBe<SchemaRepresentation.DeclarationReviver<null>>()
-    expect(Schema.FileReviver).type.toBe<SchemaRepresentation.DeclarationReviver<null>>()
-    expect(Schema.FormDataReviver).type.toBe<SchemaRepresentation.DeclarationReviver<null>>()
-  })
-})
+    expect(revivers).type.toBe<ReadonlyArray<SchemaRepresentation.AnyReviver>>();
+    expect(Schema.DateReviver).type.toBe<SchemaRepresentation.DeclarationReviver<null>>();
+    expect(Schema.FileReviver).type.toBe<SchemaRepresentation.DeclarationReviver<null>>();
+    expect(Schema.FormDataReviver).type.toBe<SchemaRepresentation.DeclarationReviver<null>>();
+  });
+});

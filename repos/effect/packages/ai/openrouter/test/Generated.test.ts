@@ -1,7 +1,7 @@
-import { Generated } from "@effect/ai-openrouter"
-import { describe, it } from "@effect/vitest"
-import { deepStrictEqual } from "@effect/vitest/utils"
-import { Schema } from "effect"
+import { Generated } from "@effect/ai-openrouter";
+import { describe, it } from "@effect/vitest";
+import { deepStrictEqual } from "@effect/vitest/utils";
+import { Schema } from "effect";
 
 describe("Generated", () => {
   it("decodes nullable generation statistics", () => {
@@ -50,12 +50,12 @@ describe("Generated", () => {
         session_id: null,
         provider_responses: null,
         user_agent: null,
-        web_search_engine: null
-      }
-    }
+        web_search_engine: null,
+      },
+    };
 
-    deepStrictEqual(Schema.decodeUnknownSync(Generated.GetGeneration200)(response), response)
-  })
+    deepStrictEqual(Schema.decodeUnknownSync(Generated.GetGeneration200)(response), response);
+  });
 
   it("preserves streamed usage cost fields", () => {
     const usage = {
@@ -66,10 +66,10 @@ describe("Generated", () => {
       is_byok: false,
       prompt_tokens_details: {
         cached_tokens: 0,
-        cache_write_tokens: 0
-      }
-    }
+        cache_write_tokens: 0,
+      },
+    };
 
-    deepStrictEqual(Schema.decodeUnknownSync(Generated.ChatUsage)(usage), usage)
-  })
-})
+    deepStrictEqual(Schema.decodeUnknownSync(Generated.ChatUsage)(usage), usage);
+  });
+});

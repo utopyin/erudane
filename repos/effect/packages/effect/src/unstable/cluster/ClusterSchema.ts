@@ -6,11 +6,11 @@
  *
  * @since 4.0.0
  */
-import * as Context from "../../Context.ts"
-import { constFalse, constTrue, identity } from "../../Function.ts"
-import type * as Rpc from "../rpc/Rpc.ts"
-import type { EntityId } from "./EntityId.ts"
-import type { Request } from "./Envelope.ts"
+import * as Context from "../../Context.ts";
+import { constFalse, constTrue, identity } from "../../Function.ts";
+import type * as Rpc from "../rpc/Rpc.ts";
+import type { EntityId } from "./EntityId.ts";
+import type { Request } from "./Envelope.ts";
 
 /**
  * Annotation that marks whether a cluster request should be persisted in mailbox
@@ -24,8 +24,8 @@ import type { Request } from "./Envelope.ts"
  * @since 4.0.0
  */
 export const Persisted = Context.Reference<boolean>("effect/cluster/ClusterSchema/Persisted", {
-  defaultValue: constFalse
-})
+  defaultValue: constFalse,
+});
 
 /**
  * Annotation that marks whether request handling should be wrapped in the
@@ -51,8 +51,8 @@ export const Persisted = Context.Reference<boolean>("effect/cluster/ClusterSchem
  */
 export const WithTransaction = Context.Reference<boolean>(
   "effect/cluster/ClusterSchema/WithTransaction",
-  { defaultValue: constFalse }
-)
+  { defaultValue: constFalse },
+);
 
 /**
  * Annotation that controls whether a cluster request is treated as
@@ -69,8 +69,8 @@ export const WithTransaction = Context.Reference<boolean>(
  */
 export const Uninterruptible = Context.Reference<boolean | "client" | "server">(
   "effect/cluster/ClusterSchema/Uninterruptible",
-  { defaultValue: constFalse }
-)
+  { defaultValue: constFalse },
+);
 
 /**
  * Returns whether the `Uninterruptible` annotation applies to server-side
@@ -87,9 +87,9 @@ export const Uninterruptible = Context.Reference<boolean | "client" | "server">(
  * @since 4.0.0
  */
 export const isUninterruptibleForServer = (context: Context.Context<never>): boolean => {
-  const value = Context.get(context, Uninterruptible)
-  return value === true || value === "server"
-}
+  const value = Context.get(context, Uninterruptible);
+  return value === true || value === "server";
+};
 
 /**
  * Returns whether the `Uninterruptible` annotation applies to client-side
@@ -112,9 +112,9 @@ export const isUninterruptibleForServer = (context: Context.Context<never>): boo
  * @since 4.0.0
  */
 export const isUninterruptibleForClient = (context: Context.Context<never>): boolean => {
-  const value = Context.get(context, Uninterruptible)
-  return value === true || value === "client"
-}
+  const value = Context.get(context, Uninterruptible);
+  return value === true || value === "client";
+};
 
 /**
  * Annotation that selects the shard group for an entity id.
@@ -128,8 +128,8 @@ export const isUninterruptibleForClient = (context: Context.Context<never>): boo
  */
 export const ShardGroup = Context.Reference<(entityId: EntityId) => string>(
   "effect/cluster/ClusterSchema/ShardGroup",
-  { defaultValue: () => (_) => "default" }
-)
+  { defaultValue: () => (_) => "default" },
+);
 
 /**
  * Annotation that controls whether client-side cluster request tracing is
@@ -142,9 +142,12 @@ export const ShardGroup = Context.Reference<(entityId: EntityId) => string>(
  * @category services
  * @since 4.0.0
  */
-export const ClientTracingEnabled = Context.Reference<boolean>("effect/cluster/ClusterSchema/ClientTracingEnabled", {
-  defaultValue: constTrue
-})
+export const ClientTracingEnabled = Context.Reference<boolean>(
+  "effect/cluster/ClusterSchema/ClientTracingEnabled",
+  {
+    defaultValue: constTrue,
+  },
+);
 
 /**
  * Context reference for deriving request annotations from a cluster request.
@@ -163,8 +166,8 @@ export const ClientTracingEnabled = Context.Reference<boolean>("effect/cluster/C
  * @since 4.0.0
  */
 export const Dynamic = Context.Reference<
-  (annotations: Context.Context<never>, request: Request<Rpc.AnyWithProps>) => Context.Context<never>
->(
-  "effect/cluster/ClusterSchema/Dynamic",
-  { defaultValue: () => identity }
-)
+  (
+    annotations: Context.Context<never>,
+    request: Request<Rpc.AnyWithProps>,
+  ) => Context.Context<never>
+>("effect/cluster/ClusterSchema/Dynamic", { defaultValue: () => identity });

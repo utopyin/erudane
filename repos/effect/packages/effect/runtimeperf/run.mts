@@ -1,6 +1,6 @@
-import os from "node:os"
-import process from "node:process"
-import { analyzePairs } from "./stats.mts"
+import os from "node:os";
+import process from "node:process";
+import { analyzePairs } from "./stats.mts";
 import {
   aggregateMeasurements,
   calibrateFixture,
@@ -20,8 +20,8 @@ import {
   resolveDefaults,
   selectFixtures,
   workerPath,
-  writeJson
-} from "./utils.mts"
+  writeJson,
+} from "./utils.mts";
 
 const usage = `Usage: pnpm runtimeperf [suite[/fixture]|scenario] [options]
 
@@ -32,56 +32,58 @@ Options:
   --tier <0-3>
   --family <name>
   --implementation <effect|valibot|zod4>
-`
+`;
 
-const rotate = (items, offset) => items.map((_, index) => items[(index + offset) % items.length])
+const rotate = (items, offset) => items.map((_, index) => items[(index + offset) % items.length]);
 
 const main = () => {
-  const options = parseArgs(process.argv.slice(2))
+  const options = parseArgs(process.argv.slice(2));
   if (options.help) {
-    process.stdout.write(usage)
-    return
+    process.stdout.write(usage);
+    return;
   }
-  const { config, fixtures } = loadRegistry()
-  const selected = selectFixtures(fixtures, options)
-  const defaults = resolveDefaults(config, options)
-  const runId = makeRunId()
-  const groups = Map.groupBy(selected, (fixture) => fixture.scenario)
-  const results = []
-  const executionOrder = []
+  const { config, fixtures } = loadRegistry();
+  const selected = selectFixtures(fixtures, options);
+  const defaults = resolveDefaults(config, options);
+  const runId = makeRunId();
+  const groups = Map.groupBy(selected, (fixture) => fixture.scenario);
+  const results = [];
+  const executionOrder = [];
 
   for (const [scenario, group] of groups) {
-    const calibrations = new Map(group.map((fixture) => [fixture, calibrateFixture(fixture, defaults)]))
-    const byTarget = new Map(group.map((fixture) => [fixture.target, []]))
+    const calibrations = new Map(
+      group.map((fixture) => [fixture, calibrateFixture(fixture, defaults)]),
+    );
+    const byTarget = new Map(group.map((fixture) => [fixture.target, []]));
 
     for (let round = 0; round < defaults.rounds; round++) {
       for (const fixture of rotate(group, round % group.length)) {
-        const calibration = calibrations.get(fixture)
-        const measurement = measureFixture(fixture, defaults, calibration.batchSize)
-        byTarget.get(fixture.target).push(measurement)
-        executionOrder.push({ scenario, round: round + 1, target: fixture.target })
+        const calibration = calibrations.get(fixture);
+        const measurement = measureFixture(fixture, defaults, calibration.batchSize);
+        byTarget.get(fixture.target).push(measurement);
+        executionOrder.push({ scenario, round: round + 1, target: fixture.target });
       }
     }
 
     for (const fixture of group) {
-      const calibration = calibrations.get(fixture)
-      const measurements = byTarget.get(fixture.target)
+      const calibration = calibrations.get(fixture);
+      const measurements = byTarget.get(fixture.target);
       results.push({
         fixture,
         batchSize: calibration.batchSize,
         calibration,
         measurements,
-        aggregate: aggregateMeasurements(measurements)
-      })
+        aggregate: aggregateMeasurements(measurements),
+      });
     }
   }
 
-  const crossLibrary = []
+  const crossLibrary = [];
   for (const [scenario, group] of Map.groupBy(results, (result) => result.fixture.scenario)) {
-    const effect = group.find((result) => result.fixture.implementation === "effect")
-    if (!effect) continue
+    const effect = group.find((result) => result.fixture.implementation === "effect");
+    if (!effect) continue;
     for (const candidate of group) {
-      if (candidate === effect) continue
+      if (candidate === effect) continue;
       crossLibrary.push({
         scenario,
         implementation: candidate.fixture.implementation,
@@ -90,10 +92,10 @@ const main = () => {
           candidate.measurements.map((item) => item.nsPerOp),
           {
             iterations: defaults.bootstrapIterations,
-            seed: defaults.bootstrapSeed
-          }
-        )
-      })
+            seed: defaults.bootstrapSeed,
+          },
+        ),
+      });
     }
   }
 
@@ -105,7 +107,7 @@ const main = () => {
     filters: {
       tier: options.tier ?? null,
       family: options.family ?? null,
-      implementation: options.implementation ?? null
+      implementation: options.implementation ?? null,
     },
     config: defaults,
     environment: {
@@ -113,13 +115,13 @@ const main = () => {
       v8: process.versions.v8,
       platform: process.platform,
       arch: process.arch,
-      cpu: os.cpus()[0]?.model ?? "unknown"
+      cpu: os.cpus()[0]?.model ?? "unknown",
     },
     libraries: libraryVersions(),
     crossLibraryDecodeApis: {
       effect: "SchemaParser.decodeUnknownExit (SchemaIssue)",
       valibot: "safeParser",
-      zod4: "safeParse ({ jitless: true })"
+      zod4: "safeParse ({ jitless: true })",
     },
     artifactMode: "repository",
     git: currentGitState(),
@@ -128,36 +130,42 @@ const main = () => {
       config: hashFile(configPath),
       worker: hashFile(workerPath),
       fixtures: Object.fromEntries(
-        [...new Set(selected.map((fixture) => fixture.fixturePath))]
-          .map((path) => [relativeToRepo(path), hashFile(path)])
-      )
+        [...new Set(selected.map((fixture) => fixture.fixturePath))].map((path) => [
+          relativeToRepo(path),
+          hashFile(path),
+        ]),
+      ),
     },
     executionOrder,
     results,
-    crossLibrary
-  }
-  const path = reportPath(runId, options.target, "single")
-  writeJson(path, report)
-  const comparisons = new Map(crossLibrary.map((item) => [`${item.scenario}/${item.implementation}`, item]))
+    crossLibrary,
+  };
+  const path = reportPath(runId, options.target, "single");
+  writeJson(path, report);
+  const comparisons = new Map(
+    crossLibrary.map((item) => [`${item.scenario}/${item.implementation}`, item]),
+  );
   printTable(
     ["scenario", "implementation", "ns/op", "mad", "vs Effect"],
     results.map((result) => {
-      const comparison = comparisons.get(`${result.fixture.scenario}/${result.fixture.implementation}`)
+      const comparison = comparisons.get(
+        `${result.fixture.scenario}/${result.fixture.implementation}`,
+      );
       return [
         result.fixture.scenario,
         result.fixture.implementation,
         formatNs(result.aggregate.median),
         formatNs(result.aggregate.mad),
-        comparison ? `${comparison.comparison.ratio.toFixed(3)}x` : "-"
-      ]
-    })
-  )
-  process.stdout.write(`\nReport: ${relativeToRepo(path)}\n`)
-}
+        comparison ? `${comparison.comparison.ratio.toFixed(3)}x` : "-",
+      ];
+    }),
+  );
+  process.stdout.write(`\nReport: ${relativeToRepo(path)}\n`);
+};
 
 try {
-  main()
+  main();
 } catch (error) {
-  process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : error}\n`)
-  process.exitCode = 1
+  process.stderr.write(`${error instanceof Error ? (error.stack ?? error.message) : error}\n`);
+  process.exitCode = 1;
 }

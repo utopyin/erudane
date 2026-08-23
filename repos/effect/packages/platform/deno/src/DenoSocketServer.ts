@@ -17,12 +17,12 @@
  *
  * @since 4.0.0
  */
-import * as Effect from "effect/Effect"
-import * as Function from "effect/Function"
-import * as Layer from "effect/Layer"
-import type * as Scope from "effect/Scope"
-import * as SocketServer from "effect/unstable/socket/SocketServer"
-import { closeListener, fromListener } from "./internal/denoSocketServer.ts"
+import * as Effect from "effect/Effect";
+import * as Function from "effect/Function";
+import * as Layer from "effect/Layer";
+import type * as Scope from "effect/Scope";
+import * as SocketServer from "effect/unstable/socket/SocketServer";
+import { closeListener, fromListener } from "./internal/denoSocketServer.ts";
 
 /**
  * Native Deno options for listening on a TCP or Unix socket.
@@ -32,7 +32,7 @@ import { closeListener, fromListener } from "./internal/denoSocketServer.ts"
  */
 export type ListenOptions =
   | (Deno.TcpListenOptions & { transport?: "tcp" })
-  | (Deno.UnixListenOptions & { transport: "unix" })
+  | (Deno.UnixListenOptions & { transport: "unix" });
 
 /**
  * Native Deno options and certified key material for listening with TLS.
@@ -40,7 +40,7 @@ export type ListenOptions =
  * @category models
  * @since 4.0.0
  */
-export type TlsListenOptions = Deno.ListenTlsOptions & Deno.TlsCertifiedKeyPem
+export type TlsListenOptions = Deno.ListenTlsOptions & Deno.TlsCertifiedKeyPem;
 
 /**
  * Creates a scoped socket server using a native Deno TCP or Unix listener.
@@ -49,21 +49,21 @@ export type TlsListenOptions = Deno.ListenTlsOptions & Deno.TlsCertifiedKeyPem
  * @since 4.0.0
  */
 export const make: (
-  options: ListenOptions
+  options: ListenOptions,
 ) => Effect.Effect<
   SocketServer.SocketServer["Service"],
   SocketServer.SocketServerError,
   Scope.Scope
-> = Effect.fnUntraced(function*(options) {
+> = Effect.fnUntraced(function* (options) {
   const listener = yield* Effect.acquireRelease(
     Effect.try({
-      try: () => options.transport === "unix" ? Deno.listen(options) : Deno.listen(options),
-      catch: openError
+      try: () => (options.transport === "unix" ? Deno.listen(options) : Deno.listen(options)),
+      catch: openError,
     }),
-    closeListener
-  )
-  return fromListener(listener)
-})
+    closeListener,
+  );
+  return fromListener(listener);
+});
 
 /**
  * Provides a socket server using a scoped native Deno TCP or Unix listener.
@@ -72,11 +72,11 @@ export const make: (
  * @since 4.0.0
  */
 export const layer: (
-  options: ListenOptions
+  options: ListenOptions,
 ) => Layer.Layer<SocketServer.SocketServer, SocketServer.SocketServerError> = Function.flow(
   make,
-  Layer.effect(SocketServer.SocketServer)
-)
+  Layer.effect(SocketServer.SocketServer),
+);
 
 /**
  * Creates a scoped TLS socket server using a native Deno TLS listener.
@@ -85,21 +85,21 @@ export const layer: (
  * @since 4.0.0
  */
 export const makeTls: (
-  options: TlsListenOptions
+  options: TlsListenOptions,
 ) => Effect.Effect<
   SocketServer.SocketServer["Service"],
   SocketServer.SocketServerError,
   Scope.Scope
-> = Effect.fnUntraced(function*(options) {
+> = Effect.fnUntraced(function* (options) {
   const listener = yield* Effect.acquireRelease(
     Effect.try({
       try: () => Deno.listenTls(options),
-      catch: openError
+      catch: openError,
     }),
-    closeListener
-  )
-  return fromListener(listener)
-})
+    closeListener,
+  );
+  return fromListener(listener);
+});
 
 /**
  * Provides a TLS socket server using a scoped native Deno TLS listener.
@@ -108,13 +108,13 @@ export const makeTls: (
  * @since 4.0.0
  */
 export const layerTls: (
-  options: TlsListenOptions
+  options: TlsListenOptions,
 ) => Layer.Layer<SocketServer.SocketServer, SocketServer.SocketServerError> = Function.flow(
   makeTls,
-  Layer.effect(SocketServer.SocketServer)
-)
+  Layer.effect(SocketServer.SocketServer),
+);
 
 const openError = (cause: unknown) =>
   new SocketServer.SocketServerError({
-    reason: new SocketServer.SocketServerOpenError({ cause })
-  })
+    reason: new SocketServer.SocketServerOpenError({ cause }),
+  });

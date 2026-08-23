@@ -1,0 +1,22 @@
+{
+  "name": "@erudane/http",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./chat/tools": "./chat/tools.ts",
+    "./chat/registry": "./chat/registry.ts",
+    "./chat/agui": "./chat/agui.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@erudane/chat": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

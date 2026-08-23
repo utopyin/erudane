@@ -161,10 +161,10 @@
   replacement: "vitest/environments#VmEnvironmentReturn"
   note: "This was a deprecated root re-export. Import it from vitest/environments; Vitest 4 custom environments use Vite environments."
 "@effect/vitest/index#HappyDOMOptions":
-  replacement: "NonNullable<import(\"vitest/node\").EnvironmentOptions[\"happyDOM\"]>"
+  replacement: 'NonNullable<import("vitest/node").EnvironmentOptions["happyDOM"]>'
   note: "Vitest 4 keeps this shape only as a property of EnvironmentOptions; derive it from the public vitest/node type."
 "@effect/vitest/index#JSDOMOptions":
-  replacement: "NonNullable<import(\"vitest/node\").EnvironmentOptions[\"jsdom\"]>"
+  replacement: 'NonNullable<import("vitest/node").EnvironmentOptions["jsdom"]>'
   note: "Vitest 4 keeps this shape only as a property of EnvironmentOptions; derive it from the public vitest/node type."
 "@effect/vitest/index#ArgumentsType":
   replacement: "T extends (...args: infer A) => any ? A : never"

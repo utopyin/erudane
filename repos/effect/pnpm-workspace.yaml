@@ -28,4 +28,4 @@ allowBuilds:
   workerd: false
 
 patchedDependencies:
-  '@changesets/get-github-info@1.0.0': patches/@changesets__get-github-info@1.0.0.patch
+  "@changesets/get-github-info@1.0.0": patches/@changesets__get-github-info@1.0.0.patch

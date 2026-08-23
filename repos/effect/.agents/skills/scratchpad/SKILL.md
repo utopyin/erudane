@@ -38,7 +38,7 @@ nearest the user's active source cursor or selection.
 - In auto mode, if a top-level `program` binding exists, the script appends:
 
   ```ts
-  Effect.runPromise(program).then(console.log, console.error)
+  Effect.runPromise(program).then(console.log, console.error);
   ```
 
 - If the example already contains an Effect runner, the script preserves it.

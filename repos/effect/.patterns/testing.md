@@ -8,25 +8,26 @@ Use `it.effect` for tests that return Effects.
 the test body in `Effect.scoped`.
 
 ```typescript
-import { assert, describe, it } from "@effect/vitest"
-import { Effect } from "effect"
+import { assert, describe, it } from "@effect/vitest";
+import { Effect } from "effect";
 
 it.effect("should work with Effects", () =>
-  Effect.gen(function*() {
-    const result = yield* someEffect
-    assert.strictEqual(result, expectedValue)
-  }))
+  Effect.gen(function* () {
+    const result = yield* someEffect;
+    assert.strictEqual(result, expectedValue);
+  }),
+);
 ```
 
 Use regular `it` for pure synchronous TypeScript functions.
 
 ```typescript
-import { assert, describe, it } from "@effect/vitest"
+import { assert, describe, it } from "@effect/vitest";
 
 it("should work with pure functions", () => {
-  const result = pureFunction(input)
-  assert.strictEqual(result, expectedValue)
-})
+  const result = pureFunction(input);
+  assert.strictEqual(result, expectedValue);
+});
 ```
 
 ## Testing Rules
@@ -59,13 +60,13 @@ the rendered type:
 
 ```typescript
 it("simplifies the displayed type", () => {
-  const value = null as unknown as PublicType
+  const value = null as unknown as PublicType;
 
   // @ts-expect-error Type '{ readonly value: string; }'
-  const displayed: never = value
+  const displayed: never = value;
 
-  void displayed
-})
+  void displayed;
+});
 ```
 
 Before accepting the test, temporarily restore the broken type and confirm that

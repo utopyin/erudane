@@ -8,11 +8,11 @@
  *
  * @since 4.0.0
  */
-import * as Arr from "./Array.ts"
-import * as InternalRecord from "./internal/record.ts"
-import { unescapeToken } from "./JsonPointer.ts"
-import * as Predicate from "./Predicate.ts"
-import * as Rec from "./Record.ts"
+import * as Arr from "./Array.ts";
+import * as InternalRecord from "./internal/record.ts";
+import { unescapeToken } from "./JsonPointer.ts";
+import * as Predicate from "./Predicate.ts";
+import * as Rec from "./Record.ts";
 
 /**
  * A plain object representing a single JSON Schema node.
@@ -30,7 +30,7 @@ import * as Rec from "./Record.ts"
  * @since 4.0.0
  */
 export interface JsonSchema {
-  [x: string]: unknown
+  [x: string]: unknown;
 }
 
 /**
@@ -54,7 +54,7 @@ export interface JsonSchema {
  * @category models
  * @since 4.0.0
  */
-export type Dialect = "draft-04" | "draft-07" | "draft-2020-12" | "openapi-3.1" | "openapi-3.0"
+export type Dialect = "draft-04" | "draft-07" | "draft-2020-12" | "openapi-3.1" | "openapi-3.0";
 
 /**
  * The JSON Schema primitive type names.
@@ -66,7 +66,7 @@ export type Dialect = "draft-04" | "draft-07" | "draft-2020-12" | "openapi-3.1" 
  * @category models
  * @since 4.0.0
  */
-export type Type = "string" | "number" | "boolean" | "array" | "object" | "null" | "integer"
+export type Type = "string" | "number" | "boolean" | "array" | "object" | "null" | "integer";
 
 /**
  * A record of named JSON Schema definitions, keyed by definition name.
@@ -129,9 +129,9 @@ export interface Definitions extends Record<string, JsonSchema> {}
  * @since 4.0.0
  */
 export interface Document<D extends Dialect> {
-  readonly dialect: D
-  readonly schema: JsonSchema
-  readonly definitions: Definitions
+  readonly dialect: D;
+  readonly schema: JsonSchema;
+  readonly definitions: Definitions;
 }
 
 /**
@@ -153,9 +153,9 @@ export interface Document<D extends Dialect> {
  * @since 4.0.0
  */
 export interface MultiDocument<D extends Dialect> {
-  readonly dialect: D
-  readonly schemas: readonly [JsonSchema, ...Array<JsonSchema>]
-  readonly definitions: Definitions
+  readonly dialect: D;
+  readonly schemas: readonly [JsonSchema, ...Array<JsonSchema>];
+  readonly definitions: Definitions;
 }
 
 /**
@@ -170,7 +170,7 @@ export interface MultiDocument<D extends Dialect> {
  * @category constants
  * @since 4.0.0
  */
-export const META_SCHEMA_URI_DRAFT_04 = "http://json-schema.org/draft-04/schema#"
+export const META_SCHEMA_URI_DRAFT_04 = "http://json-schema.org/draft-04/schema#";
 
 /**
  * Represents the `$schema` meta-schema URI for JSON Schema Draft-07.
@@ -191,7 +191,7 @@ export const META_SCHEMA_URI_DRAFT_04 = "http://json-schema.org/draft-04/schema#
  * @category constants
  * @since 4.0.0
  */
-export const META_SCHEMA_URI_DRAFT_07 = "http://json-schema.org/draft-07/schema#"
+export const META_SCHEMA_URI_DRAFT_07 = "http://json-schema.org/draft-07/schema#";
 
 /**
  * Represents the `$schema` meta-schema URI for JSON Schema Draft 2020-12.
@@ -211,11 +211,11 @@ export const META_SCHEMA_URI_DRAFT_07 = "http://json-schema.org/draft-07/schema#
  * @category constants
  * @since 4.0.0
  */
-export const META_SCHEMA_URI_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema"
+export const META_SCHEMA_URI_DRAFT_2020_12 = "https://json-schema.org/draft/2020-12/schema";
 
-const RE_DEFINITIONS = /^#\/definitions(?=\/|$)/
-const RE_DEFS = /^#\/\$defs(?=\/|$)/
-const RE_COMPONENTS_SCHEMAS = /^#\/components\/schemas(?=\/|$)/
+const RE_DEFINITIONS = /^#\/definitions(?=\/|$)/;
+const RE_DEFS = /^#\/\$defs(?=\/|$)/;
+const RE_COMPONENTS_SCHEMAS = /^#\/components\/schemas(?=\/|$)/;
 
 const DRAFT_04_COPY_KEYWORDS = new Set([
   "$ref",
@@ -234,8 +234,8 @@ const DRAFT_04_COPY_KEYWORDS = new Set([
   "minProperties",
   "maxProperties",
   "multipleOf",
-  "uniqueItems"
-])
+  "uniqueItems",
+]);
 
 const DRAFT_07_COPY_KEYWORDS = new Set([
   ...DRAFT_04_COPY_KEYWORDS,
@@ -246,14 +246,18 @@ const DRAFT_07_COPY_KEYWORDS = new Set([
   "minimum",
   "maximum",
   "exclusiveMinimum",
-  "exclusiveMaximum"
-])
+  "exclusiveMaximum",
+]);
 
-const DRAFT_04_SINGLE_SUBSCHEMA_KEYWORDS = new Set(["not"])
-const DRAFT_07_SINGLE_SUBSCHEMA_KEYWORDS = new Set(["not", "additionalProperties", "propertyNames"])
+const DRAFT_04_SINGLE_SUBSCHEMA_KEYWORDS = new Set(["not"]);
+const DRAFT_07_SINGLE_SUBSCHEMA_KEYWORDS = new Set([
+  "not",
+  "additionalProperties",
+  "propertyNames",
+]);
 
-const MAP_SUBSCHEMA_KEYWORDS = new Set(["properties", "patternProperties"])
-const ARRAY_SUBSCHEMA_KEYWORDS = new Set(["allOf", "anyOf", "oneOf"])
+const MAP_SUBSCHEMA_KEYWORDS = new Set(["properties", "patternProperties"]);
+const ARRAY_SUBSCHEMA_KEYWORDS = new Set(["allOf", "anyOf", "oneOf"]);
 
 /**
  * Parses a raw Draft-07 JSON Schema into a `Document<"draft-2020-12">`.
@@ -301,75 +305,76 @@ const ARRAY_SUBSCHEMA_KEYWORDS = new Set(["allOf", "anyOf", "oneOf"])
  * @since 4.0.0
  */
 export function fromSchemaDraft07(js: JsonSchema): Document<"draft-2020-12"> {
-  let definitions: Definitions | undefined
+  let definitions: Definitions | undefined;
 
-  const schema = walk(js, true) as JsonSchema
+  const schema = walk(js, true) as JsonSchema;
   return {
     dialect: "draft-2020-12",
     schema,
-    definitions: definitions ?? {}
-  }
+    definitions: definitions ?? {},
+  };
 
   function walk(node: unknown, isRoot: boolean): unknown {
-    if (Array.isArray(node)) return node.map(walkNested)
-    if (!Predicate.isObject(node)) return node
+    if (Array.isArray(node)) return node.map(walkNested);
+    if (!Predicate.isObject(node)) return node;
 
-    const out: Record<string, unknown> = {}
+    const out: Record<string, unknown> = {};
 
-    let prefixItems: unknown = undefined
-    let additionalItems: unknown = undefined
+    let prefixItems: unknown = undefined;
+    let additionalItems: unknown = undefined;
 
     for (const k of Object.keys(node)) {
-      const v = node[k]
+      const v = node[k];
 
       if (k === "$ref") {
-        out.$ref = typeof v === "string" ? v.replace(RE_DEFINITIONS, "#/$defs") : v
-        continue
+        out.$ref = typeof v === "string" ? v.replace(RE_DEFINITIONS, "#/$defs") : v;
+        continue;
       }
       if (DRAFT_07_COPY_KEYWORDS.has(k)) {
-        out[k] = v
-        continue
+        out[k] = v;
+        continue;
       }
-      if (rewriteSubschemaKeyword(out, k, v, walkNested, DRAFT_07_SINGLE_SUBSCHEMA_KEYWORDS)) continue
+      if (rewriteSubschemaKeyword(out, k, v, walkNested, DRAFT_07_SINGLE_SUBSCHEMA_KEYWORDS))
+        continue;
 
       switch (k) {
         case "definitions": {
-          const mapped = mapObject(v, walkNested)
+          const mapped = mapObject(v, walkNested);
           if (isRoot) {
-            definitions = mapped as Definitions | undefined
+            definitions = mapped as Definitions | undefined;
           } else {
-            out.definitions = mapped ?? v
+            out.definitions = mapped ?? v;
           }
-          break
+          break;
         }
 
         case "items":
-          prefixItems = v
-          break
+          prefixItems = v;
+          break;
         case "additionalItems":
-          additionalItems = v
-          break
+          additionalItems = v;
+          break;
 
         default:
-          break
+          break;
       }
     }
 
     // Draft-07 tuples -> 2020-12 tuples
     if (prefixItems !== undefined) {
       if (Array.isArray(prefixItems)) {
-        out.prefixItems = prefixItems.map(walkNested)
-        if (additionalItems !== undefined) out.items = walkNested(additionalItems)
+        out.prefixItems = prefixItems.map(walkNested);
+        if (additionalItems !== undefined) out.items = walkNested(additionalItems);
       } else {
-        out.items = walkNested(prefixItems)
+        out.items = walkNested(prefixItems);
       }
     }
 
-    return out
+    return out;
   }
 
   function walkNested(node: unknown): unknown {
-    return walk(node, false)
+    return walk(node, false);
   }
 }
 
@@ -407,12 +412,12 @@ export function fromSchemaDraft07(js: JsonSchema): Document<"draft-2020-12"> {
  * @since 4.0.0
  */
 export function fromSchemaDraft2020_12(js: JsonSchema): Document<"draft-2020-12"> {
-  const { $defs, ...schema } = js
+  const { $defs, ...schema } = js;
   return {
     dialect: "draft-2020-12",
     schema,
-    definitions: Predicate.isObject($defs) ? ($defs as Definitions) : {}
-  }
+    definitions: Predicate.isObject($defs) ? ($defs as Definitions) : {},
+  };
 }
 
 /**
@@ -450,8 +455,8 @@ export function fromSchemaDraft2020_12(js: JsonSchema): Document<"draft-2020-12"
  * @since 4.0.0
  */
 export function fromSchemaOpenApi3_1(js: JsonSchema): Document<"draft-2020-12"> {
-  const schema = rewriteRefs(js, (ref) => ref.replace(RE_COMPONENTS_SCHEMAS, "#/$defs"))
-  return fromSchemaDraft2020_12(schema)
+  const schema = rewriteRefs(js, (ref) => ref.replace(RE_COMPONENTS_SCHEMAS, "#/$defs"));
+  return fromSchemaDraft2020_12(schema);
 }
 
 /**
@@ -489,8 +494,8 @@ export function fromSchemaOpenApi3_1(js: JsonSchema): Document<"draft-2020-12"> 
  * @since 4.0.0
  */
 export function fromSchemaOpenApi3_0(schema: JsonSchema): Document<"draft-2020-12"> {
-  const normalized = normalizeOpenApi3_0ToDraft07(schema)
-  return fromSchemaDraft07(normalized as JsonSchema)
+  const normalized = normalizeOpenApi3_0ToDraft07(schema);
+  return fromSchemaDraft07(normalized as JsonSchema);
 }
 
 /**
@@ -539,8 +544,8 @@ export function toDocumentDraft07(document: Document<"draft-2020-12">): Document
   return {
     dialect: "draft-07",
     schema: toSchemaDraft07(document.schema),
-    definitions: Rec.map(document.definitions, toSchemaDraft07)
-  }
+    definitions: Rec.map(document.definitions, toSchemaDraft07),
+  };
 }
 
 /**
@@ -580,77 +585,89 @@ export function toDocumentDraft07(document: Document<"draft-2020-12">): Document
  * @since 4.0.0
  */
 export function toDocumentDraft04(document: Document<"draft-2020-12">): Document<"draft-04"> {
-  const draft07 = toDocumentDraft07(document)
+  const draft07 = toDocumentDraft07(document);
   return {
     dialect: "draft-04",
     schema: toSchemaDraft04(draft07.schema),
-    definitions: Rec.map(draft07.definitions, toSchemaDraft04)
-  }
+    definitions: Rec.map(draft07.definitions, toSchemaDraft04),
+  };
 }
 
 function toSchemaDraft04(schema: JsonSchema): JsonSchema {
-  return walk(schema) as JsonSchema
+  return walk(schema) as JsonSchema;
 
   function walk(node: unknown): unknown {
-    if (node === true) return {}
-    if (node === false) return { not: {} }
-    if (Array.isArray(node)) return node.map(walk)
-    if (!Predicate.isObject(node)) return node
+    if (node === true) return {};
+    if (node === false) return { not: {} };
+    if (Array.isArray(node)) return node.map(walk);
+    if (!Predicate.isObject(node)) return node;
 
-    const src = node as Record<string, unknown>
-    const out: Record<string, unknown> = {}
+    const src = node as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
 
-    let hasConst = false
-    let constValue: unknown = undefined
+    let hasConst = false;
+    let constValue: unknown = undefined;
 
     for (const k of Object.keys(src)) {
-      const v = src[k]
+      const v = src[k];
 
       if (DRAFT_04_COPY_KEYWORDS.has(k)) {
-        out[k] = v
-        continue
+        out[k] = v;
+        continue;
       }
-      if (rewriteSubschemaKeyword(out, k, v, walk, DRAFT_04_SINGLE_SUBSCHEMA_KEYWORDS)) continue
+      if (rewriteSubschemaKeyword(out, k, v, walk, DRAFT_04_SINGLE_SUBSCHEMA_KEYWORDS)) continue;
 
       switch (k) {
         case "const":
-          hasConst = true
-          constValue = v
-          break
+          hasConst = true;
+          constValue = v;
+          break;
 
         case "minimum":
         case "maximum":
         case "exclusiveMinimum":
         case "exclusiveMaximum":
-          break
+          break;
 
         case "additionalProperties":
         case "additionalItems":
-          out[k] = typeof v === "boolean" ? v : walk(v)
-          break
+          out[k] = typeof v === "boolean" ? v : walk(v);
+          break;
 
         case "items":
-          out.items = Array.isArray(v) ? v.map(walk) : walk(v)
-          break
+          out.items = Array.isArray(v) ? v.map(walk) : walk(v);
+          break;
 
         default:
-          break
+          break;
       }
     }
 
-    convertExclusiveBound(src, out, "minimum", "exclusiveMinimum", (bound, exclusive) => bound > exclusive)
-    convertExclusiveBound(src, out, "maximum", "exclusiveMaximum", (bound, exclusive) => bound < exclusive)
+    convertExclusiveBound(
+      src,
+      out,
+      "minimum",
+      "exclusiveMinimum",
+      (bound, exclusive) => bound > exclusive,
+    );
+    convertExclusiveBound(
+      src,
+      out,
+      "maximum",
+      "exclusiveMaximum",
+      (bound, exclusive) => bound < exclusive,
+    );
 
     if (hasConst) {
-      const constSchema = { enum: [constValue] }
+      const constSchema = { enum: [constValue] };
       if (Object.hasOwn(src, "enum")) {
-        out.allOf = Array.isArray(out.allOf) ? [...out.allOf, constSchema] : [constSchema]
+        out.allOf = Array.isArray(out.allOf) ? [...out.allOf, constSchema] : [constSchema];
       } else {
-        out.enum = constSchema.enum
+        out.enum = constSchema.enum;
       }
     }
 
-    return out
+    return out;
   }
 }
 
@@ -659,85 +676,85 @@ function convertExclusiveBound(
   out: Record<string, unknown>,
   boundKey: "minimum" | "maximum",
   exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum",
-  isBoundStricter: (bound: number, exclusive: number) => boolean
+  isBoundStricter: (bound: number, exclusive: number) => boolean,
 ): void {
-  const bound = src[boundKey]
-  const exclusive = src[exclusiveKey]
+  const bound = src[boundKey];
+  const exclusive = src[exclusiveKey];
 
   if (typeof exclusive === "number") {
     if (typeof bound === "number" && isBoundStricter(bound, exclusive)) {
-      out[boundKey] = bound
+      out[boundKey] = bound;
     } else {
-      out[boundKey] = exclusive
-      out[exclusiveKey] = true
+      out[boundKey] = exclusive;
+      out[exclusiveKey] = true;
     }
   } else if (bound !== undefined) {
-    out[boundKey] = bound
+    out[boundKey] = bound;
   }
 }
 
 function toSchemaDraft07(schema: JsonSchema): JsonSchema {
   return transformSchema(schema, (src) => {
-    rewriteSchemaRef(src, (ref) => ref.replace(RE_DEFS, "#/definitions"))
-    const out: Record<string, unknown> = {}
+    rewriteSchemaRef(src, (ref) => ref.replace(RE_DEFS, "#/definitions"));
+    const out: Record<string, unknown> = {};
 
-    let prefixItems: unknown = undefined
-    let items: unknown = undefined
+    let prefixItems: unknown = undefined;
+    let items: unknown = undefined;
 
     for (const k of Object.keys(src)) {
-      const v = src[k]
+      const v = src[k];
 
-      if (k === "required" && Array.isArray(v) && v.length === 0) continue
+      if (k === "required" && Array.isArray(v) && v.length === 0) continue;
       if (DRAFT_07_COPY_KEYWORDS.has(k)) {
-        out[k] = v
-        continue
+        out[k] = v;
+        continue;
       }
       if (
         MAP_SUBSCHEMA_KEYWORDS.has(k) ||
         ARRAY_SUBSCHEMA_KEYWORDS.has(k) ||
         DRAFT_07_SINGLE_SUBSCHEMA_KEYWORDS.has(k)
       ) {
-        out[k] = v
-        continue
+        out[k] = v;
+        continue;
       }
 
       switch (k) {
         // Tuple handling (2020-12 form)
         case "prefixItems":
-          prefixItems = v
-          break
+          prefixItems = v;
+          break;
         case "items":
-          items = v
-          break
+          items = v;
+          break;
 
         default:
           // drop everything else (subset)
-          break
+          break;
       }
     }
 
     // 2020-12 tuples -> Draft-07 tuples
     if (prefixItems !== undefined) {
       if (Array.isArray(prefixItems)) {
-        out.items = prefixItems
-        if (items !== undefined) out.additionalItems = items
+        out.items = prefixItems;
+        if (items !== undefined) out.additionalItems = items;
       } else {
         // Non-standard, but keep a reasonable behavior
-        out.items = prefixItems
+        out.items = prefixItems;
       }
     } else if (items !== undefined) {
       // Regular items schema stays as items
-      out.items = items
+      out.items = items;
     }
 
-    const $ref = out.$ref
+    const $ref = out.$ref;
     if (typeof $ref === "string" && Object.keys(out).length > 1) {
-      delete out.$ref
-      out.allOf = [{ $ref }, ...(Array.isArray(out.allOf) ? out.allOf : [])]
+      delete out.$ref;
+      out.allOf = [{ $ref }, ...(Array.isArray(out.allOf) ? out.allOf : [])];
     }
 
-    return out
-  }) as JsonSchema
+    return out;
+  }) as JsonSchema;
 }
 
 /**
@@ -786,54 +803,58 @@ function toSchemaDraft07(schema: JsonSchema): JsonSchema {
  * @category encoding
  * @since 4.0.0
  */
-export function toMultiDocumentOpenApi3_1(multiDocument: MultiDocument<"draft-2020-12">): MultiDocument<"openapi-3.1"> {
-  const definitionKeys = Object.keys(multiDocument.definitions)
-  const keyMap = new Map<string, string>()
-  const usedKeys = new Set(definitionKeys.filter((key) => VALID_OPEN_API_COMPONENTS_SCHEMAS_KEY_REGEXP.test(key)))
+export function toMultiDocumentOpenApi3_1(
+  multiDocument: MultiDocument<"draft-2020-12">,
+): MultiDocument<"openapi-3.1"> {
+  const definitionKeys = Object.keys(multiDocument.definitions);
+  const keyMap = new Map<string, string>();
+  const usedKeys = new Set(
+    definitionKeys.filter((key) => VALID_OPEN_API_COMPONENTS_SCHEMAS_KEY_REGEXP.test(key)),
+  );
   const invalidKeys = definitionKeys
     .filter((key) => !VALID_OPEN_API_COMPONENTS_SCHEMAS_KEY_REGEXP.test(key))
     .sort()
-    .map((key) => [key, sanitizeOpenApiComponentsSchemasKey(key)] as const)
+    .map((key) => [key, sanitizeOpenApiComponentsSchemasKey(key)] as const);
   for (const [key, base] of invalidKeys) {
-    if (usedKeys.has(base)) continue
-    usedKeys.add(base)
-    keyMap.set(key, base)
+    if (usedKeys.has(base)) continue;
+    usedKeys.add(base);
+    keyMap.set(key, base);
   }
   for (const [key, base] of invalidKeys) {
-    if (keyMap.has(key)) continue
-    let candidate: string
-    let suffix = 0
-    do candidate = `${base}_${++suffix}`
-    while (usedKeys.has(candidate))
-    usedKeys.add(candidate)
-    keyMap.set(key, candidate)
+    if (keyMap.has(key)) continue;
+    let candidate: string;
+    let suffix = 0;
+    do candidate = `${base}_${++suffix}`;
+    while (usedKeys.has(candidate));
+    usedKeys.add(candidate);
+    keyMap.set(key, candidate);
   }
 
   function rewrite(schema: JsonSchema): JsonSchema {
     return rewriteRefs(schema, ($ref) => {
-      if (!$ref.startsWith("#/$defs/")) return $ref
+      if (!$ref.startsWith("#/$defs/")) return $ref;
 
-      const path = $ref.slice("#/$defs/".length)
-      const separatorIndex = path.indexOf("/")
-      const token = separatorIndex === -1 ? path : path.slice(0, separatorIndex)
-      const rest = separatorIndex === -1 ? "" : path.slice(separatorIndex)
-      const key = keyMap.get(unescapeToken(token)) ?? token
-      return `#/components/schemas/${key}${rest}`
-    })
+      const path = $ref.slice("#/$defs/".length);
+      const separatorIndex = path.indexOf("/");
+      const token = separatorIndex === -1 ? path : path.slice(0, separatorIndex);
+      const rest = separatorIndex === -1 ? "" : path.slice(separatorIndex);
+      const key = keyMap.get(unescapeToken(token)) ?? token;
+      return `#/components/schemas/${key}${rest}`;
+    });
   }
 
   return {
     dialect: "openapi-3.1",
     schemas: Arr.map(multiDocument.schemas, rewrite),
-    definitions: Rec.mapEntries(
-      multiDocument.definitions,
-      (definition, key) => [keyMap.get(key) ?? key, rewrite(definition)]
-    )
-  }
+    definitions: Rec.mapEntries(multiDocument.definitions, (definition, key) => [
+      keyMap.get(key) ?? key,
+      rewrite(definition),
+    ]),
+  };
 }
 
 /** @internal */
-export const VALID_OPEN_API_COMPONENTS_SCHEMAS_KEY_REGEXP = /^[a-zA-Z0-9.\-_]+$/
+export const VALID_OPEN_API_COMPONENTS_SCHEMAS_KEY_REGEXP = /^[a-zA-Z0-9.\-_]+$/;
 
 /**
  * Returns a sanitized key for an OpenAPI component schema.
@@ -842,44 +863,44 @@ export const VALID_OPEN_API_COMPONENTS_SCHEMAS_KEY_REGEXP = /^[a-zA-Z0-9.\-_]+$/
  * @internal
  */
 export function sanitizeOpenApiComponentsSchemasKey(s: string): string {
-  return s.length === 0 ? "_" : s.replace(/[^a-zA-Z0-9._-]/gu, "_")
+  return s.length === 0 ? "_" : s.replace(/[^a-zA-Z0-9._-]/gu, "_");
 }
 
 /** @internal */
 export function getReferenceKey($ref: string): string | undefined {
-  const prefix = "#/$defs/"
-  if (!$ref.startsWith(prefix)) return undefined
-  const token = $ref.slice(prefix.length)
-  if (token.length === 0 || token.includes("/")) return undefined
-  return unescapeToken(token)
+  const prefix = "#/$defs/";
+  if (!$ref.startsWith(prefix)) return undefined;
+  const token = $ref.slice(prefix.length);
+  if (token.length === 0 || token.includes("/")) return undefined;
+  return unescapeToken(token);
 }
 
 function transformSchema(
   node: unknown,
-  transform: (schema: Record<string, unknown>) => Record<string, unknown>
+  transform: (schema: Record<string, unknown>) => Record<string, unknown>,
 ): unknown {
-  return walk(node)
+  return walk(node);
 
   function walk(node: unknown): unknown {
-    if (!Predicate.isObject(node)) return node
+    if (!Predicate.isObject(node)) return node;
 
-    const out: Record<string, unknown> = {}
+    const out: Record<string, unknown> = {};
     for (const key of Object.keys(node)) {
-      const value = node[key]
-      let transformed = value
+      const value = node[key];
+      let transformed = value;
       switch (key) {
         case "$defs":
         case "properties":
         case "patternProperties":
         case "dependentSchemas":
-          transformed = mapObject(value, walk) ?? value
-          break
+          transformed = mapObject(value, walk) ?? value;
+          break;
         case "allOf":
         case "anyOf":
         case "oneOf":
         case "prefixItems":
-          transformed = Array.isArray(value) ? value.map(walk) : value
-          break
+          transformed = Array.isArray(value) ? value.map(walk) : value;
+          break;
         case "not":
         case "additionalProperties":
         case "propertyNames":
@@ -891,31 +912,34 @@ function transformSchema(
         case "then":
         case "else":
         case "contentSchema":
-          transformed = walk(value)
+          transformed = walk(value);
       }
-      InternalRecord.assignProperty(out, key, transformed)
+      InternalRecord.assignProperty(out, key, transformed);
     }
-    return transform(out)
+    return transform(out);
   }
 }
 
 /** @internal */
 export function rewriteRefs(schema: JsonSchema, rewrite: ($ref: string) => string): JsonSchema {
-  return transformSchema(schema, (schema) => rewriteSchemaRef(schema, rewrite)) as JsonSchema
+  return transformSchema(schema, (schema) => rewriteSchemaRef(schema, rewrite)) as JsonSchema;
 }
 
 function rewriteSchemaRef(
   schema: Record<string, unknown>,
-  rewrite: ($ref: string) => string
+  rewrite: ($ref: string) => string,
 ): Record<string, unknown> {
   if (typeof schema.$ref === "string") {
-    InternalRecord.assignProperty(schema, "$ref", rewrite(schema.$ref))
+    InternalRecord.assignProperty(schema, "$ref", rewrite(schema.$ref));
   }
-  return schema
+  return schema;
 }
 
-function mapObject(value: unknown, f: (node: unknown) => unknown): Record<string, unknown> | undefined {
-  return Predicate.isObject(value) ? Rec.map(value, f) : undefined
+function mapObject(
+  value: unknown,
+  f: (node: unknown) => unknown,
+): Record<string, unknown> | undefined {
+  return Predicate.isObject(value) ? Rec.map(value, f) : undefined;
 }
 
 function rewriteSubschemaKeyword(
@@ -923,79 +947,79 @@ function rewriteSubschemaKeyword(
   key: string,
   value: unknown,
   rewrite: (node: unknown) => unknown,
-  singleKeywords: ReadonlySet<string>
+  singleKeywords: ReadonlySet<string>,
 ): boolean {
   if (MAP_SUBSCHEMA_KEYWORDS.has(key)) {
-    out[key] = mapObject(value, rewrite) ?? value
-    return true
+    out[key] = mapObject(value, rewrite) ?? value;
+    return true;
   }
   if (ARRAY_SUBSCHEMA_KEYWORDS.has(key)) {
-    out[key] = Array.isArray(value) ? value.map(rewrite) : value
-    return true
+    out[key] = Array.isArray(value) ? value.map(rewrite) : value;
+    return true;
   }
-  if (!singleKeywords.has(key)) return false
-  out[key] = rewrite(value)
-  return true
+  if (!singleKeywords.has(key)) return false;
+  out[key] = rewrite(value);
+  return true;
 }
 
 function normalizeOpenApi3_0ToDraft07(node: unknown): unknown {
-  if (Array.isArray(node)) return node.map(normalizeOpenApi3_0ToDraft07)
-  if (!Predicate.isObject(node)) return node
+  if (Array.isArray(node)) return node.map(normalizeOpenApi3_0ToDraft07);
+  if (!Predicate.isObject(node)) return node;
 
-  const src = node as Record<string, unknown>
-  let out: Record<string, unknown> = {}
+  const src = node as Record<string, unknown>;
+  let out: Record<string, unknown> = {};
 
   for (const k of Object.keys(src)) {
-    const v = src[k]
+    const v = src[k];
     if (k === "$ref" && typeof v === "string") {
-      InternalRecord.assignProperty(out, k, v.replace(RE_COMPONENTS_SCHEMAS, "#/definitions"))
+      InternalRecord.assignProperty(out, k, v.replace(RE_COMPONENTS_SCHEMAS, "#/definitions"));
     } else if (k === "example") {
       if (src.examples === undefined) {
-        out.examples = [v]
+        out.examples = [v];
       }
     } else if (Array.isArray(v) || Predicate.isObject(v)) {
-      InternalRecord.assignProperty(out, k, normalizeOpenApi3_0ToDraft07(v))
+      InternalRecord.assignProperty(out, k, normalizeOpenApi3_0ToDraft07(v));
     } else {
-      InternalRecord.assignProperty(out, k, v)
+      InternalRecord.assignProperty(out, k, v);
     }
   }
 
   // Draft-04-style numeric exclusivity booleans
-  out = adjustExclusivity(out)
+  out = adjustExclusivity(out);
 
   // OpenAPI 3.0 nullable
   if (out.nullable === true) {
-    out = applyNullable(out)
+    out = applyNullable(out);
   }
-  delete out.nullable
+  delete out.nullable;
 
-  return out
+  return out;
 }
 
 function adjustExclusivity(node: Record<string, unknown>): Record<string, unknown> {
   return adjustExclusiveBound(
     adjustExclusiveBound(node, "minimum", "exclusiveMinimum"),
     "maximum",
-    "exclusiveMaximum"
-  )
+    "exclusiveMaximum",
+  );
 }
 
 function adjustExclusiveBound(
   node: Record<string, unknown>,
   boundKey: "minimum" | "maximum",
-  exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum"
+  exclusiveKey: "exclusiveMinimum" | "exclusiveMaximum",
 ): Record<string, unknown> {
-  const exclusive = node[exclusiveKey]
-  if (typeof exclusive !== "boolean") return node
+  const exclusive = node[exclusiveKey];
+  if (typeof exclusive !== "boolean") return node;
 
-  const out = { ...node }
+  const out = { ...node };
   if (exclusive && typeof node[boundKey] === "number") {
-    out[exclusiveKey] = node[boundKey]
-    delete out[boundKey]
+    out[exclusiveKey] = node[boundKey];
+    delete out[boundKey];
   } else {
-    delete out[exclusiveKey]
+    delete out[exclusiveKey];
   }
-  return out
+  return out;
 }
 
 function applyNullable(node: Record<string, unknown>): Record<string, unknown> {
@@ -1003,23 +1027,23 @@ function applyNullable(node: Record<string, unknown>): Record<string, unknown> {
   if (Array.isArray(node.enum)) {
     return widenType({
       ...node,
-      enum: node.enum.includes(null) ? node.enum : [...node.enum, null]
-    })
+      enum: node.enum.includes(null) ? node.enum : [...node.enum, null],
+    });
   }
 
   // type widening
-  if (node.type !== undefined) return widenType(node)
+  if (node.type !== undefined) return widenType(node);
 
   // const === null
-  if (node.const === null) return node
+  if (node.const === null) return node;
 
   // fallback
-  return { anyOf: [node, { type: "null" }] }
+  return { anyOf: [node, { type: "null" }] };
 }
 
 function widenType(node: Record<string, unknown>): Record<string, unknown> {
-  const t = node.type
-  if (typeof t === "string") return t === "null" ? node : { ...node, type: [t, "null"] }
-  if (Array.isArray(t)) return t.includes("null") ? node : { ...node, type: [...t, "null"] }
-  return node
+  const t = node.type;
+  if (typeof t === "string") return t === "null" ? node : { ...node, type: [t, "null"] };
+  if (Array.isArray(t)) return t.includes("null") ? node : { ...node, type: [...t, "null"] };
+  return node;
 }

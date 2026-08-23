@@ -1,7 +1,6 @@
 {
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.20.0",
   "scripts": {
     "prepare": "node scripts/setup-agents.mjs && effect-tsgo patch",
     "clean": "node scripts/clean.mjs",
@@ -80,5 +79,6 @@
     "vitest": "^4.1.10",
     "vitest-websocket-mock": "^0.7.0",
     "zod": "^4.4.3"
-  }
+  },
+  "packageManager": "pnpm@11.20.0"
 }

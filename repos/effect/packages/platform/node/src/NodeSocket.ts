@@ -9,17 +9,17 @@
  *
  * @since 4.0.0
  */
-import { NodeWS as WS } from "@effect/platform-node-shared/NodeSocket"
-import type * as Duration from "effect/Duration"
-import type * as Effect from "effect/Effect"
-import { flow } from "effect/Function"
-import * as Layer from "effect/Layer"
-import * as Socket from "effect/unstable/socket/Socket"
+import { NodeWS as WS } from "@effect/platform-node-shared/NodeSocket";
+import type * as Duration from "effect/Duration";
+import type * as Effect from "effect/Effect";
+import { flow } from "effect/Function";
+import * as Layer from "effect/Layer";
+import * as Socket from "effect/unstable/socket/Socket";
 
 /**
  * @since 4.0.0
  */
-export * from "@effect/platform-node-shared/NodeSocket"
+export * from "@effect/platform-node-shared/NodeSocket";
 
 /**
  * Provides a `Socket.WebSocketConstructor`, using `globalThis.WebSocket` when
@@ -28,14 +28,14 @@ export * from "@effect/platform-node-shared/NodeSocket"
  * @category layers
  * @since 4.0.0
  */
-export const layerWebSocketConstructor: Layer.Layer<
-  Socket.WebSocketConstructor
-> = Layer.sync(Socket.WebSocketConstructor)(() => {
+export const layerWebSocketConstructor: Layer.Layer<Socket.WebSocketConstructor> = Layer.sync(
+  Socket.WebSocketConstructor,
+)(() => {
   if ("WebSocket" in globalThis) {
-    return (url, protocols) => new globalThis.WebSocket(url, protocols)
+    return (url, protocols) => new globalThis.WebSocket(url, protocols);
   }
-  return (url, protocols) => new WS.WebSocket(url, protocols) as unknown as globalThis.WebSocket
-})
+  return (url, protocols) => new WS.WebSocket(url, protocols) as unknown as globalThis.WebSocket;
+});
 
 /**
  * Provides a `Socket.WebSocketConstructor` backed explicitly by the `ws`
@@ -44,11 +44,9 @@ export const layerWebSocketConstructor: Layer.Layer<
  * @category layers
  * @since 4.0.0
  */
-export const layerWebSocketConstructorWS: Layer.Layer<
-  Socket.WebSocketConstructor
-> = Layer.succeed(Socket.WebSocketConstructor)(
-  (url, protocols) => new WS.WebSocket(url, protocols) as unknown as globalThis.WebSocket
-)
+export const layerWebSocketConstructorWS: Layer.Layer<Socket.WebSocketConstructor> = Layer.succeed(
+  Socket.WebSocketConstructor,
+)((url, protocols) => new WS.WebSocket(url, protocols) as unknown as globalThis.WebSocket);
 
 /**
  * Creates a `Socket.Socket` layer for a WebSocket URL using the Node WebSocket
@@ -60,13 +58,15 @@ export const layerWebSocketConstructorWS: Layer.Layer<
  */
 export const layerWebSocket: (
   url: string | Effect.Effect<string>,
-  options?: {
-    readonly closeCodeIsError?: ((code: number) => boolean) | undefined
-    readonly openTimeout?: Duration.Input | undefined
-    readonly protocols?: string | Array<string> | undefined
-  } | undefined
+  options?:
+    | {
+        readonly closeCodeIsError?: ((code: number) => boolean) | undefined;
+        readonly openTimeout?: Duration.Input | undefined;
+        readonly protocols?: string | Array<string> | undefined;
+      }
+    | undefined,
 ) => Layer.Layer<Socket.Socket, never, never> = flow(
   Socket.makeWebSocket,
   Layer.effect(Socket.Socket),
-  Layer.provide(layerWebSocketConstructor)
-)
+  Layer.provide(layerWebSocketConstructor),
+);

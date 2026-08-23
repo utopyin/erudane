@@ -4,12 +4,12 @@ Defines how packages in this monorepo may depend on each other: the four tiers, 
 
 ## The four tiers
 
-| #   | Tier            | Directory      | Contains                                                           | Membership test                                                        |
-| --- | --------------- | -------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| 1   | **Packages**    | `packages/`    | mechanism, shapes, infrastructure clients, cross-boundary contracts | Knows about no concept, or only the *shape* of one                      |
-| 2   | **Domains**     | `domains/`     | `chat`, later `courses`, `learners`, …                              | Owns one concept end to end                                             |
-| 3   | **Entrypoints** | `entrypoints/` | `http`, later `rpc`, `jobs`, …                                      | Assembles domains into a transport, protocol, or surface                |
-| 4   | **Apps**        | `apps/`        | `web`, `api`                                                        | Deployables and runtimes. Imported by nobody                            |
+| #   | Tier            | Directory      | Contains                                                            | Membership test                                          |
+| --- | --------------- | -------------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| 1   | **Packages**    | `packages/`    | mechanism, shapes, infrastructure clients, cross-boundary contracts | Knows about no concept, or only the _shape_ of one       |
+| 2   | **Domains**     | `domains/`     | `chat`, later `courses`, `learners`, …                              | Owns one concept end to end                              |
+| 3   | **Entrypoints** | `entrypoints/` | `http`, later `rpc`, `jobs`, …                                      | Assembles domains into a transport, protocol, or surface |
+| 4   | **Apps**        | `apps/`        | `web`, `api`                                                        | Deployables and runtimes. Imported by nobody             |
 
 Workspace package names are `@erudane/<dir>` regardless of tier; the tier is the directory.
 
@@ -27,7 +27,7 @@ Rule 2 is the hard failure. Rule 1 is the scoreboard.
 
 **Domain**: a tier-2 package owning one concept end to end — deep knowledge of one thing. Domains may depend on each other in one direction only.
 
-**Horizontal**: a package spanning every concept — shallow knowledge of everything. Legal only as a **substrate horizontal** (tier 1: mechanism or shapes, no concept behaviour) or an **assembly horizontal** (tier 3–4: composes domains into a transport or runtime). A **middle horizontal** — depended on by domains *and* depending on them — cycles by construction and is forbidden.
+**Horizontal**: a package spanning every concept — shallow knowledge of everything. Legal only as a **substrate horizontal** (tier 1: mechanism or shapes, no concept behaviour) or an **assembly horizontal** (tier 3–4: composes domains into a transport or runtime). A **middle horizontal** — depended on by domains _and_ depending on them — cycles by construction and is forbidden.
 
 **Sink**: imports nothing, imported by many (bottom of the graph). **Root**: imports many, imported by nothing (apps). "Leaf" is ambiguous between the two; say which.
 

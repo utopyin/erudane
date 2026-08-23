@@ -75,18 +75,18 @@ Use this checklist when authoring or reviewing an example:
   Good:
 
   ```ts
-  await Effect.runPromise(Stream.runCollect(Stream.make(1, 2, 3))) // => [1, 2, 3]
+  await Effect.runPromise(Stream.runCollect(Stream.make(1, 2, 3))); // => [1, 2, 3]
   ```
 
   Counterexample:
 
   ```ts
-  const values: Array<number> = []
+  const values: Array<number> = [];
 
   await Effect.runPromise(
-    Stream.make(1, 2, 3).pipe(Stream.runForEach((value) => Effect.sync(() => values.push(value))))
-  )
-  values // => [1, 2, 3]
+    Stream.make(1, 2, 3).pipe(Stream.runForEach((value) => Effect.sync(() => values.push(value)))),
+  );
+  values; // => [1, 2, 3]
   ```
 
 - **Use local probes only when the API has no direct result:** A local mutable probe is appropriate for
@@ -94,14 +94,14 @@ Use this checklist when authoring or reviewing an example:
   probe local and sequential.
 
   ```ts
-  const events: Array<string> = []
+  const events: Array<string> = [];
   const resource = Effect.acquireRelease(
     Effect.sync(() => events.push("acquire")),
-    () => Effect.sync(() => events.push("release"))
-  )
+    () => Effect.sync(() => events.push("release")),
+  );
 
-  await Effect.runPromise(Effect.scoped(resource))
-  events // => ["acquire", "release"]
+  await Effect.runPromise(Effect.scoped(resource));
+  events; // => ["acquire", "release"]
   ```
 
 - **Use Effect-managed observers for concurrency:** Prefer `Ref`, `Deferred`, or `Queue` over mutable arrays or flags when

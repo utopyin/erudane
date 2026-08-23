@@ -29,7 +29,7 @@ Cost accepted: the web bundle pulls `effect` Schema for tool schemas. Measured i
 
 `streamText` executes server tools once and **does not call the model again** — there is no `maxSteps` in Effect AI (grep confirmed; `Chat.ts` only persists history). The loop is therefore domain behaviour: re-prompt with `Prompt.concat(prompt, Prompt.fromResponseParts(parts))` while the step produced tool calls and `step < maxSteps`.
 
-The registry is a service the domain *requires* (`Chat.Toolkit`) and the entrypoint *provides*. The chat domain ships one placeholder tool so the slice is real; future tools live in the domain of their concept (`@erudane/courses/tools`) and are merged in the entrypoint registry with `Toolkit.merge`.
+The registry is a service the domain _requires_ (`Chat.Toolkit`) and the entrypoint _provides_. The chat domain ships one placeholder tool so the slice is real; future tools live in the domain of their concept (`@erudane/courses/tools`) and are merged in the entrypoint registry with `Toolkit.merge`.
 
 ## D5 — Wire protocol is AG-UI over SSE, hand-encoded
 

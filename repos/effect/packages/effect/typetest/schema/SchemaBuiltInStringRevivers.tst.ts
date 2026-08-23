@@ -1,5 +1,5 @@
-import { Schema, type SchemaRepresentation } from "effect"
-import { describe, expect, it } from "tstyche"
+import { Schema, type SchemaRepresentation } from "effect";
+import { describe, expect, it } from "tstyche";
 
 describe("Schema built-in string revivers", () => {
   it("composes every string check reviver without casts", () => {
@@ -23,20 +23,20 @@ describe("Schema built-in string revivers", () => {
       Schema.isUppercasedReviver,
       Schema.isLowercasedReviver,
       Schema.isCapitalizedReviver,
-      Schema.isUncapitalizedReviver
-    ]
+      Schema.isUncapitalizedReviver,
+    ];
 
-    expect(revivers).type.toBe<ReadonlyArray<SchemaRepresentation.AnyReviver>>()
+    expect(revivers).type.toBe<ReadonlyArray<SchemaRepresentation.AnyReviver>>();
     expect(Schema.isMinLengthReviver).type.toBe<
       SchemaRepresentation.FilterReviver<{ readonly minLength: number }>
-    >()
+    >();
     expect(Schema.isLengthBetweenReviver).type.toBe<
       SchemaRepresentation.FilterReviver<{ readonly minimum: number; readonly maximum: number }>
-    >()
+    >();
     expect(Schema.isUUIDReviver).type.toBe<
       SchemaRepresentation.FilterReviver<{
-        readonly version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null
+        readonly version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
       }>
-    >()
-  })
-})
+    >();
+  });
+});

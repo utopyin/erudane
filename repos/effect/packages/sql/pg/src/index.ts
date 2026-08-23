@@ -7,24 +7,24 @@
 /**
  * @since 4.0.0
  */
-export * as PgAuth from "./PgAuth.ts"
+export * as PgAuth from "./PgAuth.ts";
 
 /**
  * @since 4.0.0
  */
-export * as PgClient from "./PgClient.ts"
+export * as PgClient from "./PgClient.ts";
 
 /**
  * @since 4.0.0
  */
-export * as PgMigrator from "./PgMigrator.ts"
+export * as PgMigrator from "./PgMigrator.ts";
 
 /**
  * @since 4.0.0
  */
-export * as PgProtocol from "./PgProtocol.ts"
+export * as PgProtocol from "./PgProtocol.ts";
 
 /**
  * @since 4.0.0
  */
-export * as PgTypes from "./PgTypes.ts"
+export * as PgTypes from "./PgTypes.ts";

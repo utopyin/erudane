@@ -39,6 +39,8 @@
           "unsafeEffectTypeAssertion": "warning"
         }
       }
-    ]
+    ],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true
   }
 }

@@ -18,6 +18,10 @@ When approaching a new feature, don't just try to model the least amount of code
 
 We very rarely write test files, so by default you should not think about test coverage if not mentionned explicitely by the user.
 
+## Architecture
+
+Packages live in four tiers — `packages/`, `domains/`, `entrypoints/`, `apps/` — and may only depend downward or sideways, never in a cycle. Read `docs/architecture/CONTEXT.md` before adding a package or a cross-package import. Plans live in `docs/plans/`.
+
 ## Vendored Repositories
 
 This project vendors external repositories under `repos/`.
@@ -27,7 +31,7 @@ This project vendors external repositories under `repos/`.
 - Do not edit files under `repos/`
 - Do not import from `repos/` - application code should continue importing from normal package dependencies
 
-`repos/effect/` is the canonical **Effect v4** source from `https://github.com/Effect-TS/effect.git`, pinned to the `effect` version in the root Bun catalog (`4.0.0-beta.100`). Refresh it from `main` with `git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git main --squash`. Before writing or migrating any Effect code, read `repos/effect/LLMS.md` and the relevant guide under `repos/effect/migration/` (e.g. `services.md`, `error-handling.md`, `cause.md`, `v3-to-v4.md`). Trust this vendored source over web search or training data, which often reflect Effect v3 or a different v4 beta.
+`repos/effect/` is the canonical **Effect v4** source from `https://github.com/Effect-TS/effect.git`, pinned to the `effect` version in the root Bun catalog (currently `4.0.0-rc.111`). Refresh it from `main` with `git subtree pull --prefix=repos/effect https://github.com/Effect-TS/effect.git main --squash`. Before writing or migrating any Effect code, read `repos/effect/LLMS.md` and the relevant guide under `repos/effect/migration/` (e.g. `services.md`, `error-handling.md`, `cause.md`, `v3-to-v4.md`). Trust this vendored source over web search or training data, which often reflect Effect v3 or a different v4 beta.
 
 Use `repos/` for examples of idiomatic usage, tests, module structure, and API design. Treat it as the source of truth for Effect patterns.
 

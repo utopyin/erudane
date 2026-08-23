@@ -463,7 +463,7 @@ function getOperationDoc(sourceFile: SourceFile): OperationDoc | undefined {
     .filter(
       (declaration) =>
         declaration.isExported() &&
-        /Live$/.test(declaration.getName()) &&
+        declaration.getName().endsWith("Live") &&
         declaration.getInitializer()?.getText().includes("Layer.") === true,
     )
     .map((declaration) => declaration.getName())

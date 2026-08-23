@@ -18,25 +18,25 @@
  *
  * @since 4.0.0
  */
-import * as Arr from "effect/Array"
-import * as JsonPointer from "effect/JsonPointer"
-import * as JsonSchema from "effect/JsonSchema"
-import * as Rec from "effect/Record"
-import * as Schema from "effect/Schema"
-import * as SchemaRepresentation from "effect/SchemaRepresentation"
+import * as Arr from "effect/Array";
+import * as JsonPointer from "effect/JsonPointer";
+import * as JsonSchema from "effect/JsonSchema";
+import * as Rec from "effect/Record";
+import * as Schema from "effect/Schema";
+import * as SchemaRepresentation from "effect/SchemaRepresentation";
 
-type Source = "openapi-3.0" | "openapi-3.1"
+type Source = "openapi-3.0" | "openapi-3.1";
 interface GenerateOptions {
-  readonly onEnter?: ((js: JsonSchema.JsonSchema) => JsonSchema.JsonSchema) | undefined
+  readonly onEnter?: ((js: JsonSchema.JsonSchema) => JsonSchema.JsonSchema) | undefined;
 }
 
 interface MultipartSchemaRefs {
-  readonly singleFile: string
-  readonly files: string
+  readonly singleFile: string;
+  readonly files: string;
 }
 
 interface GenerateHttpApiOptions extends GenerateOptions {
-  readonly multipartSchemaRefs?: MultipartSchemaRefs | undefined
+  readonly multipartSchemaRefs?: MultipartSchemaRefs | undefined;
 }
 
 /**
@@ -52,228 +52,235 @@ interface GenerateHttpApiOptions extends GenerateOptions {
  * @since 4.0.0
  */
 export function make() {
-  return makeWithRepresentation()
+  return makeWithRepresentation();
 }
 
 function makeWithRepresentation() {
-  const store = Object.create(null) as Record<string, JsonSchema.JsonSchema>
+  const store = Object.create(null) as Record<string, JsonSchema.JsonSchema>;
 
   function addSchema(name: string, schema: JsonSchema.JsonSchema): string {
     if (Object.hasOwn(store, name)) {
-      throw new Error(`Schema ${name} already exists`)
+      throw new Error(`Schema ${name} already exists`);
     }
-    store[name] = schema
-    return name
+    store[name] = schema;
+    return name;
   }
 
   function generate(
     source: Source,
     components: JsonSchema.Definitions,
     typeOnly: boolean,
-    options?: GenerateOptions
+    options?: GenerateOptions,
   ) {
-    const generated = makeCodeDocument(source, components, options)
+    const generated = makeCodeDocument(source, components, options);
     if (generated === undefined) {
-      return ""
+      return "";
     }
 
-    const nonRecursiveReferences = generated.codeDocument.references.nonRecursives
-    const recursiveReferences = Object.entries(generated.codeDocument.references.recursives)
+    const nonRecursiveReferences = generated.codeDocument.references.nonRecursives;
+    const recursiveReferences = Object.entries(generated.codeDocument.references.recursives);
 
     const nonRecursives = nonRecursiveReferences.map(({ $ref, code }) =>
-      renderSchemaTypeAndRuntime($ref, code, typeOnly)
-    )
+      renderSchemaTypeAndRuntime($ref, code, typeOnly),
+    );
 
-    const recursiveDeclarations: Array<string> = []
-    const recursives: Array<string> = []
+    const recursiveDeclarations: Array<string> = [];
+    const recursives: Array<string> = [];
 
     if (typeOnly) {
       for (const [$ref, code] of recursiveReferences) {
-        recursives.push(renderSchemaTypeAndRuntime($ref, code, true))
+        recursives.push(renderSchemaTypeAndRuntime($ref, code, true));
       }
     } else {
       const recursivelyForwardReferenced = collectForwardReferencedRecursives(
         nonRecursiveReferences,
-        recursiveReferences
-      )
-      const recursiveInternalNames = makeRecursiveInternalNameMap(
-        recursivelyForwardReferenced,
-        [
-          ...nonRecursiveReferences.map(({ $ref }) => $ref),
-          ...recursiveReferences.map(([$ref]) => $ref),
-          ...generated.nameMap
-        ]
-      )
+        recursiveReferences,
+      );
+      const recursiveInternalNames = makeRecursiveInternalNameMap(recursivelyForwardReferenced, [
+        ...nonRecursiveReferences.map(({ $ref }) => $ref),
+        ...recursiveReferences.map(([$ref]) => $ref),
+        ...generated.nameMap,
+      ]);
 
       for (const [$ref, code] of recursiveReferences) {
         if (recursivelyForwardReferenced.has($ref)) {
-          const internalName = recursiveInternalNames.get($ref)!
-          recursiveDeclarations.push(renderRecursiveReferenceDeclaration($ref, code, internalName))
-          recursives.push(`const ${internalName} = ${code.runtime}`)
-          continue
+          const internalName = recursiveInternalNames.get($ref)!;
+          recursiveDeclarations.push(renderRecursiveReferenceDeclaration($ref, code, internalName));
+          recursives.push(`const ${internalName} = ${code.runtime}`);
+          continue;
         }
 
-        recursives.push(renderSchemaTypeAndRuntime($ref, code, false))
+        recursives.push(renderSchemaTypeAndRuntime($ref, code, false));
       }
     }
 
     const codes = generated.codeDocument.codes.map((code, i) =>
-      renderSchemaTypeAndRuntime(generated.nameMap[i], code, typeOnly)
-    )
+      renderSchemaTypeAndRuntime(generated.nameMap[i], code, typeOnly),
+    );
 
-    return renderImportArtifacts(generated.codeDocument, !typeOnly) +
+    return (
+      renderImportArtifacts(generated.codeDocument, !typeOnly) +
       render("recursive declarations", recursiveDeclarations) +
       render("non-recursive definitions", nonRecursives) +
       render("recursive definitions", recursives) +
       render("schemas", codes)
+    );
   }
 
   function generateHttpApi(
     source: Source,
     components: JsonSchema.Definitions,
-    options?: GenerateHttpApiOptions
+    options?: GenerateHttpApiOptions,
   ) {
-    const generated = makeCodeDocument(source, components, options)
+    const generated = makeCodeDocument(source, components, options);
     if (generated === undefined) {
-      return ""
+      return "";
     }
 
-    const nonRecursiveReferences = generated.codeDocument.references.nonRecursives
-    const recursiveReferences = Object.entries(generated.codeDocument.references.recursives)
+    const nonRecursiveReferences = generated.codeDocument.references.nonRecursives;
+    const recursiveReferences = Object.entries(generated.codeDocument.references.recursives);
 
     const nonRecursives = nonRecursiveReferences.map(({ $ref, code }) =>
-      renderSchemaTypeAndRuntime($ref, code, false, options?.multipartSchemaRefs)
-    )
+      renderSchemaTypeAndRuntime($ref, code, false, options?.multipartSchemaRefs),
+    );
 
-    const recursivelyForwardReferenced = collectForwardReferencedRecursives(nonRecursiveReferences, recursiveReferences)
-    const recursiveInternalNames = makeRecursiveInternalNameMap(
-      recursivelyForwardReferenced,
-      [
-        ...nonRecursiveReferences.map(({ $ref }) => $ref),
-        ...recursiveReferences.map(([$ref]) => $ref),
-        ...generated.nameMap
-      ]
-    )
+    const recursivelyForwardReferenced = collectForwardReferencedRecursives(
+      nonRecursiveReferences,
+      recursiveReferences,
+    );
+    const recursiveInternalNames = makeRecursiveInternalNameMap(recursivelyForwardReferenced, [
+      ...nonRecursiveReferences.map(({ $ref }) => $ref),
+      ...recursiveReferences.map(([$ref]) => $ref),
+      ...generated.nameMap,
+    ]);
 
-    const recursiveDeclarations: Array<string> = []
-    const recursives: Array<string> = []
+    const recursiveDeclarations: Array<string> = [];
+    const recursives: Array<string> = [];
 
     for (const [$ref, code] of recursiveReferences) {
       if (recursivelyForwardReferenced.has($ref)) {
-        const internalName = recursiveInternalNames.get($ref)!
-        recursiveDeclarations.push(renderRecursiveReferenceDeclaration($ref, code, internalName))
-        recursives.push(`const ${internalName} = ${code.runtime}`)
-        continue
+        const internalName = recursiveInternalNames.get($ref)!;
+        recursiveDeclarations.push(renderRecursiveReferenceDeclaration($ref, code, internalName));
+        recursives.push(`const ${internalName} = ${code.runtime}`);
+        continue;
       }
 
-      recursives.push(renderSchemaTypeAndRuntime($ref, code, false, options?.multipartSchemaRefs))
+      recursives.push(renderSchemaTypeAndRuntime($ref, code, false, options?.multipartSchemaRefs));
     }
 
     const codes = generated.codeDocument.codes.map((code, i) =>
-      renderSchemaTypeAndRuntime(generated.nameMap[i], code, false, options?.multipartSchemaRefs)
-    )
+      renderSchemaTypeAndRuntime(generated.nameMap[i], code, false, options?.multipartSchemaRefs),
+    );
 
-    return renderImportArtifacts(generated.codeDocument, true) +
+    return (
+      renderImportArtifacts(generated.codeDocument, true) +
       render("recursive declarations", recursiveDeclarations) +
       render("non-recursive definitions", nonRecursives) +
       render("recursive definitions", recursives) +
       render("schemas", codes)
+    );
   }
 
   function makeCodeDocument(
     source: Source,
     components: JsonSchema.Definitions,
-    options?: GenerateHttpApiOptions
-  ): {
-    readonly nameMap: Array<string>
-    readonly codeDocument: SchemaRepresentation.CodeDocument
-  } | undefined {
-    const nameMap: Array<string> = []
-    const schemas: Array<JsonSchema.JsonSchema> = []
+    options?: GenerateHttpApiOptions,
+  ):
+    | {
+        readonly nameMap: Array<string>;
+        readonly codeDocument: SchemaRepresentation.CodeDocument;
+      }
+    | undefined {
+    const nameMap: Array<string> = [];
+    const schemas: Array<JsonSchema.JsonSchema> = [];
 
     let definitions: JsonSchema.Definitions = Rec.map(
       components,
-      (js) => fromSchemaOpenApi(source, js).schema
-    )
+      (js) => fromSchemaOpenApi(source, js).schema,
+    );
 
     for (const [name, js] of Object.entries(store)) {
-      nameMap.push(name)
-      schemas.push(fromSchemaOpenApi(source, js).schema)
+      nameMap.push(name);
+      schemas.push(fromSchemaOpenApi(source, js).schema);
     }
 
     if (!Arr.isArrayNonEmpty(schemas)) {
-      return
+      return;
     }
     if (options?.multipartSchemaRefs !== undefined) {
-      definitions = omitSupersededMultipartDefinitions(definitions, schemas, options.multipartSchemaRefs)
+      definitions = omitSupersededMultipartDefinitions(
+        definitions,
+        schemas,
+        options.multipartSchemaRefs,
+      );
     }
 
     const document = {
       dialect: "draft-2020-12" as const,
       schemas,
-      definitions
-    }
-    const schemasWithExamples: Array<JsonSchema.JsonSchema> = []
-    const preparedSchemas = new WeakMap<JsonSchema.JsonSchema, JsonSchema.JsonSchema>()
-    const preparedOutputs = new WeakSet<JsonSchema.JsonSchema>()
+      definitions,
+    };
+    const schemasWithExamples: Array<JsonSchema.JsonSchema> = [];
+    const preparedSchemas = new WeakMap<JsonSchema.JsonSchema, JsonSchema.JsonSchema>();
+    const preparedOutputs = new WeakSet<JsonSchema.JsonSchema>();
     const importerOptions: SchemaRepresentation.FromJsonSchemaOptions = {
       patterns: "apply",
       onEnter(js: JsonSchema.JsonSchema) {
-        if (preparedOutputs.has(js)) return js
-        const cached = preparedSchemas.get(js)
-        if (cached !== undefined) return cached
+        if (preparedOutputs.has(js)) return js;
+        const cached = preparedSchemas.get(js);
+        if (cached !== undefined) return cached;
 
-        const out = { ...js }
+        const out = { ...js };
         if (out.type === "object" && out.additionalProperties === undefined) {
-          out.additionalProperties = false
+          out.additionalProperties = false;
         }
-        const transformed = { ...(options?.onEnter === undefined ? out : options.onEnter(out)) }
-        preparedSchemas.set(js, transformed)
-        preparedOutputs.add(transformed)
+        const transformed = { ...(options?.onEnter === undefined ? out : options.onEnter(out)) };
+        preparedSchemas.set(js, transformed);
+        preparedOutputs.add(transformed);
         if (Array.isArray(transformed.examples)) {
-          schemasWithExamples.push(transformed)
+          schemasWithExamples.push(transformed);
         }
-        return transformed
-      }
-    }
-    let rootSchemas = SchemaRepresentation.fromJsonSchemaMultiDocument(document, importerOptions)
+        return transformed;
+      },
+    };
+    let rootSchemas = SchemaRepresentation.fromJsonSchemaMultiDocument(document, importerOptions);
     if (Arr.isArrayNonEmpty(schemasWithExamples)) {
       const exampleSchemas = SchemaRepresentation.fromJsonSchemaMultiDocument(
         { ...document, schemas: schemasWithExamples },
-        importerOptions
-      )
+        importerOptions,
+      );
       for (let i = 0; i < schemasWithExamples.length; i++) {
-        const node = schemasWithExamples[i]
-        const examples = node.examples as ReadonlyArray<unknown>
-        const validExamples = examples.filter(Schema.is(exampleSchemas[i]))
-        if (validExamples.length === examples.length) continue
+        const node = schemasWithExamples[i];
+        const examples = node.examples as ReadonlyArray<unknown>;
+        const validExamples = examples.filter(Schema.is(exampleSchemas[i]));
+        if (validExamples.length === examples.length) continue;
         if (validExamples.length === 0) {
-          delete node.examples
+          delete node.examples;
         } else {
-          node.examples = validExamples
+          node.examples = validExamples;
         }
       }
-      rootSchemas = SchemaRepresentation.fromJsonSchemaMultiDocument(document, importerOptions)
+      rootSchemas = SchemaRepresentation.fromJsonSchemaMultiDocument(document, importerOptions);
     }
     const codeDocument = SchemaRepresentation.toCodeDocument(
-      SchemaRepresentation.toRepresentations(Arr.map(rootSchemas, (schema) => schema.ast))
-    )
+      SchemaRepresentation.toRepresentations(Arr.map(rootSchemas, (schema) => schema.ast)),
+    );
 
     return {
       nameMap,
-      codeDocument
-    }
+      codeDocument,
+    };
   }
 
-  return { addSchema, generate, generateHttpApi } as const
+  return { addSchema, generate, generateHttpApi } as const;
 }
 
 function fromSchemaOpenApi(source: Source, jsonSchema: JsonSchema.JsonSchema) {
   switch (source) {
     case "openapi-3.1":
-      return JsonSchema.fromSchemaOpenApi3_1(jsonSchema)
+      return JsonSchema.fromSchemaOpenApi3_1(jsonSchema);
     case "openapi-3.0":
-      return JsonSchema.fromSchemaOpenApi3_0(jsonSchema)
+      return JsonSchema.fromSchemaOpenApi3_0(jsonSchema);
   }
 }
 
@@ -281,163 +288,168 @@ function renderSchemaTypeAndRuntime(
   $ref: string,
   code: SchemaRepresentation.Code,
   typeOnly: boolean,
-  multipartSchemaRefs?: MultipartSchemaRefs
+  multipartSchemaRefs?: MultipartSchemaRefs,
 ) {
   if (!typeOnly && multipartSchemaRefs !== undefined) {
     if ($ref === multipartSchemaRefs.singleFile) {
       return [
         `export type ${$ref} = Multipart.PersistedFile`,
-        `export const ${$ref} = Multipart.SingleFileSchema`
-      ].join("\n")
+        `export const ${$ref} = Multipart.SingleFileSchema`,
+      ].join("\n");
     }
     if ($ref === multipartSchemaRefs.files) {
       return [
         `export type ${$ref} = ReadonlyArray<Multipart.PersistedFile>`,
-        `export const ${$ref} = Multipart.FilesSchema`
-      ].join("\n")
+        `export const ${$ref} = Multipart.FilesSchema`,
+      ].join("\n");
     }
   }
 
-  const strings = [`export type ${$ref} = ${code.Type}`]
+  const strings = [`export type ${$ref} = ${code.Type}`];
   if (!typeOnly) {
-    strings.push(`export const ${$ref} = ${code.runtime}`)
+    strings.push(`export const ${$ref} = ${code.runtime}`);
   }
-  return strings.join("\n")
+  return strings.join("\n");
 }
 
 function renderRecursiveReferenceDeclaration(
   $ref: string,
   code: SchemaRepresentation.Code,
-  internalName: string
+  internalName: string,
 ): string {
   return [
     `export type ${$ref} = ${code.Type}`,
-    `export const ${$ref} = Schema.suspend((): Schema.Codec<${$ref}> => ${internalName})`
-  ].join("\n")
+    `export const ${$ref} = Schema.suspend((): Schema.Codec<${$ref}> => ${internalName})`,
+  ].join("\n");
 }
 
 function render(title: string, as: ReadonlyArray<string>) {
-  if (as.length === 0) return ""
-  return "// " + title + "\n" + as.join("\n") + "\n"
+  if (as.length === 0) return "";
+  return "// " + title + "\n" + as.join("\n") + "\n";
 }
 
-function renderImportArtifacts(codeDocument: SchemaRepresentation.CodeDocument, enabled: boolean): string {
-  if (!enabled) return ""
+function renderImportArtifacts(
+  codeDocument: SchemaRepresentation.CodeDocument,
+  enabled: boolean,
+): string {
+  if (!enabled) return "";
   const imports = codeDocument.artifacts.flatMap((artifact) =>
-    artifact._tag === "Import" ? [artifact.importDeclaration] : []
-  )
-  return imports.length === 0 ? "" : imports.join("\n") + "\n"
+    artifact._tag === "Import" ? [artifact.importDeclaration] : [],
+  );
+  return imports.length === 0 ? "" : imports.join("\n") + "\n";
 }
 
 function omitSupersededMultipartDefinitions(
   definitions: JsonSchema.Definitions,
   schemas: ReadonlyArray<JsonSchema.JsonSchema>,
-  multipartSchemaRefs: MultipartSchemaRefs
+  multipartSchemaRefs: MultipartSchemaRefs,
 ): JsonSchema.Definitions {
-  const rootReferences = collectReferenceKeys(schemas)
-  const multipartReferences = new Set([multipartSchemaRefs.singleFile, multipartSchemaRefs.files])
-  const output: JsonSchema.Definitions = {}
+  const rootReferences = collectReferenceKeys(schemas);
+  const multipartReferences = new Set([multipartSchemaRefs.singleFile, multipartSchemaRefs.files]);
+  const output: JsonSchema.Definitions = {};
 
   for (const [key, schema] of Object.entries(definitions)) {
-    const superseded = !multipartReferences.has(key) && !rootReferences.has(key) &&
-      referencesAny(schema, multipartReferences)
+    const superseded =
+      !multipartReferences.has(key) &&
+      !rootReferences.has(key) &&
+      referencesAny(schema, multipartReferences);
     if (!superseded) {
       Object.defineProperty(output, key, {
         value: schema,
         enumerable: true,
         configurable: true,
-        writable: true
-      })
+        writable: true,
+      });
     }
   }
-  return output
+  return output;
 }
 
 function collectReferenceKeys(input: unknown): Set<string> {
-  const references = new Set<string>()
+  const references = new Set<string>();
   visitReferences(input, ($ref) => {
-    const token = $ref.split("/").at(-1)
+    const token = $ref.split("/").at(-1);
     if (token !== undefined && token.length > 0) {
-      references.add(JsonPointer.unescapeToken(token))
+      references.add(JsonPointer.unescapeToken(token));
     }
-  })
-  return references
+  });
+  return references;
 }
 
 function referencesAny(input: unknown, keys: ReadonlySet<string>): boolean {
-  const references = collectReferenceKeys(input)
+  const references = collectReferenceKeys(input);
   for (const key of references) {
-    if (keys.has(key)) return true
+    if (keys.has(key)) return true;
   }
-  return false
+  return false;
 }
 
 function visitReferences(input: unknown, onReference: ($ref: string) => void): void {
   if (Array.isArray(input)) {
-    for (const value of input) visitReferences(value, onReference)
-    return
+    for (const value of input) visitReferences(value, onReference);
+    return;
   }
-  if (typeof input !== "object" || input === null) return
+  if (typeof input !== "object" || input === null) return;
   for (const [key, value] of Object.entries(input)) {
     if (key === "$ref" && typeof value === "string") {
-      onReference(value)
+      onReference(value);
     } else {
-      visitReferences(value, onReference)
+      visitReferences(value, onReference);
     }
   }
 }
 
-const tokenPattern = /[A-Za-z_$][A-Za-z0-9_$]*/g
+const tokenPattern = /[A-Za-z_$][A-Za-z0-9_$]*/g;
 
 function collectForwardReferencedRecursives(
   nonRecursives: ReadonlyArray<{
-    readonly $ref: string
-    readonly code: SchemaRepresentation.Code
+    readonly $ref: string;
+    readonly code: SchemaRepresentation.Code;
   }>,
-  recursives: ReadonlyArray<readonly [string, SchemaRepresentation.Code]>
+  recursives: ReadonlyArray<readonly [string, SchemaRepresentation.Code]>,
 ): Set<string> {
-  const recursiveNames = new Set(recursives.map(([name]) => name))
-  const recursiveIndexes = new Map(recursives.map(([name], index) => [name, index]))
-  const referenced = new Set<string>()
+  const recursiveNames = new Set(recursives.map(([name]) => name));
+  const recursiveIndexes = new Map(recursives.map(([name], index) => [name, index]));
+  const referenced = new Set<string>();
 
   for (const { code } of nonRecursives) {
     for (const token of code.runtime.matchAll(tokenPattern)) {
-      const identifier = token[0]
+      const identifier = token[0];
       if (recursiveNames.has(identifier)) {
-        referenced.add(identifier)
+        referenced.add(identifier);
       }
     }
   }
 
   for (let index = 0; index < recursives.length; index++) {
-    const [, code] = recursives[index]
+    const [, code] = recursives[index];
     for (const token of code.runtime.matchAll(tokenPattern)) {
-      const identifier = token[0]
-      const referencedIndex = recursiveIndexes.get(identifier)
+      const identifier = token[0];
+      const referencedIndex = recursiveIndexes.get(identifier);
       if (referencedIndex !== undefined && referencedIndex > index) {
-        referenced.add(identifier)
+        referenced.add(identifier);
       }
     }
   }
 
-  return referenced
+  return referenced;
 }
 
 function makeRecursiveInternalNameMap(
   recursiveNames: ReadonlySet<string>,
-  existingNames: ReadonlyArray<string>
+  existingNames: ReadonlyArray<string>,
 ): Map<string, string> {
-  const usedNames = new Set(existingNames)
-  const internalNames = new Map<string, string>()
+  const usedNames = new Set(existingNames);
+  const internalNames = new Map<string, string>();
 
   for (const name of recursiveNames) {
-    let candidate = `__recursive_${name}`
+    let candidate = `__recursive_${name}`;
     while (usedNames.has(candidate)) {
-      candidate = `_${candidate}`
+      candidate = `_${candidate}`;
     }
-    usedNames.add(candidate)
-    internalNames.set(name, candidate)
+    usedNames.add(candidate);
+    internalNames.set(name, candidate);
   }
 
-  return internalNames
+  return internalNames;
 }

@@ -8,7 +8,10 @@ const provider = process.argv[2] ?? "AWS";
 
 const srcRoot = path.join(import.meta.dir, "../packages/alchemy/src", provider);
 const providersPath = path.join(srcRoot, "Providers.ts");
-const tsConfig = path.join(import.meta.dir, "../packages/alchemy/tsconfig.json");
+const tsConfig = path.join(
+  import.meta.dir,
+  "../packages/alchemy/tsconfig.json",
+);
 
 const project = new Project({
   tsConfigFilePath: tsConfig,
@@ -50,9 +53,7 @@ for (const sourceFile of project.getSourceFiles()) {
   const alreadyImported = sourceFile
     .getImportDeclarations()
     .some((decl) =>
-      decl
-        .getNamedImports()
-        .some((named) => named.getName() === "Providers"),
+      decl.getNamedImports().some((named) => named.getName() === "Providers"),
     );
 
   if (!alreadyImported) {

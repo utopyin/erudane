@@ -1,22 +1,22 @@
-import * as Effect from "../../../Effect.ts"
-import { identity } from "../../../Function.ts"
-import * as Stream from "../../../Stream.ts"
-import type * as Headers from "../Headers.ts"
-import * as HttpBody from "../HttpBody.ts"
-import type { Compression, CompressionAlgorithm, CompressionOptions } from "../HttpPlatform.ts"
-import * as Response from "../HttpServerResponse.ts"
+import * as Effect from "../../../Effect.ts";
+import { identity } from "../../../Function.ts";
+import * as Stream from "../../../Stream.ts";
+import type * as Headers from "../Headers.ts";
+import * as HttpBody from "../HttpBody.ts";
+import type { Compression, CompressionAlgorithm, CompressionOptions } from "../HttpPlatform.ts";
+import * as Response from "../HttpServerResponse.ts";
 
 /** @internal */
 export const varyAcceptEncoding = (headers: Headers.Headers): string | undefined => {
-  const vary = headers["vary"]
+  const vary = headers["vary"];
   if (vary === undefined) {
-    return "Accept-Encoding"
+    return "Accept-Encoding";
   }
-  const members = vary.split(",").map((member) => member.trim().toLowerCase())
+  const members = vary.split(",").map((member) => member.trim().toLowerCase());
   return members.includes("*") || members.includes("accept-encoding")
     ? undefined
-    : `${vary}, Accept-Encoding`
-}
+    : `${vary}, Accept-Encoding`;
+};
 
 /** @internal */
 export const wrapCompression = (impl: Compression): Compression => ({
@@ -24,119 +24,132 @@ export const wrapCompression = (impl: Compression): Compression => ({
   compressResponse(response, algorithm, options) {
     return Effect.map(impl.compressResponse(response, algorithm, options), (compressed) => {
       if (compressed === response) {
-        return response
+        return response;
       }
-      const headers: Record<string, string> = { "content-encoding": algorithm }
-      const vary = varyAcceptEncoding(compressed.headers)
+      const headers: Record<string, string> = { "content-encoding": algorithm };
+      const vary = varyAcceptEncoding(compressed.headers);
       if (vary !== undefined) {
-        headers["vary"] = vary
+        headers["vary"] = vary;
       }
-      const etag = compressed.headers["etag"]
+      const etag = compressed.headers["etag"];
       if (etag !== undefined && !etag.startsWith("W/")) {
-        headers["etag"] = `W/${etag}`
+        headers["etag"] = `W/${etag}`;
       }
-      return Response.setHeaders(compressed, headers)
-    })
-  }
-})
+      return Response.setHeaders(compressed, headers);
+    });
+  },
+});
 
 /** @internal */
 export const compressionTransformWeb =
-  (format: string) => (stream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> =>
+  (format: string) =>
+  (stream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> =>
     stream.pipeThrough(
-      new CompressionStream(format as CompressionFormat) as unknown as ReadableWritablePair<Uint8Array, Uint8Array>
-    )
+      new CompressionStream(format as CompressionFormat) as unknown as ReadableWritablePair<
+        Uint8Array,
+        Uint8Array
+      >,
+    );
 
 /** @internal */
 export const setBodyWithoutLength = (
   response: Response.HttpServerResponse,
-  body: HttpBody.HttpBody
-): Response.HttpServerResponse => Response.removeHeader(Response.setBody(response, body), "content-length")
+  body: HttpBody.HttpBody,
+): Response.HttpServerResponse =>
+  Response.removeHeader(Response.setBody(response, body), "content-length");
 
 /** @internal */
 export const makeCompressionWeb = (options: {
-  readonly algorithms: Iterable<CompressionAlgorithm>
+  readonly algorithms: Iterable<CompressionAlgorithm>;
   readonly transform: (
     algorithm: CompressionAlgorithm,
-    options?: CompressionOptions | undefined
-  ) => (stream: ReadableStream<Uint8Array>) => ReadableStream<Uint8Array>
+    options?: CompressionOptions | undefined,
+  ) => (stream: ReadableStream<Uint8Array>) => ReadableStream<Uint8Array>;
 }): Compression => ({
   algorithms: new Set(options.algorithms),
   compressResponse(response, algorithm, opts) {
-    const body = response.body
+    const body = response.body;
     switch (body._tag) {
       case "Uint8Array": {
-        const data = body.body
-        return Effect.succeed(streamBody(
-          response,
-          () => options.transform(algorithm, opts)(singleChunkStream(data)),
-          body.contentType
-        ))
+        const data = body.body;
+        return Effect.succeed(
+          streamBody(
+            response,
+            () => options.transform(algorithm, opts)(singleChunkStream(data)),
+            body.contentType,
+          ),
+        );
       }
       case "Stream": {
-        const stream = body.stream
-        return Effect.succeed(streamBody(
-          response,
-          () => options.transform(algorithm, opts)(Stream.toReadableStream(stream)),
-          body.contentType
-        ))
+        const stream = body.stream;
+        return Effect.succeed(
+          streamBody(
+            response,
+            () => options.transform(algorithm, opts)(Stream.toReadableStream(stream)),
+            body.contentType,
+          ),
+        );
       }
       case "Raw": {
-        const readable = rawReadableStream(body.body)
+        const readable = rawReadableStream(body.body);
         if (readable === undefined) {
-          return Effect.succeed(response)
+          return Effect.succeed(response);
         }
-        return Effect.succeed(setBodyWithoutLength(
-          response,
-          HttpBody.raw(options.transform(algorithm, opts)(readable), { contentType: body.contentType })
-        ))
+        return Effect.succeed(
+          setBodyWithoutLength(
+            response,
+            HttpBody.raw(options.transform(algorithm, opts)(readable), {
+              contentType: body.contentType,
+            }),
+          ),
+        );
       }
       default: {
-        return Effect.succeed(response)
+        return Effect.succeed(response);
       }
     }
-  }
-})
+  },
+});
 
 const streamBody = (
   response: Response.HttpServerResponse,
   evaluate: () => ReadableStream<Uint8Array>,
-  contentType: string | undefined
+  contentType: string | undefined,
 ): Response.HttpServerResponse =>
   setBodyWithoutLength(
     response,
-    HttpBody.stream(Stream.fromReadableStream({ evaluate, onError: identity }), contentType)
-  )
+    HttpBody.stream(Stream.fromReadableStream({ evaluate, onError: identity }), contentType),
+  );
 
 const singleChunkStream = (data: Uint8Array): ReadableStream<Uint8Array> =>
   new ReadableStream({
     start(controller) {
-      controller.enqueue(data)
-      controller.close()
-    }
-  })
+      controller.enqueue(data);
+      controller.close();
+    },
+  });
 
 const rawReadableStream = (raw: unknown): ReadableStream<Uint8Array> | undefined => {
   if (typeof ReadableStream !== "undefined" && raw instanceof ReadableStream) {
-    return raw
+    return raw;
   } else if (raw instanceof globalThis.Response) {
-    return raw.body ?? undefined
+    return raw.body ?? undefined;
   }
-  return new globalThis.Response(raw as BodyInit).body ?? undefined
-}
+  return new globalThis.Response(raw as BodyInit).body ?? undefined;
+};
 
 /** @internal */
 export const compressionWeb: Compression = makeCompressionWeb({
   algorithms: ["gzip", "deflate"],
-  transform: (algorithm) => compressionTransformWeb(algorithm)
-})
+  transform: (algorithm) => compressionTransformWeb(algorithm),
+});
 
 /** @internal */
 export const defaultCompressible = (contentType: string): boolean => {
-  const semi = contentType.indexOf(";")
-  const type = (semi === -1 ? contentType : contentType.slice(0, semi)).trim().toLowerCase()
+  const semi = contentType.indexOf(";");
+  const type = (semi === -1 ? contentType : contentType.slice(0, semi)).trim().toLowerCase();
   if (type.startsWith("text/")) {
-    return true
+    return true;
   }
   switch (type) {
     case "application/json":
@@ -144,53 +157,56 @@ export const defaultCompressible = (contentType: string): boolean => {
     case "application/xml":
     case "image/svg+xml":
     case "application/wasm": {
-      return true
+      return true;
     }
   }
-  return type.endsWith("+json") || type.endsWith("+xml")
-}
+  return type.endsWith("+json") || type.endsWith("+xml");
+};
 
-const acceptMember = /^([a-z0-9!#$%&'*+.^_`|~-]+)(?:;q=(0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?))?$/
+const acceptMember = /^([a-z0-9!#$%&'*+.^_`|~-]+)(?:;q=(0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?))?$/;
 
 /** @internal */
 export const parseAcceptEncoding = (header: string): ReadonlyMap<string, number> | undefined => {
-  const trimmed = header.trim()
+  const trimmed = header.trim();
   if (trimmed === "") {
-    return undefined
+    return undefined;
   }
-  const accepted = new Map<string, number>()
+  const accepted = new Map<string, number>();
   for (const part of trimmed.split(",")) {
-    const member = part.trim().toLowerCase().replace(/[ \t]*;[ \t]*/g, ";")
-    const match = acceptMember.exec(member)
+    const member = part
+      .trim()
+      .toLowerCase()
+      .replace(/[ \t]*;[ \t]*/g, ";");
+    const match = acceptMember.exec(member);
     if (match === null) {
-      return undefined
+      return undefined;
     }
-    accepted.set(match[1], match[2] === undefined ? 1 : Number(match[2]))
+    accepted.set(match[1], match[2] === undefined ? 1 : Number(match[2]));
   }
-  return accepted
-}
+  return accepted;
+};
 
 /** @internal */
 export const negotiate = (
   header: string | undefined,
   preferred: ReadonlyArray<CompressionAlgorithm>,
-  supported: ReadonlySet<CompressionAlgorithm>
+  supported: ReadonlySet<CompressionAlgorithm>,
 ): CompressionAlgorithm | undefined => {
   if (header === undefined) {
-    return undefined
+    return undefined;
   }
-  const accepted = parseAcceptEncoding(header)
+  const accepted = parseAcceptEncoding(header);
   if (accepted === undefined) {
-    return undefined
+    return undefined;
   }
   for (const algorithm of preferred) {
     if (!supported.has(algorithm)) {
-      continue
+      continue;
     }
-    const quality = accepted.get(algorithm) ?? accepted.get("*")
+    const quality = accepted.get(algorithm) ?? accepted.get("*");
     if (quality !== undefined && quality > 0) {
-      return algorithm
+      return algorithm;
     }
   }
-  return undefined
-}
+  return undefined;
+};

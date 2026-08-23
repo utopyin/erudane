@@ -10,23 +10,23 @@
  *
  * @since 4.0.0
  */
-import type { Cause } from "effect/Cause"
-import * as Context from "effect/Context"
-import * as Deferred from "effect/Deferred"
-import * as Effect from "effect/Effect"
-import * as Exit from "effect/Exit"
-import * as Fiber from "effect/Fiber"
-import { pipe } from "effect/Function"
-import * as Function from "effect/Function"
-import * as Layer from "effect/Layer"
-import * as References from "effect/References"
-import * as Scope from "effect/Scope"
-import * as Socket from "effect/unstable/socket/Socket"
-import * as SocketServer from "effect/unstable/socket/SocketServer"
-import type * as Http from "node:http"
-import * as Net from "node:net"
-import * as NodeSocket from "./NodeSocket.ts"
-import { NodeWS } from "./NodeSocket.ts"
+import type { Cause } from "effect/Cause";
+import * as Context from "effect/Context";
+import * as Deferred from "effect/Deferred";
+import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
+import { pipe } from "effect/Function";
+import * as Function from "effect/Function";
+import * as Layer from "effect/Layer";
+import * as References from "effect/References";
+import * as Scope from "effect/Scope";
+import * as Socket from "effect/unstable/socket/Socket";
+import * as SocketServer from "effect/unstable/socket/SocketServer";
+import type * as Http from "node:http";
+import * as Net from "node:net";
+import * as NodeSocket from "./NodeSocket.ts";
+import { NodeWS } from "./NodeSocket.ts";
 
 /**
  * Service tag for the Node `IncomingMessage` associated with the current
@@ -35,10 +35,9 @@ import { NodeWS } from "./NodeSocket.ts"
  * @category services
  * @since 4.0.0
  */
-export class IncomingMessage extends Context.Service<
-  IncomingMessage,
-  Http.IncomingMessage
->()("@effect/platform-node-shared/NodeSocketServer/IncomingMessage") {}
+export class IncomingMessage extends Context.Service<IncomingMessage, Http.IncomingMessage>()(
+  "@effect/platform-node-shared/NodeSocketServer/IncomingMessage",
+) {}
 
 /**
  * Creates a scoped TCP `SocketServer` from a Node `net.Server`, starts
@@ -48,57 +47,62 @@ export class IncomingMessage extends Context.Service<
  * @category constructors
  * @since 4.0.0
  */
-export const make = Effect.fnUntraced(function*(
-  options: Net.ServerOpts & Net.ListenOptions
-) {
-  const errorDeferred = Deferred.makeUnsafe<never, Error>()
-  const pending = new Map<Net.Socket, () => void>()
+export const make = Effect.fnUntraced(function* (options: Net.ServerOpts & Net.ListenOptions) {
+  const errorDeferred = Deferred.makeUnsafe<never, Error>();
+  const pending = new Map<Net.Socket, () => void>();
   function defaultOnConnection(conn: Net.Socket) {
     const remove = () => {
-      pending.delete(conn)
-      conn.off("close", remove)
-      conn.off("error", remove)
-    }
-    pending.set(conn, remove)
-    conn.on("close", remove)
-    conn.on("error", remove)
+      pending.delete(conn);
+      conn.off("close", remove);
+      conn.off("error", remove);
+    };
+    pending.set(conn, remove);
+    conn.on("close", remove);
+    conn.on("error", remove);
   }
-  let onConnection = defaultOnConnection
+  let onConnection = defaultOnConnection;
   // oxlint-disable-next-line prefer-const
-  let server: Net.Server | undefined
+  let server: Net.Server | undefined;
   yield* Effect.addFinalizer(() =>
     Effect.callback<void>((resume) => {
       pending.forEach((remove, conn) => {
-        remove()
-        conn.destroy()
-      })
-      server?.close(() => resume(Effect.void))
-    })
-  )
-  server = Net.createServer(options, (conn) => onConnection(conn))
-  server.on("error", (err) => Deferred.doneUnsafe(errorDeferred, Exit.fail(err)))
+        remove();
+        conn.destroy();
+      });
+      server?.close(() => resume(Effect.void));
+    }),
+  );
+  server = Net.createServer(options, (conn) => onConnection(conn));
+  server.on("error", (err) => Deferred.doneUnsafe(errorDeferred, Exit.fail(err)));
 
   yield* Effect.callback<void, SocketServer.SocketServerError>((resume) => {
-    server.listen(options, () => resume(Effect.void))
+    server.listen(options, () => resume(Effect.void));
   }).pipe(
-    Effect.raceFirst(Effect.mapError(Deferred.await(errorDeferred), (err) =>
-      new SocketServer.SocketServerError({
-        reason: new SocketServer.SocketServerOpenError({
-          cause: err
-        })
-      })))
-  )
+    Effect.raceFirst(
+      Effect.mapError(
+        Deferred.await(errorDeferred),
+        (err) =>
+          new SocketServer.SocketServerError({
+            reason: new SocketServer.SocketServerOpenError({
+              cause: err,
+            }),
+          }),
+      ),
+    ),
+  );
 
-  const run = Effect.fnUntraced(function*<R, E, _>(handler: (socket: Socket.Socket) => Effect.Effect<_, E, R>) {
-    const scope = yield* Scope.make()
-    const services = Context.omit(Scope.Scope)(yield* Effect.context<R>()) as Context.Context<R>
-    const trackFiber = Fiber.runIn(scope)
-    const prevOnConnection = onConnection
-    onConnection = function(conn: Net.Socket) {
-      let error: Error | undefined
+  const run = Effect.fnUntraced(function* <R, E, _>(
+    handler: (socket: Socket.Socket) => Effect.Effect<_, E, R>,
+  ) {
+    const scope = yield* Scope.make();
+    const services = Context.omit(Scope.Scope)(yield* Effect.context<R>()) as Context.Context<R>;
+    const trackFiber = Fiber.runIn(scope);
+    const prevOnConnection = onConnection;
+    onConnection = function (conn: Net.Socket) {
+      let error: Error | undefined;
       conn.on("error", (err) => {
-        error = err
-      })
+        error = err;
+      });
       pipe(
         NodeSocket.fromDuplex(
           Effect.acquireRelease(
@@ -108,60 +112,61 @@ export const make = Effect.fnUntraced(function*(
                   new Socket.SocketError({
                     reason: new Socket.SocketOpenError({
                       kind: "Unknown",
-                      cause: error
-                    })
-                  })
-                )
+                      cause: error,
+                    }),
+                  }),
+                );
               } else if (conn.closed) {
                 return Effect.fail(
                   new Socket.SocketError({
-                    reason: new Socket.SocketCloseError({ code: 1000 })
-                  })
-                )
+                    reason: new Socket.SocketCloseError({ code: 1000 }),
+                  }),
+                );
               }
-              return Effect.succeed(conn)
+              return Effect.succeed(conn);
             }),
             (conn) =>
               Effect.sync(() => {
                 if (conn.closed === false) {
-                  conn.destroySoon()
+                  conn.destroySoon();
                 }
-              })
-          )
+              }),
+          ),
         ),
         Effect.flatMap(handler),
         Effect.catchCause(reportUnhandledError),
         Effect.runForkWith(Context.add(services, NodeSocket.NetSocket, conn)),
-        trackFiber
-      )
-    }
+        trackFiber,
+      );
+    };
     pending.forEach((remove, conn) => {
-      remove()
-      onConnection(conn)
-    })
+      remove();
+      onConnection(conn);
+    });
     return yield* Effect.callback<never>((_resume) => {
       return Effect.suspend(() => {
-        onConnection = prevOnConnection
-        return Scope.close(scope, Exit.void)
-      })
-    })
-  })
+        onConnection = prevOnConnection;
+        return Scope.close(scope, Exit.void);
+      });
+    });
+  });
 
-  const address = server.address()!
+  const address = server.address()!;
   return SocketServer.SocketServer.of({
-    address: typeof address === "string" ?
-      {
-        _tag: "UnixAddress",
-        path: address
-      } :
-      {
-        _tag: "TcpAddress",
-        hostname: address.address,
-        port: address.port
-      },
-    run
-  })
-})
+    address:
+      typeof address === "string"
+        ? {
+            _tag: "UnixAddress",
+            path: address,
+          }
+        : {
+            _tag: "TcpAddress",
+            hostname: address.address,
+            port: address.port,
+          },
+    run,
+  });
+});
 
 /**
  * Provides a TCP `SocketServer` by creating and managing a scoped Node
@@ -171,11 +176,11 @@ export const make = Effect.fnUntraced(function*(
  * @since 4.0.0
  */
 export const layer: (
-  options: Net.ServerOpts & Net.ListenOptions
-) => Layer.Layer<
-  SocketServer.SocketServer,
-  SocketServer.SocketServerError
-> = Function.flow(make, Layer.effect(SocketServer.SocketServer))
+  options: Net.ServerOpts & Net.ListenOptions,
+) => Layer.Layer<SocketServer.SocketServer, SocketServer.SocketServerError> = Function.flow(
+  make,
+  Layer.effect(SocketServer.SocketServer),
+);
 
 /**
  * Creates a scoped WebSocket `SocketServer` backed by the `ws` package,
@@ -186,109 +191,108 @@ export const layer: (
  * @since 4.0.0
  */
 export const makeWebSocket: (
-  options: NodeWS.ServerOptions<typeof NodeWS.WebSocket, typeof Http.IncomingMessage>
+  options: NodeWS.ServerOptions<typeof NodeWS.WebSocket, typeof Http.IncomingMessage>,
 ) => Effect.Effect<
   SocketServer.SocketServer["Service"],
   SocketServer.SocketServerError,
   Scope.Scope
-> = Effect.fnUntraced(function*(
-  options: NodeWS.ServerOptions
-) {
+> = Effect.fnUntraced(function* (options: NodeWS.ServerOptions) {
   const pendingConnections = new Map<
     globalThis.WebSocket,
     readonly [request: Http.IncomingMessage, remove: () => void]
-  >()
+  >();
   const server = yield* Effect.acquireRelease(
     Effect.sync(() => new NodeWS.WebSocketServer(options)),
     (server) =>
       Effect.callback<void>((resume) => {
         pendingConnections.forEach(([, remove], conn) => {
-          remove()
-          const socket = conn as unknown as NodeWS.WebSocket
-          socket.terminate()
-        })
-        server.close(() => resume(Effect.void))
-      })
-  )
+          remove();
+          const socket = conn as unknown as NodeWS.WebSocket;
+          socket.terminate();
+        });
+        server.close(() => resume(Effect.void));
+      }),
+  );
   function defaultHandler(conn: globalThis.WebSocket, req: Http.IncomingMessage) {
     const remove = () => {
-      pendingConnections.delete(conn)
-      conn.removeEventListener("close", remove)
-    }
-    pendingConnections.set(conn, [req, remove])
-    conn.addEventListener("close", remove)
+      pendingConnections.delete(conn);
+      conn.removeEventListener("close", remove);
+    };
+    pendingConnections.set(conn, [req, remove]);
+    conn.addEventListener("close", remove);
   }
-  let onConnection = defaultHandler
-  server.on("connection", (conn, req) => onConnection(conn as any, req))
+  let onConnection = defaultHandler;
+  server.on("connection", (conn, req) => onConnection(conn as any, req));
 
   yield* Effect.callback<void, SocketServer.SocketServerError>((resume) => {
     server.once("error", (error) => {
-      resume(Effect.fail(
-        new SocketServer.SocketServerError({
-          reason: new SocketServer.SocketServerOpenError({
-            cause: error
-          })
-        })
-      ))
-    })
+      resume(
+        Effect.fail(
+          new SocketServer.SocketServerError({
+            reason: new SocketServer.SocketServerOpenError({
+              cause: error,
+            }),
+          }),
+        ),
+      );
+    });
     server.once("listening", () => {
-      resume(Effect.void)
-    })
-  })
+      resume(Effect.void);
+    });
+  });
 
-  const run = Effect.fnUntraced(function*<R, E, _>(handler: (socket: Socket.Socket) => Effect.Effect<_, E, R>) {
-    const scope = yield* Scope.make()
-    const services = Context.omit(Scope.Scope)(yield* Effect.context<R>()) as Context.Context<R>
-    const trackFiber = Fiber.runIn(scope)
-    const prevOnConnection = onConnection
-    onConnection = function(conn: globalThis.WebSocket, req: Http.IncomingMessage) {
-      let context = services
-      context = Context.add(context, IncomingMessage, req)
-      context = Context.add(context, Socket.WebSocket, conn as any)
+  const run = Effect.fnUntraced(function* <R, E, _>(
+    handler: (socket: Socket.Socket) => Effect.Effect<_, E, R>,
+  ) {
+    const scope = yield* Scope.make();
+    const services = Context.omit(Scope.Scope)(yield* Effect.context<R>()) as Context.Context<R>;
+    const trackFiber = Fiber.runIn(scope);
+    const prevOnConnection = onConnection;
+    onConnection = function (conn: globalThis.WebSocket, req: Http.IncomingMessage) {
+      let context = services;
+      context = Context.add(context, IncomingMessage, req);
+      context = Context.add(context, Socket.WebSocket, conn as any);
       pipe(
         Socket.fromWebSocket(
-          Effect.acquireRelease(
-            Effect.succeed(conn),
-            (conn) =>
-              Effect.sync(() => {
-                conn.close()
-              })
-          )
+          Effect.acquireRelease(Effect.succeed(conn), (conn) =>
+            Effect.sync(() => {
+              conn.close();
+            }),
+          ),
         ),
         Effect.flatMap(handler),
         Effect.catchCause(reportUnhandledError),
         Effect.runForkWith(context),
-        trackFiber
-      )
-    }
+        trackFiber,
+      );
+    };
     pendingConnections.forEach(([req, remove], conn) => {
-      remove()
-      onConnection(conn, req)
-    })
+      remove();
+      onConnection(conn, req);
+    });
     return yield* Effect.callback<never>((_resume) => {
       return Effect.sync(() => {
-        onConnection = prevOnConnection
-      })
-    }).pipe(
-      Effect.ensuring(Scope.close(scope, Exit.void))
-    )
-  })
+        onConnection = prevOnConnection;
+      });
+    }).pipe(Effect.ensuring(Scope.close(scope, Exit.void)));
+  });
 
-  const address = server.address()!
+  const address = server.address()!;
   return SocketServer.SocketServer.of({
-    address: typeof address === "string" ?
-      {
-        _tag: "UnixAddress",
-        path: address
-      } :
-      {
-        _tag: "TcpAddress",
-        hostname: address.address,
-        port: address.port
-      },
-    run
-  })
-})
+    address:
+      typeof address === "string"
+        ? {
+            _tag: "UnixAddress",
+            path: address,
+          }
+        : {
+            _tag: "TcpAddress",
+            hostname: address.address,
+            port: address.port,
+          },
+    run,
+  });
+});
 
 /**
  * Provides a WebSocket `SocketServer` backed by the `ws` package and managed
@@ -298,17 +302,20 @@ export const makeWebSocket: (
  * @since 4.0.0
  */
 export const layerWebSocket: (
-  options: NodeSocket.NodeWS.ServerOptions<typeof NodeSocket.NodeWS.WebSocket, typeof Http.IncomingMessage>
-) => Layer.Layer<
-  SocketServer.SocketServer,
-  SocketServer.SocketServerError
-> = Function.flow(makeWebSocket, Layer.effect(SocketServer.SocketServer))
+  options: NodeSocket.NodeWS.ServerOptions<
+    typeof NodeSocket.NodeWS.WebSocket,
+    typeof Http.IncomingMessage
+  >,
+) => Layer.Layer<SocketServer.SocketServer, SocketServer.SocketServerError> = Function.flow(
+  makeWebSocket,
+  Layer.effect(SocketServer.SocketServer),
+);
 
 const reportUnhandledError = <E>(cause: Cause<E>) =>
   Effect.withFiber<void>((fiber) => {
-    const unhandledLogLevel = fiber.getRef(References.UnhandledLogLevel)
+    const unhandledLogLevel = fiber.getRef(References.UnhandledLogLevel);
     if (unhandledLogLevel) {
-      return Effect.logWithLevel(unhandledLogLevel)(cause, "Unhandled error in SocketServer")
+      return Effect.logWithLevel(unhandledLogLevel)(cause, "Unhandled error in SocketServer");
     }
-    return Effect.void
-  })
+    return Effect.void;
+  });

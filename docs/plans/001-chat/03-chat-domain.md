@@ -5,18 +5,18 @@ Owns: turning a transcript into a streamed assistant turn, including the server-
 ## Types (`types.ts`)
 
 ```ts
-import type { Prompt, Response, Tool } from "effect/unstable/ai"
+import type { Prompt, Response, Tool } from "effect/unstable/ai";
 
 export interface ChatInput {
   /** Full transcript, already decoded into Effect AI messages by the caller. */
-  readonly messages: ReadonlyArray<Prompt.Message>
+  readonly messages: ReadonlyArray<Prompt.Message>;
   /** Optional system prompt; prepended if present. */
-  readonly system?: string
+  readonly system?: string;
   /** Upper bound on model rounds per run. Default 5. */
-  readonly maxSteps?: number
+  readonly maxSteps?: number;
 }
 
-export type StepIndex = number & { readonly StepIndex: unique symbol }
+export type StepIndex = number & { readonly StepIndex: unique symbol };
 
 /**
  * Entrypoint-neutral event stream. Effect AI parts are re-emitted verbatim
@@ -25,8 +25,13 @@ export type StepIndex = number & { readonly StepIndex: unique symbol }
 export type ChatEvent =
   | { readonly _tag: "StepStart"; readonly step: StepIndex }
   | { readonly _tag: "Part"; readonly step: StepIndex; readonly part: Response.StreamPart<any> }
-  | { readonly _tag: "StepEnd"; readonly step: StepIndex; readonly reason: Response.FinishReason; readonly usage: Response.Usage }
-  | { readonly _tag: "MaxStepsReached"; readonly step: StepIndex }
+  | {
+      readonly _tag: "StepEnd";
+      readonly step: StepIndex;
+      readonly reason: Response.FinishReason;
+      readonly usage: Response.Usage;
+    }
+  | { readonly _tag: "MaxStepsReached"; readonly step: StepIndex };
 ```
 
 `Part.part` stays `Response.StreamPart<any>` at the boundary because the registry's tool set is only known at the entrypoint. The service is generic over the toolkit internally; the public event type erases it.
@@ -38,7 +43,7 @@ Model this as `Data.TaggedEnum` (skill: internal tagged variants) — `ChatEvent
 ```ts
 export class ChatError extends Schema.TaggedErrorClass<ChatError>()("Chat.Error", {
   step: Schema.Number,
-  reason: Schema.String,          // AiError.reason._tag
+  reason: Schema.String, // AiError.reason._tag
   message: Schema.String,
   retryable: Schema.Boolean,
 }) {}
@@ -50,27 +55,30 @@ Produced by mapping `AiError` at the service seam (`Effect.fn` transform, see SE
 
 ```ts
 export interface Interface {
-  readonly stream: (input: ChatInput) => Stream.Stream<ChatEvent, ChatError>
+  readonly stream: (input: ChatInput) => Stream.Stream<ChatEvent, ChatError>;
 }
 
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/Chat") {}
 
 /** The tool registry this domain talks to. Provided by an entrypoint. */
-export class Toolkit extends Context.Service<Toolkit, Toolkit.WithHandler<Record<string, Tool.Any>>>()(
-  "@erudane/chat/Toolkit",
-) {}
+export class Toolkit extends Context.Service<
+  Toolkit,
+  Toolkit.WithHandler<Record<string, Tool.Any>>
+>()("@erudane/chat/Toolkit") {}
 
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
-    const model = yield* LanguageModel.LanguageModel
-    const toolkit = yield* Toolkit
-    const stream = Effect.fn("Chat.stream")(function* (input: ChatInput) { /* loop below */ })
-    return Service.of({ stream })
+    const model = yield* LanguageModel.LanguageModel;
+    const toolkit = yield* Toolkit;
+    const stream = Effect.fn("Chat.stream")(function* (input: ChatInput) {
+      /* loop below */
+    });
+    return Service.of({ stream });
   }),
-)
+);
 
-export * as Chat from "./service.js"
+export * as Chat from "./service.js";
 ```
 
 Requirements of `layer`: `LanguageModel.LanguageModel`, `Chat.Toolkit`. Nothing else. Handler services are hidden inside the registry layer (`toLayer` captures the context at build time).
@@ -98,7 +106,7 @@ Implementation notes:
 - Build it as `Stream.unwrap` over an `Effect.gen` that returns `Stream.concat(thisStep, Stream.unwrap(nextStep))`, or with `Stream.paginateChunkEffect` keyed on `(prompt, step)`. Pick whichever keeps the parts-collection `Ref` local to one round.
 - `Prompt.fromResponseParts` already merges text/reasoning deltas and emits the `tool` message for tool results (`Prompt.ts`), so the assistant turn is reconstructed without hand-merging.
 - `concurrency` bounds parallel tool handlers; `streamText` already guarantees `tool-result` parts precede `finish`.
-- Termination on `reason === "tool-calls"` is *not* sufficient on its own (providers differ); check for `tool-call` parts.
+- Termination on `reason === "tool-calls"` is _not_ sufficient on its own (providers differ); check for `tool-call` parts.
 - Interruption: the request abort propagates as fiber interruption through `toWebHandler`; handlers are forked inside `streamText`'s `FiberSet`, so nothing to add.
 
 ### Prompt building
@@ -113,11 +121,11 @@ export const CurrentTime = Tool.make("CurrentTime", {
   parameters: Schema.Struct({}),
   success: Schema.Struct({ iso: Schema.String }),
   failureMode: "return",
-})
+});
 
-export const toolkit = Toolkit.make(CurrentTime)
+export const toolkit = Toolkit.make(CurrentTime);
 
-export * as ChatTools from "./tools.js"
+export * as ChatTools from "./tools.js";
 ```
 
 `CurrentTime` is a placeholder so the loop has something real to exercise; it will move or die once the first concept-owning tool exists.
@@ -127,13 +135,14 @@ export * as ChatTools from "./tools.js"
 ```ts
 export const layer = ChatTools.toolkit.toLayer(
   Effect.gen(function* () {
-    const clock = yield* Clock.Clock
+    const clock = yield* Clock.Clock;
     return ChatTools.toolkit.of({
-      CurrentTime: () => Effect.map(Clock.currentTimeMillis, (ms) => ({ iso: new Date(ms).toISOString() })),
-    })
+      CurrentTime: () =>
+        Effect.map(Clock.currentTimeMillis, (ms) => ({ iso: new Date(ms).toISOString() })),
+    });
   }),
-)
-export * as ChatHandlers from "./handlers.js"
+);
+export * as ChatHandlers from "./handlers.js";
 ```
 
 Produces `Layer<Tool.HandlersFor<{ CurrentTime }>>`. The entrypoint registry provides this to its `Chat.Toolkit` layer.

@@ -9,16 +9,16 @@
  *
  * @since 4.0.0
  */
-import * as Arr from "../../Array.ts"
-import * as Effect from "../../Effect.ts"
-import { dual } from "../../Function.ts"
-import { type Pipeable, pipeArguments } from "../../Pipeable.ts"
-import * as Predicate from "../../Predicate.ts"
-import * as Schema from "../../Schema.ts"
-import * as SchemaIssue from "../../SchemaIssue.ts"
-import * as SchemaParser from "../../SchemaParser.ts"
-import * as SchemaTransformation from "../../SchemaTransformation.ts"
-import type * as Response from "./Response.ts"
+import * as Arr from "../../Array.ts";
+import * as Effect from "../../Effect.ts";
+import { dual } from "../../Function.ts";
+import { type Pipeable, pipeArguments } from "../../Pipeable.ts";
+import * as Predicate from "../../Predicate.ts";
+import * as Schema from "../../Schema.ts";
+import * as SchemaIssue from "../../SchemaIssue.ts";
+import * as SchemaParser from "../../SchemaParser.ts";
+import * as SchemaTransformation from "../../SchemaTransformation.ts";
+import type * as Response from "./Response.ts";
 
 // =============================================================================
 // Options
@@ -39,7 +39,7 @@ import type * as Response from "./Response.ts"
 export const ProviderOptions: Schema.$Record<
   Schema.String,
   Schema.NullOr<Schema.Codec<Schema.Json>>
-> = Schema.Record(Schema.String, Schema.NullOr(Schema.Json))
+> = Schema.Record(Schema.String, Schema.NullOr(Schema.Json));
 
 /**
  * Type of provider-specific options that can be attached to prompt messages
@@ -48,13 +48,13 @@ export const ProviderOptions: Schema.$Record<
  * @category options
  * @since 4.0.0
  */
-export type ProviderOptions = typeof ProviderOptions.Type
+export type ProviderOptions = typeof ProviderOptions.Type;
 
 // =============================================================================
 // Base Part
 // =============================================================================
 
-const PartTypeId = "~effect/ai/Prompt/Part" as const
+const PartTypeId = "~effect/ai/Prompt/Part" as const;
 
 /**
  * Type guard to check if a value is a Part.
@@ -62,7 +62,7 @@ const PartTypeId = "~effect/ai/Prompt/Part" as const
  * @category guards
  * @since 4.0.0
  */
-export const isPart = (u: unknown): u is Part => Predicate.hasProperty(u, PartTypeId)
+export const isPart = (u: unknown): u is Part => Predicate.hasProperty(u, PartTypeId);
 
 /**
  * Union type representing all possible content parts within messages.
@@ -83,7 +83,7 @@ export type Part =
   | ToolCallPart
   | ToolResultPart
   | ToolApprovalResponsePart
-  | ToolApprovalRequestPart
+  | ToolApprovalRequestPart;
 
 /**
  * Encoded representation of a Part.
@@ -98,7 +98,7 @@ export type PartEncoded =
   | ToolCallPartEncoded
   | ToolResultPartEncoded
   | ToolApprovalResponsePartEncoded
-  | ToolApprovalRequestPartEncoded
+  | ToolApprovalRequestPartEncoded;
 
 /**
  * Base interface for all content parts.
@@ -112,15 +112,15 @@ export type PartEncoded =
  * @since 4.0.0
  */
 export interface BasePart<Type extends string, Options extends ProviderOptions> {
-  readonly [PartTypeId]: typeof PartTypeId
+  readonly [PartTypeId]: typeof PartTypeId;
   /**
    * The type of this content part.
    */
-  readonly type: Type
+  readonly type: Type;
   /**
    * Provider-specific options for this part.
    */
-  readonly options: Options
+  readonly options: Options;
 }
 
 /**
@@ -133,19 +133,19 @@ export interface BasePartEncoded<Type extends string, Options extends ProviderOp
   /**
    * The type of this content part.
    */
-  readonly type: Type
+  readonly type: Type;
   /**
    * Provider-specific options for this part.
    */
-  readonly options?: Options | undefined
+  readonly options?: Options | undefined;
 }
 
 const BasePart = Schema.Struct({
   [PartTypeId]: Schema.Literal(PartTypeId).pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed(PartTypeId), { encodingStrategy: "omit" })
+    Schema.withDecodingDefaultKey(Effect.succeed(PartTypeId), { encodingStrategy: "omit" }),
   ),
-  options: ProviderOptions.pipe(Schema.withDecodingDefault(Effect.succeed({})))
-})
+  options: ProviderOptions.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+});
 
 /**
  * Creates a new content part of the specified type.
@@ -183,14 +183,15 @@ export const makePart = <const Type extends Part["type"]>(
     /**
      * Optional provider-specific options for this part.
      */
-    readonly options?: Extract<Part, { type: Type }>["options"] | undefined
-  }
-): Extract<Part, { type: Type }> => (({
-  ...params,
-  [PartTypeId]: PartTypeId,
-  type,
-  options: params.options ?? {}
-}) as any)
+    readonly options?: Extract<Part, { type: Type }>["options"] | undefined;
+  },
+): Extract<Part, { type: Type }> =>
+  ({
+    ...params,
+    [PartTypeId]: PartTypeId,
+    type,
+    options: params.options ?? {},
+  }) as any;
 
 /**
  * A utility type for specifying the parameters required to construct a
@@ -199,12 +200,15 @@ export const makePart = <const Type extends Part["type"]>(
  * @category utility types
  * @since 4.0.0
  */
-export type PartConstructorParams<P extends Part> = Omit<P, typeof PartTypeId | "type" | "options"> & {
+export type PartConstructorParams<P extends Part> = Omit<
+  P,
+  typeof PartTypeId | "type" | "options"
+> & {
   /**
    * Optional provider-specific options for this part.
    */
-  readonly options?: Part["options"] | undefined
-}
+  readonly options?: Part["options"] | undefined;
+};
 
 // =============================================================================
 // Text Part
@@ -236,7 +240,7 @@ export interface TextPart extends BasePart<"text", TextPartOptions> {
   /**
    * The text content.
    */
-  readonly text: string
+  readonly text: string;
 }
 
 /**
@@ -249,7 +253,7 @@ export interface TextPartEncoded extends BasePartEncoded<"text", TextPartOptions
   /**
    * The text content.
    */
-  readonly text: string
+  readonly text: string;
 }
 
 /**
@@ -267,23 +271,20 @@ export interface TextPartOptions extends ProviderOptions {}
  * @category schemas
  * @since 4.0.0
  */
-export const TextPart: Schema.Struct<
-  {
-    readonly type: Schema.Literal<"text">
-    readonly text: Schema.String
-    readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
-    readonly options: Schema.withDecodingDefault<
-      Schema.$Record<
-        Schema.String,
-        Schema.NullOr<Schema.Codec<Schema.Json>>
-      >
-    >
-  }
-> = Schema.Struct({
+export const TextPart: Schema.Struct<{
+  readonly type: Schema.Literal<"text">;
+  readonly text: Schema.String;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
+  readonly options: Schema.withDecodingDefault<
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
+}> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("text"),
-  text: Schema.String
-}).annotate({ identifier: "TextPart" })
+  text: Schema.String,
+}).annotate({ identifier: "TextPart" });
 
 /**
  * Constructs a new text part.
@@ -291,7 +292,8 @@ export const TextPart: Schema.Struct<
  * @category constructors
  * @since 4.0.0
  */
-export const textPart = (params: PartConstructorParams<TextPart>): TextPart => makePart("text", params as any)
+export const textPart = (params: PartConstructorParams<TextPart>): TextPart =>
+  makePart("text", params as any);
 
 // =============================================================================
 // Reasoning Part
@@ -320,7 +322,7 @@ export interface ReasoningPart extends BasePart<"reasoning", ReasoningPartOption
   /**
    * The reasoning or thought process text.
    */
-  readonly text: string
+  readonly text: string;
 }
 
 /**
@@ -333,7 +335,7 @@ export interface ReasoningPartEncoded extends BasePartEncoded<"reasoning", Reaso
   /**
    * The reasoning or thought process text.
    */
-  readonly text: string
+  readonly text: string;
 }
 
 /**
@@ -352,20 +354,19 @@ export interface ReasoningPartOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const ReasoningPart: Schema.Struct<{
-  readonly type: Schema.Literal<"reasoning">
-  readonly text: Schema.String
-  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+  readonly type: Schema.Literal<"reasoning">;
+  readonly text: Schema.String;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("reasoning"),
-  text: Schema.String
-}).annotate({ identifier: "ReasoningPart" })
+  text: Schema.String,
+}).annotate({ identifier: "ReasoningPart" });
 
 /**
  * Constructs a new reasoning part.
@@ -374,7 +375,7 @@ export const ReasoningPart: Schema.Struct<{
  * @since 4.0.0
  */
 export const reasoningPart = (params: PartConstructorParams<ReasoningPart>): ReasoningPart =>
-  makePart("reasoning", params as any)
+  makePart("reasoning", params as any);
 
 // =============================================================================
 // File Part
@@ -415,15 +416,15 @@ export interface FilePart extends BasePart<"file", FilePartOptions> {
   /**
    * MIME type of the file (e.g., "image/jpeg", "application/pdf").
    */
-  readonly mediaType: string
+  readonly mediaType: string;
   /**
    * Optional filename for the file.
    */
-  readonly fileName?: string | undefined
+  readonly fileName?: string | undefined;
   /**
    * File data as base64 string of data, a byte array, or a URL.
    */
-  readonly data: string | Uint8Array | URL
+  readonly data: string | Uint8Array | URL;
 }
 
 /**
@@ -436,15 +437,15 @@ export interface FilePartEncoded extends BasePartEncoded<"file", FilePartOptions
   /**
    * MIME type of the file (e.g., "image/jpeg", "application/pdf").
    */
-  readonly mediaType: string
+  readonly mediaType: string;
   /**
    * Optional filename for the file.
    */
-  readonly fileName?: string | undefined
+  readonly fileName?: string | undefined;
   /**
    * File data as base64 string of data, a byte array, or a URL.
    */
-  readonly data: string | Uint8Array | URL
+  readonly data: string | Uint8Array | URL;
 }
 
 /**
@@ -463,24 +464,23 @@ export interface FilePartOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const FilePart: Schema.Struct<{
-  readonly type: Schema.Literal<"file">
-  readonly mediaType: Schema.String
-  readonly fileName: Schema.optional<Schema.String>
-  readonly data: Schema.Union<readonly [Schema.String, Schema.Uint8Array, Schema.URL]>
-  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+  readonly type: Schema.Literal<"file">;
+  readonly mediaType: Schema.String;
+  readonly fileName: Schema.optional<Schema.String>;
+  readonly data: Schema.Union<readonly [Schema.String, Schema.Uint8Array, Schema.URL]>;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("file"),
   mediaType: Schema.String,
   fileName: Schema.optional(Schema.String),
-  data: Schema.Union([Schema.String, Schema.Uint8Array, Schema.URL])
-}).annotate({ identifier: "FilePart" })
+  data: Schema.Union([Schema.String, Schema.Uint8Array, Schema.URL]),
+}).annotate({ identifier: "FilePart" });
 
 /**
  * Constructs a `FilePart` for prompt file attachments.
@@ -495,7 +495,8 @@ export const FilePart: Schema.Struct<{
  * @category constructors
  * @since 4.0.0
  */
-export const filePart = (params: PartConstructorParams<FilePart>): FilePart => makePart("file", params as any)
+export const filePart = (params: PartConstructorParams<FilePart>): FilePart =>
+  makePart("file", params as any);
 
 // =============================================================================
 // Tool Call Part
@@ -525,19 +526,19 @@ export interface ToolCallPart extends BasePart<"tool-call", ToolCallPartOptions>
   /**
    * Unique identifier for this tool call.
    */
-  readonly id: string
+  readonly id: string;
   /**
    * Name of the tool to invoke.
    */
-  readonly name: string
+  readonly name: string;
   /**
    * Parameters to pass to the tool.
    */
-  readonly params: unknown
+  readonly params: unknown;
   /**
    * Whether the tool was executed by the provider (true) or framework (false).
    */
-  readonly providerExecuted: boolean
+  readonly providerExecuted: boolean;
 }
 
 /**
@@ -550,19 +551,19 @@ export interface ToolCallPartEncoded extends BasePartEncoded<"tool-call", ToolCa
   /**
    * Unique identifier for this tool call.
    */
-  readonly id: string
+  readonly id: string;
   /**
    * Name of the tool to invoke.
    */
-  readonly name: string
+  readonly name: string;
   /**
    * Parameters to pass to the tool.
    */
-  readonly params: unknown
+  readonly params: unknown;
   /**
    * Whether the tool was executed by the provider (true) or framework (false).
    */
-  readonly providerExecuted?: boolean | undefined
+  readonly providerExecuted?: boolean | undefined;
 }
 
 /**
@@ -581,26 +582,25 @@ export interface ToolCallPartOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const ToolCallPart: Schema.Struct<{
-  readonly type: Schema.Literal<"tool-call">
-  readonly id: Schema.String
-  readonly name: Schema.String
-  readonly params: Schema.Unknown
-  readonly providerExecuted: Schema.withDecodingDefault<Schema.Boolean>
-  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+  readonly type: Schema.Literal<"tool-call">;
+  readonly id: Schema.String;
+  readonly name: Schema.String;
+  readonly params: Schema.Unknown;
+  readonly providerExecuted: Schema.withDecodingDefault<Schema.Boolean>;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("tool-call"),
   id: Schema.String,
   name: Schema.String,
   params: Schema.Unknown,
-  providerExecuted: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false)))
-}).annotate({ identifier: "ToolCallPart" })
+  providerExecuted: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+}).annotate({ identifier: "ToolCallPart" });
 
 /**
  * Constructs a new tool call part.
@@ -609,7 +609,7 @@ export const ToolCallPart: Schema.Struct<{
  * @since 4.0.0
  */
 export const toolCallPart = (params: PartConstructorParams<ToolCallPart>): ToolCallPart =>
-  makePart("tool-call", params as any)
+  makePart("tool-call", params as any);
 
 // =============================================================================
 // Tool Result Part
@@ -644,23 +644,23 @@ export interface ToolResultPart extends BasePart<"tool-result", ToolResultPartOp
   /**
    * Unique identifier matching the original tool call.
    */
-  readonly id: string
+  readonly id: string;
   /**
    * Name of the tool that was executed.
    */
-  readonly name: string
+  readonly name: string;
   /**
    * Whether or not the result of executing the tool call handler was an error.
    */
-  readonly isFailure: boolean
+  readonly isFailure: boolean;
   /**
    * The result returned by the tool execution.
    */
-  readonly result: unknown
+  readonly result: unknown;
   /**
    * Whether the tool was executed by the provider (true) or framework (false).
    */
-  readonly providerExecuted: boolean
+  readonly providerExecuted: boolean;
 }
 
 /**
@@ -669,27 +669,30 @@ export interface ToolResultPart extends BasePart<"tool-result", ToolResultPartOp
  * @category models
  * @since 4.0.0
  */
-export interface ToolResultPartEncoded extends BasePartEncoded<"tool-result", ToolResultPartOptions> {
+export interface ToolResultPartEncoded extends BasePartEncoded<
+  "tool-result",
+  ToolResultPartOptions
+> {
   /**
    * Unique identifier matching the original tool call.
    */
-  readonly id: string
+  readonly id: string;
   /**
    * Name of the tool that was executed.
    */
-  readonly name: string
+  readonly name: string;
   /**
    * Whether or not the result of executing the tool call handler was an error.
    */
-  readonly isFailure: boolean
+  readonly isFailure: boolean;
   /**
    * The result returned by the tool execution.
    */
-  readonly result: unknown
+  readonly result: unknown;
   /**
    * Whether the tool was executed by the provider (true) or framework (false).
    */
-  readonly providerExecuted?: boolean | undefined
+  readonly providerExecuted?: boolean | undefined;
 }
 
 /**
@@ -708,19 +711,18 @@ export interface ToolResultPartOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const ToolResultPart: Schema.Struct<{
-  readonly type: Schema.Literal<"tool-result">
-  readonly id: Schema.String
-  readonly name: Schema.String
-  readonly isFailure: Schema.Boolean
-  readonly result: Schema.Unknown
-  readonly providerExecuted: Schema.withDecodingDefault<Schema.Boolean>
-  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+  readonly type: Schema.Literal<"tool-result">;
+  readonly id: Schema.String;
+  readonly name: Schema.String;
+  readonly isFailure: Schema.Boolean;
+  readonly result: Schema.Unknown;
+  readonly providerExecuted: Schema.withDecodingDefault<Schema.Boolean>;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("tool-result"),
@@ -728,8 +730,8 @@ export const ToolResultPart: Schema.Struct<{
   name: Schema.String,
   isFailure: Schema.Boolean,
   result: Schema.Unknown,
-  providerExecuted: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false)))
-}).annotate({ identifier: "ToolResultPart" })
+  providerExecuted: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
+}).annotate({ identifier: "ToolResultPart" });
 
 /**
  * Constructs a new tool result part.
@@ -738,7 +740,7 @@ export const ToolResultPart: Schema.Struct<{
  * @since 4.0.0
  */
 export const toolResultPart = (params: PartConstructorParams<ToolResultPart>): ToolResultPart =>
-  makePart("tool-result", params as any)
+  makePart("tool-result", params as any);
 
 // =============================================================================
 // Tool Approval Response Part
@@ -780,19 +782,22 @@ export const toolResultPart = (params: PartConstructorParams<ToolResultPart>): T
  * @category models
  * @since 4.0.0
  */
-export interface ToolApprovalResponsePart extends BasePart<"tool-approval-response", ToolApprovalResponsePartOptions> {
+export interface ToolApprovalResponsePart extends BasePart<
+  "tool-approval-response",
+  ToolApprovalResponsePartOptions
+> {
   /**
    * References the original approval request.
    */
-  readonly approvalId: string
+  readonly approvalId: string;
   /**
    * User's decision to approve or deny the tool execution.
    */
-  readonly approved: boolean
+  readonly approved: boolean;
   /**
    * Optional justification for the decision.
    */
-  readonly reason?: string | undefined
+  readonly reason?: string | undefined;
 }
 
 /**
@@ -801,21 +806,22 @@ export interface ToolApprovalResponsePart extends BasePart<"tool-approval-respon
  * @category models
  * @since 4.0.0
  */
-export interface ToolApprovalResponsePartEncoded
-  extends BasePartEncoded<"tool-approval-response", ToolApprovalResponsePartOptions>
-{
+export interface ToolApprovalResponsePartEncoded extends BasePartEncoded<
+  "tool-approval-response",
+  ToolApprovalResponsePartOptions
+> {
   /**
    * References the original approval request.
    */
-  readonly approvalId: string
+  readonly approvalId: string;
   /**
    * User's decision to approve or deny the tool execution.
    */
-  readonly approved: boolean
+  readonly approved: boolean;
   /**
    * Optional justification for the decision.
    */
-  readonly reason?: string | undefined
+  readonly reason?: string | undefined;
 }
 
 /**
@@ -834,24 +840,23 @@ export interface ToolApprovalResponsePartOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const ToolApprovalResponsePart: Schema.Struct<{
-  readonly type: Schema.Literal<"tool-approval-response">
-  readonly approvalId: Schema.String
-  readonly approved: Schema.Boolean
-  readonly reason: Schema.optional<Schema.String>
-  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+  readonly type: Schema.Literal<"tool-approval-response">;
+  readonly approvalId: Schema.String;
+  readonly approved: Schema.Boolean;
+  readonly reason: Schema.optional<Schema.String>;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("tool-approval-response"),
   approvalId: Schema.String,
   approved: Schema.Boolean,
-  reason: Schema.optional(Schema.String)
-}).annotate({ identifier: "ToolApprovalResponsePart" })
+  reason: Schema.optional(Schema.String),
+}).annotate({ identifier: "ToolApprovalResponsePart" });
 
 /**
  * Constructs a new tool approval response part.
@@ -860,8 +865,8 @@ export const ToolApprovalResponsePart: Schema.Struct<{
  * @since 4.0.0
  */
 export const toolApprovalResponsePart = (
-  params: PartConstructorParams<ToolApprovalResponsePart>
-): ToolApprovalResponsePart => makePart("tool-approval-response", params as any)
+  params: PartConstructorParams<ToolApprovalResponsePart>,
+): ToolApprovalResponsePart => makePart("tool-approval-response", params as any);
 
 // =============================================================================
 // Tool Approval Request Part
@@ -894,15 +899,18 @@ export const toolApprovalResponsePart = (
  * @category models
  * @since 4.0.0
  */
-export interface ToolApprovalRequestPart extends BasePart<"tool-approval-request", ToolApprovalRequestPartOptions> {
+export interface ToolApprovalRequestPart extends BasePart<
+  "tool-approval-request",
+  ToolApprovalRequestPartOptions
+> {
   /**
    * Unique identifier for this approval flow.
    */
-  readonly approvalId: string
+  readonly approvalId: string;
   /**
    * The tool call ID requiring approval.
    */
-  readonly toolCallId: string
+  readonly toolCallId: string;
 }
 
 /**
@@ -911,17 +919,18 @@ export interface ToolApprovalRequestPart extends BasePart<"tool-approval-request
  * @category models
  * @since 4.0.0
  */
-export interface ToolApprovalRequestPartEncoded
-  extends BasePartEncoded<"tool-approval-request", ToolApprovalRequestPartOptions>
-{
+export interface ToolApprovalRequestPartEncoded extends BasePartEncoded<
+  "tool-approval-request",
+  ToolApprovalRequestPartOptions
+> {
   /**
    * Unique identifier for this approval flow.
    */
-  readonly approvalId: string
+  readonly approvalId: string;
   /**
    * The tool call ID requiring approval.
    */
-  readonly toolCallId: string
+  readonly toolCallId: string;
 }
 
 /**
@@ -940,22 +949,21 @@ export interface ToolApprovalRequestPartOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const ToolApprovalRequestPart: Schema.Struct<{
-  readonly type: Schema.Literal<"tool-approval-request">
-  readonly approvalId: Schema.String
-  readonly toolCallId: Schema.String
-  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+  readonly type: Schema.Literal<"tool-approval-request">;
+  readonly approvalId: Schema.String;
+  readonly toolCallId: Schema.String;
+  readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Part">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BasePart.fields,
   type: Schema.Literal("tool-approval-request"),
   approvalId: Schema.String,
-  toolCallId: Schema.String
-}).annotate({ identifier: "ToolApprovalRequestPart" })
+  toolCallId: Schema.String,
+}).annotate({ identifier: "ToolApprovalRequestPart" });
 
 /**
  * Constructs a new tool approval request part.
@@ -964,8 +972,8 @@ export const ToolApprovalRequestPart: Schema.Struct<{
  * @since 4.0.0
  */
 export const toolApprovalRequestPart = (
-  params: PartConstructorParams<ToolApprovalRequestPart>
-): ToolApprovalRequestPart => makePart("tool-approval-request", params as any)
+  params: PartConstructorParams<ToolApprovalRequestPart>,
+): ToolApprovalRequestPart => makePart("tool-approval-request", params as any);
 
 /**
  * Schema for validation and encoding of content parts.
@@ -981,7 +989,7 @@ export const Part: Schema.Union<
     typeof ToolCallPart,
     typeof ToolResultPart,
     typeof ToolApprovalResponsePart,
-    typeof ToolApprovalRequestPart
+    typeof ToolApprovalRequestPart,
   ]
 > = Schema.Union([
   TextPart,
@@ -990,14 +998,14 @@ export const Part: Schema.Union<
   ToolCallPart,
   ToolResultPart,
   ToolApprovalResponsePart,
-  ToolApprovalRequestPart
-])
+  ToolApprovalRequestPart,
+]);
 
 // =============================================================================
 // Base Message
 // =============================================================================
 
-const MessageTypeId = "~effect/ai/Prompt/Message" as const
+const MessageTypeId = "~effect/ai/Prompt/Message" as const;
 
 /**
  * Type guard to check if a value is a Message.
@@ -1005,7 +1013,7 @@ const MessageTypeId = "~effect/ai/Prompt/Message" as const
  * @category guards
  * @since 4.0.0
  */
-export const isMessage = (u: unknown): u is Message => Predicate.hasProperty(u, MessageTypeId)
+export const isMessage = (u: unknown): u is Message => Predicate.hasProperty(u, MessageTypeId);
 
 /**
  * Base interface for all message types.
@@ -1019,15 +1027,15 @@ export const isMessage = (u: unknown): u is Message => Predicate.hasProperty(u, 
  * @since 4.0.0
  */
 export interface BaseMessage<Role extends string, Options extends ProviderOptions> {
-  readonly [MessageTypeId]: typeof MessageTypeId
+  readonly [MessageTypeId]: typeof MessageTypeId;
   /**
    * The role of the message participant.
    */
-  readonly role: Role
+  readonly role: Role;
   /**
    * Provider-specific options for this message.
    */
-  readonly options: Options
+  readonly options: Options;
 }
 
 /**
@@ -1040,19 +1048,19 @@ export interface BaseMessageEncoded<Role extends string, Options extends Provide
   /**
    * The role of the message participant.
    */
-  readonly role: Role
+  readonly role: Role;
   /**
    * Provider-specific options for this message.
    */
-  readonly options?: Options | undefined
+  readonly options?: Options | undefined;
 }
 
 const BaseMessage = Schema.Struct({
   [MessageTypeId]: Schema.Literal(MessageTypeId).pipe(
-    Schema.withDecodingDefaultKey(Effect.succeed(MessageTypeId), { encodingStrategy: "omit" })
+    Schema.withDecodingDefaultKey(Effect.succeed(MessageTypeId), { encodingStrategy: "omit" }),
   ),
-  options: ProviderOptions.pipe(Schema.withDecodingDefault(Effect.succeed({})))
-})
+  options: ProviderOptions.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+});
 
 /**
  * Creates a new message with the specified role.
@@ -1078,14 +1086,15 @@ const BaseMessage = Schema.Struct({
 export const makeMessage = <const Role extends Message["role"]>(
   role: Role,
   params: Omit<Extract<Message, { role: Role }>, typeof MessageTypeId | "role" | "options"> & {
-    readonly options?: Extract<Message, { role: Role }>["options"] | undefined
-  }
-): Extract<Message, { role: Role }> => (({
-  ...params,
-  [MessageTypeId]: MessageTypeId,
-  role,
-  options: params.options ?? {}
-}) as any)
+    readonly options?: Extract<Message, { role: Role }>["options"] | undefined;
+  },
+): Extract<Message, { role: Role }> =>
+  ({
+    ...params,
+    [MessageTypeId]: MessageTypeId,
+    role,
+    options: params.options ?? {},
+  }) as any;
 
 /**
  * A utility type for specifying the parameters required to construct a
@@ -1094,12 +1103,15 @@ export const makeMessage = <const Role extends Message["role"]>(
  * @category utility types
  * @since 4.0.0
  */
-export type MessageConstructorParams<M extends Message> = Omit<M, typeof MessageTypeId | "role" | "options"> & {
+export type MessageConstructorParams<M extends Message> = Omit<
+  M,
+  typeof MessageTypeId | "role" | "options"
+> & {
   /**
    * Optional provider-specific options for this message.
    */
-  readonly options?: Part["options"] | undefined
-}
+  readonly options?: Part["options"] | undefined;
+};
 
 /**
  * Schema that decodes a string into content containing a single `TextPart` and,
@@ -1112,15 +1124,14 @@ export const ContentFromString: Schema.decodeTo<
   Schema.NonEmptyArray<
     Schema.toType<
       Schema.Struct<{
-        readonly type: Schema.Literal<"text">
-        readonly text: Schema.String
-        readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+        readonly type: Schema.Literal<"text">;
+        readonly text: Schema.String;
+        readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+          Schema.Literal<"~effect/ai/Prompt/Part">
+        >;
         readonly options: Schema.withDecodingDefault<
-          Schema.$Record<
-            Schema.String,
-            Schema.NullOr<Schema.Codec<Schema.Json>>
-          >
-        >
+          Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+        >;
       }>
     >
   >,
@@ -1130,10 +1141,10 @@ export const ContentFromString: Schema.decodeTo<
     Schema.NonEmptyArray(Schema.toType(TextPart)),
     SchemaTransformation.transform({
       decode: (text) => Arr.of(makePart("text", { text })) as Arr.NonEmptyReadonlyArray<TextPart>,
-      encode: (content) => content[0].text
-    })
-  )
-)
+      encode: (content) => content[0].text,
+    }),
+  ),
+);
 
 // =============================================================================
 // System Message
@@ -1161,7 +1172,7 @@ export interface SystemMessage extends BaseMessage<"system", SystemMessageOption
   /**
    * The system instruction or context as plain text.
    */
-  readonly content: string
+  readonly content: string;
 }
 
 /**
@@ -1174,7 +1185,7 @@ export interface SystemMessageEncoded extends BaseMessageEncoded<"system", Syste
   /**
    * The system instruction or context as plain text.
    */
-  readonly content: string
+  readonly content: string;
 }
 
 /**
@@ -1193,20 +1204,19 @@ export interface SystemMessageOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const SystemMessage: Schema.Struct<{
-  readonly role: Schema.Literal<"system">
-  readonly content: Schema.String
-  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Message">>
+  readonly role: Schema.Literal<"system">;
+  readonly content: Schema.String;
+  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Message">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BaseMessage.fields,
   role: Schema.Literal("system"),
-  content: Schema.String
-}).annotate({ identifier: "SystemMessage" })
+  content: Schema.String,
+}).annotate({ identifier: "SystemMessage" });
 
 /**
  * Constructs a new system message.
@@ -1215,7 +1225,7 @@ export const SystemMessage: Schema.Struct<{
  * @since 4.0.0
  */
 export const systemMessage = (params: MessageConstructorParams<SystemMessage>): SystemMessage =>
-  makeMessage("system", params)
+  makeMessage("system", params);
 
 // =============================================================================
 // User Message
@@ -1260,7 +1270,7 @@ export interface UserMessage extends BaseMessage<"user", UserMessageOptions> {
   /**
    * Array of content parts that make up the user's message.
    */
-  readonly content: ReadonlyArray<UserMessagePart>
+  readonly content: ReadonlyArray<UserMessagePart>;
 }
 
 /**
@@ -1269,7 +1279,7 @@ export interface UserMessage extends BaseMessage<"user", UserMessageOptions> {
  * @category models
  * @since 4.0.0
  */
-export type UserMessagePart = TextPart | FilePart
+export type UserMessagePart = TextPart | FilePart;
 
 /**
  * Encoded representation of user messages for serialization.
@@ -1281,7 +1291,7 @@ export interface UserMessageEncoded extends BaseMessageEncoded<"user", UserMessa
   /**
    * Array of content parts that make up the user's message.
    */
-  readonly content: string | ReadonlyArray<UserMessagePartEncoded>
+  readonly content: string | ReadonlyArray<UserMessagePartEncoded>;
 }
 
 /**
@@ -1290,7 +1300,7 @@ export interface UserMessageEncoded extends BaseMessageEncoded<"user", UserMessa
  * @category models
  * @since 4.0.0
  */
-export type UserMessagePartEncoded = TextPartEncoded | FilePartEncoded
+export type UserMessagePartEncoded = TextPartEncoded | FilePartEncoded;
 
 /**
  * Schema for validation and encoding of user message content parts.
@@ -1298,10 +1308,8 @@ export type UserMessagePartEncoded = TextPartEncoded | FilePartEncoded
  * @category schemas
  * @since 4.0.0
  */
-export const UserMessagePart: Schema.Union<readonly [typeof TextPart, typeof FilePart]> = Schema.Union([
-  TextPart,
-  FilePart
-])
+export const UserMessagePart: Schema.Union<readonly [typeof TextPart, typeof FilePart]> =
+  Schema.Union([TextPart, FilePart]);
 
 /**
  * Represents provider-specific options that can be associated with a
@@ -1319,22 +1327,21 @@ export interface UserMessageOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const UserMessage: Schema.Struct<{
-  readonly role: Schema.Literal<"user">
+  readonly role: Schema.Literal<"user">;
   readonly content: Schema.Union<
     readonly [
       Schema.decodeTo<
         Schema.NonEmptyArray<
           Schema.toType<
             Schema.Struct<{
-              readonly type: Schema.Literal<"text">
-              readonly text: Schema.String
-              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+              readonly type: Schema.Literal<"text">;
+              readonly text: Schema.String;
+              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+                Schema.Literal<"~effect/ai/Prompt/Part">
+              >;
               readonly options: Schema.withDecodingDefault<
-                Schema.$Record<
-                  Schema.String,
-                  Schema.NullOr<Schema.Codec<Schema.Json>>
-                >
-              >
+                Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+              >;
             }>
           >
         >,
@@ -1346,49 +1353,43 @@ export const UserMessage: Schema.Struct<{
         Schema.Union<
           readonly [
             Schema.Struct<{
-              readonly type: Schema.Literal<"text">
-              readonly text: Schema.String
-              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+              readonly type: Schema.Literal<"text">;
+              readonly text: Schema.String;
+              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+                Schema.Literal<"~effect/ai/Prompt/Part">
+              >;
               readonly options: Schema.withDecodingDefault<
-                Schema.$Record<
-                  Schema.String,
-                  Schema.NullOr<Schema.Codec<Schema.Json>>
-                >
-              >
+                Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+              >;
             }>,
             Schema.Struct<{
-              readonly type: Schema.Literal<"file">
-              readonly mediaType: Schema.String
-              readonly fileName: Schema.optional<Schema.String>
-              readonly data: Schema.Union<readonly [Schema.String, Schema.Uint8Array, Schema.URL]>
-              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+              readonly type: Schema.Literal<"file">;
+              readonly mediaType: Schema.String;
+              readonly fileName: Schema.optional<Schema.String>;
+              readonly data: Schema.Union<readonly [Schema.String, Schema.Uint8Array, Schema.URL]>;
+              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+                Schema.Literal<"~effect/ai/Prompt/Part">
+              >;
               readonly options: Schema.withDecodingDefault<
-                Schema.$Record<
-                  Schema.String,
-                  Schema.NullOr<Schema.Codec<Schema.Json>>
-                >
-              >
-            }>
+                Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+              >;
+            }>,
           ]
         >
-      >
+      >,
     ]
-  >
-  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Message">>
+  >;
+  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Message">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BaseMessage.fields,
   role: Schema.Literal("user"),
-  content: Schema.Union([
-    ContentFromString,
-    Schema.Array(Schema.Union([TextPart, FilePart]))
-  ])
-}).annotate({ identifier: "UserMessage" })
+  content: Schema.Union([ContentFromString, Schema.Array(Schema.Union([TextPart, FilePart]))]),
+}).annotate({ identifier: "UserMessage" });
 
 /**
  * Constructs a new user message.
@@ -1396,7 +1397,8 @@ export const UserMessage: Schema.Struct<{
  * @category constructors
  * @since 4.0.0
  */
-export const userMessage = (params: MessageConstructorParams<UserMessage>): UserMessage => makeMessage("user", params)
+export const userMessage = (params: MessageConstructorParams<UserMessage>): UserMessage =>
+  makeMessage("user", params);
 
 // =============================================================================
 // Assistant Message
@@ -1450,7 +1452,7 @@ export interface AssistantMessage extends BaseMessage<"assistant", AssistantMess
   /**
    * Array of content parts that make up the assistant's response.
    */
-  readonly content: ReadonlyArray<AssistantMessagePart>
+  readonly content: ReadonlyArray<AssistantMessagePart>;
 }
 
 /**
@@ -1465,7 +1467,7 @@ export type AssistantMessagePart =
   | ReasoningPart
   | ToolCallPart
   | ToolResultPart
-  | ToolApprovalRequestPart
+  | ToolApprovalRequestPart;
 
 /**
  * Encoded representation of assistant messages for serialization.
@@ -1473,8 +1475,11 @@ export type AssistantMessagePart =
  * @category models
  * @since 4.0.0
  */
-export interface AssistantMessageEncoded extends BaseMessageEncoded<"assistant", AssistantMessageOptions> {
-  readonly content: string | ReadonlyArray<AssistantMessagePartEncoded>
+export interface AssistantMessageEncoded extends BaseMessageEncoded<
+  "assistant",
+  AssistantMessageOptions
+> {
+  readonly content: string | ReadonlyArray<AssistantMessagePartEncoded>;
 }
 
 /**
@@ -1489,7 +1494,7 @@ export type AssistantMessagePartEncoded =
   | ReasoningPartEncoded
   | ToolCallPartEncoded
   | ToolResultPartEncoded
-  | ToolApprovalRequestPartEncoded
+  | ToolApprovalRequestPartEncoded;
 
 /**
  * Schema for validation and encoding of assistant message content parts.
@@ -1504,7 +1509,7 @@ export const AssistantMessagePart: Schema.Union<
     typeof ReasoningPart,
     typeof ToolCallPart,
     typeof ToolResultPart,
-    typeof ToolApprovalRequestPart
+    typeof ToolApprovalRequestPart,
   ]
 > = Schema.Union([
   TextPart,
@@ -1512,8 +1517,8 @@ export const AssistantMessagePart: Schema.Union<
   ReasoningPart,
   ToolCallPart,
   ToolResultPart,
-  ToolApprovalRequestPart
-])
+  ToolApprovalRequestPart,
+]);
 
 /**
  * Represents provider-specific options that can be associated with a
@@ -1537,22 +1542,21 @@ export interface AssistantMessageOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const AssistantMessage: Schema.Struct<{
-  readonly role: Schema.Literal<"assistant">
+  readonly role: Schema.Literal<"assistant">;
   readonly content: Schema.Union<
     readonly [
       Schema.decodeTo<
         Schema.NonEmptyArray<
           Schema.toType<
             Schema.Struct<{
-              readonly type: Schema.Literal<"text">
-              readonly text: Schema.String
-              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Part">>
+              readonly type: Schema.Literal<"text">;
+              readonly text: Schema.String;
+              readonly "~effect/ai/Prompt/Part": Schema.withDecodingDefaultKey<
+                Schema.Literal<"~effect/ai/Prompt/Part">
+              >;
               readonly options: Schema.withDecodingDefault<
-                Schema.$Record<
-                  Schema.String,
-                  Schema.NullOr<Schema.Codec<Schema.Json>>
-                >
-              >
+                Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+              >;
             }>
           >
         >,
@@ -1568,34 +1572,35 @@ export const AssistantMessage: Schema.Struct<{
             typeof ReasoningPart,
             typeof ToolCallPart,
             typeof ToolResultPart,
-            typeof ToolApprovalRequestPart
+            typeof ToolApprovalRequestPart,
           ]
         >
-      >
+      >,
     ]
-  >
-  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Message">>
+  >;
+  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Message">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BaseMessage.fields,
   role: Schema.Literal("assistant"),
   content: Schema.Union([
     ContentFromString,
-    Schema.Array(Schema.Union([
-      TextPart,
-      FilePart,
-      ReasoningPart,
-      ToolCallPart,
-      ToolResultPart,
-      ToolApprovalRequestPart
-    ]))
-  ])
-}).annotate({ identifier: "AssistantMessage" })
+    Schema.Array(
+      Schema.Union([
+        TextPart,
+        FilePart,
+        ReasoningPart,
+        ToolCallPart,
+        ToolResultPart,
+        ToolApprovalRequestPart,
+      ]),
+    ),
+  ]),
+}).annotate({ identifier: "AssistantMessage" });
 
 /**
  * Constructs a new assistant message.
@@ -1611,8 +1616,9 @@ export const AssistantMessage: Schema.Struct<{
  * @category constructors
  * @since 4.0.0
  */
-export const assistantMessage = (params: MessageConstructorParams<AssistantMessage>): AssistantMessage =>
-  makeMessage("assistant", params)
+export const assistantMessage = (
+  params: MessageConstructorParams<AssistantMessage>,
+): AssistantMessage => makeMessage("assistant", params);
 
 // =============================================================================
 // Tool Message
@@ -1654,7 +1660,7 @@ export interface ToolMessage extends BaseMessage<"tool", ToolMessageOptions> {
   /**
    * Array of tool result parts.
    */
-  readonly content: ReadonlyArray<ToolMessagePart>
+  readonly content: ReadonlyArray<ToolMessagePart>;
 }
 
 /**
@@ -1663,7 +1669,7 @@ export interface ToolMessage extends BaseMessage<"tool", ToolMessageOptions> {
  * @category models
  * @since 4.0.0
  */
-export type ToolMessagePart = ToolResultPart | ToolApprovalResponsePart
+export type ToolMessagePart = ToolResultPart | ToolApprovalResponsePart;
 
 /**
  * Encoded representation of tool messages for serialization.
@@ -1675,7 +1681,7 @@ export interface ToolMessageEncoded extends BaseMessageEncoded<"tool", ToolMessa
   /**
    * Array of tool result parts.
    */
-  readonly content: ReadonlyArray<ToolMessagePartEncoded>
+  readonly content: ReadonlyArray<ToolMessagePartEncoded>;
 }
 
 /**
@@ -1684,7 +1690,7 @@ export interface ToolMessageEncoded extends BaseMessageEncoded<"tool", ToolMessa
  * @category models
  * @since 4.0.0
  */
-export type ToolMessagePartEncoded = ToolResultPartEncoded | ToolApprovalResponsePartEncoded
+export type ToolMessagePartEncoded = ToolResultPartEncoded | ToolApprovalResponsePartEncoded;
 
 /**
  * Schema for validation and encoding of tool message content parts.
@@ -1694,10 +1700,7 @@ export type ToolMessagePartEncoded = ToolResultPartEncoded | ToolApprovalRespons
  */
 export const ToolMessagePart: Schema.Union<
   readonly [typeof ToolResultPart, typeof ToolApprovalResponsePart]
-> = Schema.Union([
-  ToolResultPart,
-  ToolApprovalResponsePart
-])
+> = Schema.Union([ToolResultPart, ToolApprovalResponsePart]);
 
 /**
  * Represents provider-specific options that can be associated with a
@@ -1715,22 +1718,21 @@ export interface ToolMessageOptions extends ProviderOptions {}
  * @since 4.0.0
  */
 export const ToolMessage: Schema.Struct<{
-  readonly role: Schema.Literal<"tool">
+  readonly role: Schema.Literal<"tool">;
   readonly content: Schema.$Array<
     Schema.Union<readonly [typeof ToolResultPart, typeof ToolApprovalResponsePart]>
-  >
-  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<Schema.Literal<"~effect/ai/Prompt/Message">>
+  >;
+  readonly "~effect/ai/Prompt/Message": Schema.withDecodingDefaultKey<
+    Schema.Literal<"~effect/ai/Prompt/Message">
+  >;
   readonly options: Schema.withDecodingDefault<
-    Schema.$Record<
-      Schema.String,
-      Schema.NullOr<Schema.Codec<Schema.Json>>
-    >
-  >
+    Schema.$Record<Schema.String, Schema.NullOr<Schema.Codec<Schema.Json>>>
+  >;
 }> = Schema.Struct({
   ...BaseMessage.fields,
   role: Schema.Literal("tool"),
-  content: Schema.Array(Schema.Union([ToolResultPart, ToolApprovalResponsePart]))
-}).annotate({ identifier: "ToolMessage" })
+  content: Schema.Array(Schema.Union([ToolResultPart, ToolApprovalResponsePart])),
+}).annotate({ identifier: "ToolMessage" });
 
 /**
  * Constructs a new tool message.
@@ -1738,7 +1740,8 @@ export const ToolMessage: Schema.Struct<{
  * @category constructors
  * @since 4.0.0
  */
-export const toolMessage = (params: MessageConstructorParams<ToolMessage>): ToolMessage => makeMessage("tool", params)
+export const toolMessage = (params: MessageConstructorParams<ToolMessage>): ToolMessage =>
+  makeMessage("tool", params);
 
 // =============================================================================
 // Message
@@ -1750,11 +1753,7 @@ export const toolMessage = (params: MessageConstructorParams<ToolMessage>): Tool
  * @category models
  * @since 4.0.0
  */
-export type Message =
-  | SystemMessage
-  | UserMessage
-  | AssistantMessage
-  | ToolMessage
+export type Message = SystemMessage | UserMessage | AssistantMessage | ToolMessage;
 
 /**
  * A type representing all possible encoded message types for serialization.
@@ -1766,7 +1765,7 @@ export type MessageEncoded =
   | SystemMessageEncoded
   | UserMessageEncoded
   | AssistantMessageEncoded
-  | ToolMessageEncoded
+  | ToolMessageEncoded;
 
 /**
  * Schema for validation and encoding of messages.
@@ -1778,14 +1777,14 @@ export const Message: Schema.Codec<Message, MessageEncoded> = Schema.Union([
   SystemMessage,
   UserMessage,
   AssistantMessage,
-  ToolMessage
-])
+  ToolMessage,
+]);
 
 // =============================================================================
 // Prompt
 // =============================================================================
 
-const TypeId = "~effect/unstable/ai/Prompt" as const
+const TypeId = "~effect/unstable/ai/Prompt" as const;
 
 /**
  * Type guard to check if a value is a Prompt.
@@ -1793,7 +1792,7 @@ const TypeId = "~effect/unstable/ai/Prompt" as const
  * @category guards
  * @since 4.0.0
  */
-export const isPrompt = (u: unknown): u is Prompt => Predicate.hasProperty(u, TypeId)
+export const isPrompt = (u: unknown): u is Prompt => Predicate.hasProperty(u, TypeId);
 
 /**
  * A Prompt contains a sequence of messages that form the context of a
@@ -1803,11 +1802,11 @@ export const isPrompt = (u: unknown): u is Prompt => Predicate.hasProperty(u, Ty
  * @since 4.0.0
  */
 export interface Prompt extends Pipeable {
-  readonly [TypeId]: typeof TypeId
+  readonly [TypeId]: typeof TypeId;
   /**
    * Array of messages that make up the conversation.
    */
-  readonly content: ReadonlyArray<Message>
+  readonly content: ReadonlyArray<Message>;
 }
 
 /**
@@ -1820,10 +1819,10 @@ export interface PromptEncoded {
   /**
    * Array of messages that make up the conversation.
    */
-  readonly content: ReadonlyArray<MessageEncoded>
+  readonly content: ReadonlyArray<MessageEncoded>;
 }
 
-const $Prompt = Schema.declare((u) => isPrompt(u), { identifier: "Prompt" })
+const $Prompt = Schema.declare((u) => isPrompt(u), { identifier: "Prompt" });
 
 // TODO: is the type annotation necessary?
 // TODO: shoudn't the name be `PromptFrom...`?
@@ -1835,40 +1834,34 @@ const $Prompt = Schema.declare((u) => isPrompt(u), { identifier: "Prompt" })
  * @since 4.0.0
  */
 export const Prompt: Schema.Codec<Prompt, PromptEncoded> = Schema.Struct({
-  content: Schema.Array(Schema.toEncoded(Message))
+  content: Schema.Array(Schema.toEncoded(Message)),
 }).pipe(
   Schema.decodeTo(
     $Prompt,
     SchemaTransformation.transformOrFail({
       decode: (input, options) =>
-        Effect.mapBothEager(
-          SchemaParser.decodeEffect(Schema.Array(Message))(input.content),
-          {
-            onSuccess: makePrompt,
-            onFailure: () =>
-              new SchemaIssue.InvalidValue(
-                { message: "Invalid Prompt messages" },
-                input.content,
-                options
-              )
-          }
-        ),
+        Effect.mapBothEager(SchemaParser.decodeEffect(Schema.Array(Message))(input.content), {
+          onSuccess: makePrompt,
+          onFailure: () =>
+            new SchemaIssue.InvalidValue(
+              { message: "Invalid Prompt messages" },
+              input.content,
+              options,
+            ),
+        }),
       encode: (prompt, options) =>
-        Effect.mapBothEager(
-          SchemaParser.encodeEffect(Schema.Array(Message))(prompt.content),
-          {
-            onSuccess: (messages) => ({ content: messages }),
-            onFailure: () =>
-              new SchemaIssue.InvalidValue(
-                { message: "Invalid Prompt messages" },
-                prompt.content,
-                options
-              )
-          }
-        )
-    })
-  )
-)
+        Effect.mapBothEager(SchemaParser.encodeEffect(Schema.Array(Message))(prompt.content), {
+          onSuccess: (messages) => ({ content: messages }),
+          onFailure: () =>
+            new SchemaIssue.InvalidValue(
+              { message: "Invalid Prompt messages" },
+              prompt.content,
+              options,
+            ),
+        }),
+    }),
+  ),
+);
 
 /**
  * Raw input accepted by `make`: a string, an iterable of encoded messages, or
@@ -1896,24 +1889,21 @@ export const Prompt: Schema.Codec<Prompt, PromptEncoded> = Schema.Struct({
  * @category models
  * @since 4.0.0
  */
-export type RawInput =
-  | string
-  | Iterable<MessageEncoded>
-  | Prompt
+export type RawInput = string | Iterable<MessageEncoded> | Prompt;
 
 const Proto = {
   [TypeId]: TypeId,
   pipe() {
-    return pipeArguments(this, arguments)
-  }
-}
+    return pipeArguments(this, arguments);
+  },
+};
 
 const makePrompt = (content: ReadonlyArray<Message>): Prompt =>
   Object.assign(Object.create(Proto), {
-    content
-  })
+    content,
+  });
 
-const decodeMessagesSync = Schema.decodeSync(Schema.Array(Message))
+const decodeMessagesSync = Schema.decodeSync(Schema.Array(Message));
 
 /**
  * An empty prompt with no messages.
@@ -1930,7 +1920,7 @@ const decodeMessagesSync = Schema.decodeSync(Schema.Array(Message))
  * @category constructors
  * @since 4.0.0
  */
-export const empty: Prompt = makePrompt([])
+export const empty: Prompt = makePrompt([]);
 
 /**
  * Creates a `Prompt` from an input.
@@ -1964,19 +1954,21 @@ export const empty: Prompt = makePrompt([])
  */
 export const make = (input: RawInput): Prompt => {
   if (typeof input === "string") {
-    const part = makePart("text", { text: input })
-    const message = makeMessage("user", { content: [part] })
-    return makePrompt([message])
+    const part = makePart("text", { text: input });
+    const message = makeMessage("user", { content: [part] });
+    return makePrompt([message]);
   }
 
   if (Predicate.isIterable(input)) {
-    return makePrompt(decodeMessagesSync(Arr.fromIterable(input), {
-      errors: "all"
-    }))
+    return makePrompt(
+      decodeMessagesSync(Arr.fromIterable(input), {
+        errors: "all",
+      }),
+    );
   }
 
-  return input
-}
+  return input;
+};
 
 /**
  * Creates a Prompt from an array of messages.
@@ -2002,18 +1994,19 @@ export const make = (input: RawInput): Prompt => {
  * @category constructors
  * @since 4.0.0
  */
-export const fromMessages = (messages: ReadonlyArray<Message>): Prompt => makePrompt(messages)
+export const fromMessages = (messages: ReadonlyArray<Message>): Prompt => makePrompt(messages);
 
 const mergeOptions = (left: ProviderOptions, right: ProviderOptions): ProviderOptions => {
-  const result: Record<string, ProviderOptions[string]> = { ...left }
+  const result: Record<string, ProviderOptions[string]> = { ...left };
   for (const [provider, metadata] of Object.entries(right)) {
-    const previous = result[provider]
-    result[provider] = Predicate.isObject(previous) && Predicate.isObject(metadata)
-      ? Object.assign({}, previous, metadata)
-      : metadata
+    const previous = result[provider];
+    result[provider] =
+      Predicate.isObject(previous) && Predicate.isObject(metadata)
+        ? Object.assign({}, previous, metadata)
+        : metadata;
   }
-  return result
-}
+  return result;
+};
 
 /**
  * Creates a `Prompt` from response parts by folding completed text and
@@ -2058,128 +2051,134 @@ const mergeOptions = (left: ProviderOptions, right: ProviderOptions): ProviderOp
  */
 export const fromResponseParts = (parts: ReadonlyArray<Response.AnyPart>): Prompt => {
   if (parts.length === 0) {
-    return empty
+    return empty;
   }
 
-  const assistantParts: Array<AssistantMessagePart> = []
-  const toolParts: Array<ToolMessagePart> = []
+  const assistantParts: Array<AssistantMessagePart> = [];
+  const toolParts: Array<ToolMessagePart> = [];
 
-  const activeTextDeltas = new Map<string, { text: string; options: ProviderOptions }>()
-  const activeReasoningDeltas = new Map<string, { text: string; options: ProviderOptions }>()
+  const activeTextDeltas = new Map<string, { text: string; options: ProviderOptions }>();
+  const activeReasoningDeltas = new Map<string, { text: string; options: ProviderOptions }>();
 
   for (const part of parts) {
     switch (part.type) {
       // Text Parts
       case "text": {
-        assistantParts.push(makePart("text", { text: part.text, options: part.metadata }))
-        break
+        assistantParts.push(makePart("text", { text: part.text, options: part.metadata }));
+        break;
       }
 
       // Text Parts (streaming)
       case "text-start": {
-        activeTextDeltas.set(part.id, { text: "", options: part.metadata })
-        break
+        activeTextDeltas.set(part.id, { text: "", options: part.metadata });
+        break;
       }
       case "text-delta": {
         if (activeTextDeltas.has(part.id)) {
-          const active = activeTextDeltas.get(part.id)!
-          active.text += part.delta
-          active.options = mergeOptions(active.options, part.metadata)
+          const active = activeTextDeltas.get(part.id)!;
+          active.text += part.delta;
+          active.options = mergeOptions(active.options, part.metadata);
         }
-        break
+        break;
       }
       case "text-end": {
         if (activeTextDeltas.has(part.id)) {
-          const active = activeTextDeltas.get(part.id)!
-          active.options = mergeOptions(active.options, part.metadata)
-          assistantParts.push(makePart("text", active))
+          const active = activeTextDeltas.get(part.id)!;
+          active.options = mergeOptions(active.options, part.metadata);
+          assistantParts.push(makePart("text", active));
         }
-        break
+        break;
       }
 
       // Reasoning Parts
       case "reasoning": {
-        assistantParts.push(makePart("reasoning", { text: part.text, options: part.metadata }))
-        break
+        assistantParts.push(makePart("reasoning", { text: part.text, options: part.metadata }));
+        break;
       }
 
       // Reasoning Parts (streaming)
       case "reasoning-start": {
-        activeReasoningDeltas.set(part.id, { text: "", options: part.metadata })
-        break
+        activeReasoningDeltas.set(part.id, { text: "", options: part.metadata });
+        break;
       }
       case "reasoning-delta": {
         if (activeReasoningDeltas.has(part.id)) {
-          const active = activeReasoningDeltas.get(part.id)!
-          active.text += part.delta
-          active.options = mergeOptions(active.options, part.metadata)
+          const active = activeReasoningDeltas.get(part.id)!;
+          active.text += part.delta;
+          active.options = mergeOptions(active.options, part.metadata);
         }
-        break
+        break;
       }
       case "reasoning-end": {
         if (activeReasoningDeltas.has(part.id)) {
-          const active = activeReasoningDeltas.get(part.id)!
-          active.options = mergeOptions(active.options, part.metadata)
-          assistantParts.push(makePart("reasoning", active))
+          const active = activeReasoningDeltas.get(part.id)!;
+          active.options = mergeOptions(active.options, part.metadata);
+          assistantParts.push(makePart("reasoning", active));
         }
-        break
+        break;
       }
 
       // Tool Call Parts
       case "tool-call": {
-        assistantParts.push(makePart("tool-call", {
-          id: part.id,
-          name: part.name,
-          params: part.params,
-          providerExecuted: part.providerExecuted ?? false,
-          options: part.metadata
-        }))
-        break
+        assistantParts.push(
+          makePart("tool-call", {
+            id: part.id,
+            name: part.name,
+            params: part.params,
+            providerExecuted: part.providerExecuted ?? false,
+            options: part.metadata,
+          }),
+        );
+        break;
       }
 
       // Tool Result Parts (skip preliminary results)
       case "tool-result": {
         if (part.preliminary !== true) {
-          const target = part.providerExecuted === true ? assistantParts : toolParts
-          target.push(makePart("tool-result", {
-            id: part.id,
-            name: part.name,
-            isFailure: part.isFailure,
-            result: part.encodedResult,
-            providerExecuted: part.providerExecuted ?? false,
-            options: part.metadata
-          }))
+          const target = part.providerExecuted === true ? assistantParts : toolParts;
+          target.push(
+            makePart("tool-result", {
+              id: part.id,
+              name: part.name,
+              isFailure: part.isFailure,
+              result: part.encodedResult,
+              providerExecuted: part.providerExecuted ?? false,
+              options: part.metadata,
+            }),
+          );
         }
-        break
+        break;
       }
 
       // Tool Approval Request Parts
       case "tool-approval-request": {
-        assistantParts.push(makePart("tool-approval-request", {
-          approvalId: part.approvalId,
-          toolCallId: part.toolCallId
-        }))
-        break
+        assistantParts.push(
+          makePart("tool-approval-request", {
+            approvalId: part.approvalId,
+            toolCallId: part.toolCallId,
+          }),
+        );
+        break;
       }
     }
   }
 
   if (assistantParts.length === 0 && toolParts.length === 0) {
-    return empty
+    return empty;
   }
 
-  const messages: Array<Message> = []
+  const messages: Array<Message> = [];
 
   if (assistantParts.length > 0) {
-    messages.push(makeMessage("assistant", { content: assistantParts }))
+    messages.push(makeMessage("assistant", { content: assistantParts }));
   }
 
   if (toolParts.length > 0) {
-    messages.push(makeMessage("tool", { content: toolParts }))
+    messages.push(makeMessage("tool", { content: toolParts }));
   }
 
-  return makePrompt(messages)
-}
+  return makePrompt(messages);
+};
 
 // =============================================================================
 // Merging Prompts
@@ -2211,18 +2210,18 @@ export const fromResponseParts = (parts: ReadonlyArray<Response.AnyPart>): Promp
  * @since 4.0.0
  */
 export const concat: {
-  (input: RawInput): (self: Prompt) => Prompt
-  (self: Prompt, input: RawInput): Prompt
+  (input: RawInput): (self: Prompt) => Prompt;
+  (self: Prompt, input: RawInput): Prompt;
 } = dual(2, (self: Prompt, input: RawInput): Prompt => {
-  const other = make(input)
+  const other = make(input);
   if (self.content.length === 0) {
-    return other
+    return other;
   }
   if (other.content.length === 0) {
-    return self
+    return self;
   }
-  return fromMessages([...self.content, ...other.content])
-})
+  return fromMessages([...self.content, ...other.content]);
+});
 
 // =============================================================================
 // Manipulating Prompts
@@ -2262,17 +2261,17 @@ export const concat: {
  * @since 4.0.0
  */
 export const setSystem: {
-  (content: string): (self: Prompt) => Prompt
-  (self: Prompt, content: string): Prompt
+  (content: string): (self: Prompt) => Prompt;
+  (self: Prompt, content: string): Prompt;
 } = dual(2, (self: Prompt, content: string): Prompt => {
-  const messages: Array<Message> = [makeMessage("system", { content })]
+  const messages: Array<Message> = [makeMessage("system", { content })];
   for (const message of self.content) {
     if (message.role !== "system") {
-      messages.push(message)
+      messages.push(message);
     }
   }
-  return makePrompt(messages)
-})
+  return makePrompt(messages);
+});
 
 /**
  * Creates a new prompt with a leading system message. If the prompt already has
@@ -2306,23 +2305,23 @@ export const setSystem: {
  * @since 4.0.0
  */
 export const prependSystem: {
-  (content: string): (self: Prompt) => Prompt
-  (self: Prompt, content: string): Prompt
+  (content: string): (self: Prompt) => Prompt;
+  (self: Prompt, content: string): Prompt;
 } = dual(2, (self: Prompt, content: string): Prompt => {
-  let system: SystemMessage | undefined = undefined
+  let system: SystemMessage | undefined = undefined;
   for (const message of self.content) {
     if (message.role === "system") {
       system = makeMessage("system", {
-        content: content + message.content
-      })
-      break
+        content: content + message.content,
+      });
+      break;
     }
   }
   if (Predicate.isUndefined(system)) {
-    system = makeMessage("system", { content })
+    system = makeMessage("system", { content });
   }
-  return makePrompt([system, ...self.content])
-})
+  return makePrompt([system, ...self.content]);
+});
 
 /**
  * Creates a new prompt with a leading system message. If the prompt already has
@@ -2356,20 +2355,20 @@ export const prependSystem: {
  * @since 4.0.0
  */
 export const appendSystem: {
-  (content: string): (self: Prompt) => Prompt
-  (self: Prompt, content: string): Prompt
+  (content: string): (self: Prompt) => Prompt;
+  (self: Prompt, content: string): Prompt;
 } = dual(2, (self: Prompt, content: string): Prompt => {
-  let system: SystemMessage | undefined = undefined
+  let system: SystemMessage | undefined = undefined;
   for (const message of self.content) {
     if (message.role === "system") {
       system = makeMessage("system", {
-        content: message.content + content
-      })
-      break
+        content: message.content + content,
+      });
+      break;
     }
   }
   if (Predicate.isUndefined(system)) {
-    system = makeMessage("system", { content })
+    system = makeMessage("system", { content });
   }
-  return makePrompt([system, ...self.content])
-})
+  return makePrompt([system, ...self.content]);
+});

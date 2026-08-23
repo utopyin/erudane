@@ -1,0 +1,19 @@
+{
+  "name": "@erudane/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/ai-openai": "catalog:",
+    "@erudane/chat": "workspace:*",
+    "@erudane/http": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260823.1",
+    "typescript": "7.0.2"
+  }
+}

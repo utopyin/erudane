@@ -3,7 +3,7 @@
  *
  * @since 4.0.0
  */
-import * as internal from "./FindMyWay/internal/router.ts"
+import * as internal from "./FindMyWay/internal/router.ts";
 
 /*
  * MIT License
@@ -34,27 +34,27 @@ import * as internal from "./FindMyWay/internal/router.ts"
  * @category models
  */
 export interface RouterConfig {
-  readonly ignoreTrailingSlash: boolean
-  readonly ignoreDuplicateSlashes: boolean
-  readonly caseSensitive: boolean
-  readonly maxParamLength: number
+  readonly ignoreTrailingSlash: boolean;
+  readonly ignoreDuplicateSlashes: boolean;
+  readonly caseSensitive: boolean;
+  readonly maxParamLength: number;
 }
 
 /**
  * @since 4.0.0
  * @category models
  */
-export type PathInput = `/${string}` | "*"
+export type PathInput = `/${string}` | "*";
 
 /**
  * @since 4.0.0
  * @category models
  */
 export interface Router<A> {
-  readonly on: (method: string | Iterable<string>, path: PathInput, handler: A) => void
-  readonly all: (path: PathInput, handler: A) => void
-  readonly find: (method: string, url: string) => FindResult<A> | undefined
-  readonly has: (method: string, url: string) => boolean
+  readonly on: (method: string | Iterable<string>, path: PathInput, handler: A) => void;
+  readonly all: (path: PathInput, handler: A) => void;
+  readonly find: (method: string, url: string) => FindResult<A> | undefined;
+  readonly has: (method: string, url: string) => boolean;
 }
 
 /**
@@ -62,13 +62,13 @@ export interface Router<A> {
  * @category models
  */
 export interface FindResult<A> {
-  readonly handler: A
-  readonly params: Record<string, string | undefined>
-  readonly searchParams: Record<string, string | Array<string>>
+  readonly handler: A;
+  readonly params: Record<string, string | undefined>;
+  readonly searchParams: Record<string, string | Array<string>>;
 }
 
 /**
  * @since 4.0.0
  * @category constructors
  */
-export const make: <A>(options?: Partial<RouterConfig>) => Router<A> = internal.make
+export const make: <A>(options?: Partial<RouterConfig>) => Router<A> = internal.make;

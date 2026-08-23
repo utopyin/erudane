@@ -387,7 +387,15 @@ async function deployAndVerify(
   const dep = await alcRetry(
     stage,
     // --adopt: take over a pre-existing fixed-name worker instead of failing.
-    ["deploy", "--yes", "--adopt", "--stage", alchemyStage, "--profile", PROFILE!],
+    [
+      "deploy",
+      "--yes",
+      "--adopt",
+      "--stage",
+      alchemyStage,
+      "--profile",
+      PROFILE!,
+    ],
     "deploy",
   );
 
@@ -425,7 +433,12 @@ async function destroyApp(stage: Stage, alchemyStage: string) {
  */
 async function teardownStore(reason: string) {
   console.log(`${YELLOW}↺ tearing down state store (${reason})${RESET}`);
-  const r = await alc(LATEST, ["cloudflare", "teardown", "--profile", PROFILE!]);
+  const r = await alc(LATEST, [
+    "cloudflare",
+    "teardown",
+    "--profile",
+    PROFILE!,
+  ]);
   if (r.code !== 0) {
     console.error(
       `${RED}warning: state store teardown failed — remove it manually.${RESET}`,
@@ -495,7 +508,10 @@ interface EdgeResult {
   failed: boolean;
 }
 
-async function tryStep(name: string, fn: () => Promise<void>): Promise<StepResult> {
+async function tryStep(
+  name: string,
+  fn: () => Promise<void>,
+): Promise<StepResult> {
   try {
     await fn();
     console.log(`${GREEN}✓ ${name}${RESET}`);
@@ -528,7 +544,9 @@ async function runEdge(edge: Edge): Promise<EdgeResult> {
 
   if (deployStep.status === "ok") {
     steps.push(
-      await tryStep(`upgrade → ${to.dir}`, () => deployAndVerify(to, EDGE_STAGE)),
+      await tryStep(`upgrade → ${to.dir}`, () =>
+        deployAndVerify(to, EDGE_STAGE),
+      ),
     );
   } else {
     steps.push({
@@ -579,7 +597,11 @@ async function main() {
     console.log(`${mark}  [${r.group}] ${r.label}${tag}`);
     for (const s of r.steps) {
       const sym =
-        s.status === "ok" ? `${GREEN}✓${RESET}` : s.status === "skip" ? `${YELLOW}∅${RESET}` : `${RED}✗${RESET}`;
+        s.status === "ok"
+          ? `${GREEN}✓${RESET}`
+          : s.status === "skip"
+            ? `${YELLOW}∅${RESET}`
+            : `${RED}✗${RESET}`;
       console.log(`        ${sym} ${s.name}${s.error ? ` — ${s.error}` : ""}`);
     }
   }

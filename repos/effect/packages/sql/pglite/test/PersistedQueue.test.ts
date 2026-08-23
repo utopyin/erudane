@@ -1,18 +1,18 @@
-import { PgliteClient } from "@effect/sql-pglite"
-import { assert, describe, layer } from "@effect/vitest"
-import { Effect } from "effect"
-import { PersistedQueue } from "effect/unstable/persistence"
-import { SqlClient } from "effect/unstable/sql"
+import { PgliteClient } from "@effect/sql-pglite";
+import { assert, describe, layer } from "@effect/vitest";
+import { Effect } from "effect";
+import { PersistedQueue } from "effect/unstable/persistence";
+import { SqlClient } from "effect/unstable/sql";
 
-const ClientLayer = PgliteClient.layer({})
+const ClientLayer = PgliteClient.layer({});
 
 describe("PersistedQueue SQL migrations", () => {
   layer(ClientLayer, { timeout: "30 seconds" })((it) => {
     it.effect("adopts an existing queue table and records the migration once", () =>
-      Effect.gen(function*() {
-        const sql = (yield* SqlClient.SqlClient).withoutTransforms()
-        const tableName = "persisted_queue_migration_test"
-        const table = sql(tableName)
+      Effect.gen(function* () {
+        const sql = (yield* SqlClient.SqlClient).withoutTransforms();
+        const tableName = "persisted_queue_migration_test";
+        const table = sql(tableName);
 
         yield* sql`CREATE TABLE ${table} (
           sequence SERIAL PRIMARY KEY,
@@ -26,28 +26,32 @@ describe("PersistedQueue SQL migrations", () => {
           acquired_by UUID NULL,
           created_at TIMESTAMP NOT NULL,
           updated_at TIMESTAMP NOT NULL
-        )`
+        )`;
 
-        yield* PersistedQueue.makeStoreSql({ tableName })
-        yield* PersistedQueue.makeStoreSql({ tableName })
+        yield* PersistedQueue.makeStoreSql({ tableName });
+        yield* PersistedQueue.makeStoreSql({ tableName });
 
         const migrations = yield* sql<{
-          readonly migration_id: number
-          readonly name: string
-        }>`SELECT migration_id, name FROM ${sql(`${tableName}_migrations`)} ORDER BY migration_id`
-        assert.deepStrictEqual(migrations, [{ migration_id: 1, name: "create_table" }])
+          readonly migration_id: number;
+          readonly name: string;
+        }>`SELECT migration_id, name FROM ${sql(`${tableName}_migrations`)} ORDER BY migration_id`;
+        assert.deepStrictEqual(migrations, [{ migration_id: 1, name: "create_table" }]);
 
         const indexes = yield* sql<{ readonly indexname: string }>`
           SELECT indexname FROM pg_indexes
           WHERE tablename = ${tableName}
           ORDER BY indexname
-        `
-        assert.deepStrictEqual(indexes.map((row) => row.indexname), [
-          `idx_${tableName}_id`,
-          `idx_${tableName}_take`,
-          `idx_${tableName}_update`,
-          `${tableName}_pkey`
-        ])
-      }))
-  })
-})
+        `;
+        assert.deepStrictEqual(
+          indexes.map((row) => row.indexname),
+          [
+            `idx_${tableName}_id`,
+            `idx_${tableName}_take`,
+            `idx_${tableName}_update`,
+            `${tableName}_pkey`,
+          ],
+        );
+      }),
+    );
+  });
+});

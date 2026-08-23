@@ -9,17 +9,17 @@
  *
  * @since 4.0.0
  */
-import type * as Config from "../../Config.ts"
-import type * as Effect from "../../Effect.ts"
-import { dual, type LazyArg } from "../../Function.ts"
-import type * as Option from "../../Option.ts"
-import type * as Redacted from "../../Redacted.ts"
-import type * as Result from "../../Result.ts"
-import type * as Schema from "../../Schema.ts"
-import type * as CliError from "./CliError.ts"
-import type { Environment } from "./Command.ts"
-import * as Param from "./Param.ts"
-import type * as Primitive from "./Primitive.ts"
+import type * as Config from "../../Config.ts";
+import type * as Effect from "../../Effect.ts";
+import { dual, type LazyArg } from "../../Function.ts";
+import type * as Option from "../../Option.ts";
+import type * as Redacted from "../../Redacted.ts";
+import type * as Result from "../../Result.ts";
+import type * as Schema from "../../Schema.ts";
+import type * as CliError from "./CliError.ts";
+import type { Environment } from "./Command.ts";
+import * as Param from "./Param.ts";
+import type * as Primitive from "./Primitive.ts";
 
 // -------------------------------------------------------------------------------------
 // models
@@ -59,7 +59,7 @@ export interface Argument<A> extends Param.Param<typeof Param.argumentKind, A> {
  * @category constructors
  * @since 4.0.0
  */
-export const string = (name: string): Argument<string> => Param.string(Param.argumentKind, name)
+export const string = (name: string): Argument<string> => Param.string(Param.argumentKind, name);
 
 /**
  * Creates a positional integer argument.
@@ -76,7 +76,7 @@ export const string = (name: string): Argument<string> => Param.string(Param.arg
  * @category constructors
  * @since 4.0.0
  */
-export const integer = (name: string): Argument<number> => Param.integer(Param.argumentKind, name)
+export const integer = (name: string): Argument<number> => Param.integer(Param.argumentKind, name);
 
 /**
  * Creates a positional file path argument.
@@ -94,9 +94,12 @@ export const integer = (name: string): Argument<number> => Param.integer(Param.a
  * @category constructors
  * @since 4.0.0
  */
-export const file = (name: string, options?: {
-  readonly mustExist?: boolean | undefined
-}): Argument<string> => Param.file(Param.argumentKind, name, options)
+export const file = (
+  name: string,
+  options?: {
+    readonly mustExist?: boolean | undefined;
+  },
+): Argument<string> => Param.file(Param.argumentKind, name, options);
 
 /**
  * Creates a positional directory path argument.
@@ -113,9 +116,12 @@ export const file = (name: string, options?: {
  * @category constructors
  * @since 4.0.0
  */
-export const directory = (name: string, options?: {
-  readonly mustExist?: boolean | undefined
-}): Argument<string> => Param.directory(Param.argumentKind, name, options)
+export const directory = (
+  name: string,
+  options?: {
+    readonly mustExist?: boolean | undefined;
+  },
+): Argument<string> => Param.directory(Param.argumentKind, name, options);
 
 /**
  * Creates a positional float argument.
@@ -132,7 +138,7 @@ export const directory = (name: string, options?: {
  * @category constructors
  * @since 4.0.0
  */
-export const float = (name: string): Argument<number> => Param.float(Param.argumentKind, name)
+export const float = (name: string): Argument<number> => Param.float(Param.argumentKind, name);
 
 /**
  * Creates a positional date argument.
@@ -149,7 +155,7 @@ export const float = (name: string): Argument<number> => Param.float(Param.argum
  * @category constructors
  * @since 4.0.0
  */
-export const date = (name: string): Argument<Date> => Param.date(Param.argumentKind, name)
+export const date = (name: string): Argument<Date> => Param.date(Param.argumentKind, name);
 
 /**
  * Creates a positional choice argument.
@@ -168,8 +174,8 @@ export const date = (name: string): Argument<Date> => Param.date(Param.argumentK
  */
 export const choice = <const Choices extends ReadonlyArray<string>>(
   name: string,
-  choices: Choices
-): Argument<Choices[number]> => Param.choice(Param.argumentKind, name, choices)
+  choices: Choices,
+): Argument<Choices[number]> => Param.choice(Param.argumentKind, name, choices);
 
 /**
  * Creates a positional path argument.
@@ -186,10 +192,13 @@ export const choice = <const Choices extends ReadonlyArray<string>>(
  * @category constructors
  * @since 4.0.0
  */
-export const path = (name: string, options?: {
-  pathType?: "file" | "directory" | "either"
-  mustExist?: boolean
-}): Argument<string> => Param.path(Param.argumentKind, name, options)
+export const path = (
+  name: string,
+  options?: {
+    pathType?: "file" | "directory" | "either";
+    mustExist?: boolean;
+  },
+): Argument<string> => Param.path(Param.argumentKind, name, options);
 
 /**
  * Creates a positional redacted argument that obscures its value.
@@ -206,7 +215,8 @@ export const path = (name: string, options?: {
  * @category constructors
  * @since 4.0.0
  */
-export const redacted = (name: string): Argument<Redacted.Redacted<string>> => Param.redacted(Param.argumentKind, name)
+export const redacted = (name: string): Argument<Redacted.Redacted<string>> =>
+  Param.redacted(Param.argumentKind, name);
 
 /**
  * Creates a positional argument that reads file content as a string.
@@ -223,7 +233,8 @@ export const redacted = (name: string): Argument<Redacted.Redacted<string>> => P
  * @category constructors
  * @since 4.0.0
  */
-export const fileText = (name: string): Argument<string> => Param.fileText(Param.argumentKind, name)
+export const fileText = (name: string): Argument<string> =>
+  Param.fileText(Param.argumentKind, name);
 
 /**
  * Creates a positional argument that reads a file and parses its content.
@@ -248,8 +259,8 @@ export const fileText = (name: string): Argument<string> => Param.fileText(Param
  */
 export const fileParse = (
   name: string,
-  options?: Primitive.FileParseOptions | undefined
-): Argument<unknown> => Param.fileParse(Param.argumentKind, name, options)
+  options?: Primitive.FileParseOptions | undefined,
+): Argument<unknown> => Param.fileParse(Param.argumentKind, name, options);
 
 /**
  * Creates a positional argument that reads and validates file content using a schema.
@@ -275,8 +286,8 @@ export const fileParse = (
 export const fileSchema = <A>(
   name: string,
   schema: Schema.ConstraintDecoder<A, Environment>,
-  options?: Primitive.FileSchemaOptions | undefined
-): Argument<A> => Param.fileSchema(Param.argumentKind, name, schema, options)
+  options?: Primitive.FileSchemaOptions | undefined,
+): Argument<A> => Param.fileSchema(Param.argumentKind, name, schema, options);
 
 /**
  * Creates an empty sentinel argument that always fails to parse.
@@ -294,7 +305,7 @@ export const fileSchema = <A>(
  * @category constructors
  * @since 4.0.0
  */
-export const none: Argument<never> = Param.none(Param.argumentKind)
+export const none: Argument<never> = Param.none(Param.argumentKind);
 
 // -------------------------------------------------------------------------------------
 // combinators
@@ -315,7 +326,7 @@ export const none: Argument<never> = Param.none(Param.argumentKind)
  * @category combinators
  * @since 4.0.0
  */
-export const optional = <A>(arg: Argument<A>): Argument<Option.Option<A>> => Param.optional(arg)
+export const optional = <A>(arg: Argument<A>): Argument<Option.Option<A>> => Param.optional(arg);
 
 /**
  * Adds a description to a positional argument.
@@ -335,9 +346,11 @@ export const optional = <A>(arg: Argument<A>): Argument<Option.Option<A>> => Par
  * @since 4.0.0
  */
 export const withDescription: {
-  <A>(description: string): (self: Argument<A>) => Argument<A>
-  <A>(self: Argument<A>, description: string): Argument<A>
-} = dual(2, <A>(self: Argument<A>, description: string) => Param.withDescription(self, description))
+  <A>(description: string): (self: Argument<A>) => Argument<A>;
+  <A>(self: Argument<A>, description: string): Argument<A>;
+} = dual(2, <A>(self: Argument<A>, description: string) =>
+  Param.withDescription(self, description),
+);
 
 /**
  * Provides a default value for a positional argument.
@@ -356,13 +369,13 @@ export const withDescription: {
  */
 export const withDefault: {
   <const B>(
-    defaultValue: B | Effect.Effect<B, CliError.CliError, Environment>
-  ): <A>(self: Argument<A>) => Argument<A | B>
+    defaultValue: B | Effect.Effect<B, CliError.CliError, Environment>,
+  ): <A>(self: Argument<A>) => Argument<A | B>;
   <A, const B>(
     self: Argument<A>,
-    defaultValue: B | Effect.Effect<B, CliError.CliError, Environment>
-  ): Argument<A | B>
-} = Param.withDefault
+    defaultValue: B | Effect.Effect<B, CliError.CliError, Environment>,
+  ): Argument<A | B>;
+} = Param.withDefault;
 
 /**
  * Adds a fallback config that is loaded when a required argument is missing.
@@ -383,9 +396,11 @@ export const withDefault: {
  * @since 4.0.0
  */
 export const withFallbackConfig: {
-  <B>(config: Config.Config<B>): <A>(self: Argument<A>) => Argument<A | B>
-  <A, B>(self: Argument<A>, config: Config.Config<B>): Argument<A | B>
-} = dual(2, <A, B>(self: Argument<A>, config: Config.Config<B>) => Param.withFallbackConfig(self, config))
+  <B>(config: Config.Config<B>): <A>(self: Argument<A>) => Argument<A | B>;
+  <A, B>(self: Argument<A>, config: Config.Config<B>): Argument<A | B>;
+} = dual(2, <A, B>(self: Argument<A>, config: Config.Config<B>) =>
+  Param.withFallbackConfig(self, config),
+);
 
 /**
  * Adds a fallback prompt that is shown when a required argument is missing.
@@ -405,9 +420,11 @@ export const withFallbackConfig: {
  * @since 4.0.0
  */
 export const withFallbackPrompt: {
-  <B>(prompt: Param.FallbackPrompt<B>): <A>(self: Argument<A>) => Argument<A | B>
-  <A, B>(self: Argument<A>, prompt: Param.FallbackPrompt<B>): Argument<A | B>
-} = dual(2, <A, B>(self: Argument<A>, prompt: Param.FallbackPrompt<B>) => Param.withFallbackPrompt(self, prompt))
+  <B>(prompt: Param.FallbackPrompt<B>): <A>(self: Argument<A>) => Argument<A | B>;
+  <A, B>(self: Argument<A>, prompt: Param.FallbackPrompt<B>): Argument<A | B>;
+} = dual(2, <A, B>(self: Argument<A>, prompt: Param.FallbackPrompt<B>) =>
+  Param.withFallbackPrompt(self, prompt),
+);
 
 /**
  * Creates a variadic positional argument that accepts multiple values.
@@ -437,12 +454,20 @@ export const withFallbackPrompt: {
  * @since 4.0.0
  */
 export const variadic: {
-  (options?: Param.VariadicParamOptions | undefined): <A>(self: Argument<A>) => Argument<ReadonlyArray<A>>
-  <A>(self: Argument<A>, options?: Param.VariadicParamOptions | undefined): Argument<ReadonlyArray<A>>
-} = dual((args) => Param.isParam(args[0]), <A>(
-  self: Argument<A>,
-  options?: Param.VariadicParamOptions | undefined
-): Argument<ReadonlyArray<A>> => Param.variadic(self, options))
+  (
+    options?: Param.VariadicParamOptions | undefined,
+  ): <A>(self: Argument<A>) => Argument<ReadonlyArray<A>>;
+  <A>(
+    self: Argument<A>,
+    options?: Param.VariadicParamOptions | undefined,
+  ): Argument<ReadonlyArray<A>>;
+} = dual(
+  (args) => Param.isParam(args[0]),
+  <A>(
+    self: Argument<A>,
+    options?: Param.VariadicParamOptions | undefined,
+  ): Argument<ReadonlyArray<A>> => Param.variadic(self, options),
+);
 
 /**
  * Transforms the parsed value of a positional argument.
@@ -462,9 +487,9 @@ export const variadic: {
  * @since 4.0.0
  */
 export const map: {
-  <A, B>(f: (a: A) => B): (self: Argument<A>) => Argument<B>
-  <A, B>(self: Argument<A>, f: (a: A) => B): Argument<B>
-} = dual(2, <A, B>(self: Argument<A>, f: (a: A) => B) => Param.map(self, f))
+  <A, B>(f: (a: A) => B): (self: Argument<A>) => Argument<B>;
+  <A, B>(self: Argument<A>, f: (a: A) => B): Argument<B>;
+} = dual(2, <A, B>(self: Argument<A>, f: (a: A) => B) => Param.map(self, f));
 
 /**
  * Transforms the parsed value of a positional argument using an effectful function.
@@ -517,16 +542,17 @@ export const map: {
  */
 export const mapEffect: {
   <A, B>(
-    f: (a: A) => Effect.Effect<B, CliError.CliError, Environment>
-  ): (self: Argument<A>) => Argument<B>
+    f: (a: A) => Effect.Effect<B, CliError.CliError, Environment>,
+  ): (self: Argument<A>) => Argument<B>;
   <A, B>(
     self: Argument<A>,
-    f: (a: A) => Effect.Effect<B, CliError.CliError, Environment>
-  ): Argument<B>
-} = dual(2, <A, B>(
-  self: Argument<A>,
-  f: (a: A) => Effect.Effect<B, CliError.CliError, Environment>
-) => Param.mapEffect(self, f))
+    f: (a: A) => Effect.Effect<B, CliError.CliError, Environment>,
+  ): Argument<B>;
+} = dual(
+  2,
+  <A, B>(self: Argument<A>, f: (a: A) => Effect.Effect<B, CliError.CliError, Environment>) =>
+    Param.mapEffect(self, f),
+);
 
 /**
  * Transforms the parsed value of a positional argument using a function that may throw.
@@ -573,16 +599,11 @@ export const mapEffect: {
  * @since 4.0.0
  */
 export const mapTryCatch: {
-  <A, B>(
-    f: (a: A) => B,
-    onError: (error: unknown) => string
-  ): (self: Argument<A>) => Argument<B>
-  <A, B>(self: Argument<A>, f: (a: A) => B, onError: (error: unknown) => string): Argument<B>
-} = dual(3, <A, B>(
-  self: Argument<A>,
-  f: (a: A) => B,
-  onError: (error: unknown) => string
-) => Param.mapTryCatch(self, f, onError))
+  <A, B>(f: (a: A) => B, onError: (error: unknown) => string): (self: Argument<A>) => Argument<B>;
+  <A, B>(self: Argument<A>, f: (a: A) => B, onError: (error: unknown) => string): Argument<B>;
+} = dual(3, <A, B>(self: Argument<A>, f: (a: A) => B, onError: (error: unknown) => string) =>
+  Param.mapTryCatch(self, f, onError),
+);
 
 /**
  * Creates a variadic argument that requires at least n values.
@@ -600,9 +621,9 @@ export const mapTryCatch: {
  * @since 4.0.0
  */
 export const atLeast: {
-  <A>(min: number): (self: Argument<A>) => Argument<ReadonlyArray<A>>
-  <A>(self: Argument<A>, min: number): Argument<ReadonlyArray<A>>
-} = dual(2, <A>(self: Argument<A>, min: number) => Param.atLeast(self, min))
+  <A>(min: number): (self: Argument<A>) => Argument<ReadonlyArray<A>>;
+  <A>(self: Argument<A>, min: number): Argument<ReadonlyArray<A>>;
+} = dual(2, <A>(self: Argument<A>, min: number) => Param.atLeast(self, min));
 
 /**
  * Creates a variadic argument that accepts at most n values.
@@ -620,9 +641,9 @@ export const atLeast: {
  * @since 4.0.0
  */
 export const atMost: {
-  <A>(max: number): (self: Argument<A>) => Argument<ReadonlyArray<A>>
-  <A>(self: Argument<A>, max: number): Argument<ReadonlyArray<A>>
-} = dual(2, <A>(self: Argument<A>, max: number) => Param.atMost(self, max))
+  <A>(max: number): (self: Argument<A>) => Argument<ReadonlyArray<A>>;
+  <A>(self: Argument<A>, max: number): Argument<ReadonlyArray<A>>;
+} = dual(2, <A>(self: Argument<A>, max: number) => Param.atMost(self, max));
 
 /**
  * Creates a variadic argument that accepts between min and max values.
@@ -640,9 +661,9 @@ export const atMost: {
  * @since 4.0.0
  */
 export const between: {
-  <A>(min: number, max: number): (self: Argument<A>) => Argument<ReadonlyArray<A>>
-  <A>(self: Argument<A>, min: number, max: number): Argument<ReadonlyArray<A>>
-} = dual(3, <A>(self: Argument<A>, min: number, max: number) => Param.between(self, min, max))
+  <A>(min: number, max: number): (self: Argument<A>) => Argument<ReadonlyArray<A>>;
+  <A>(self: Argument<A>, min: number, max: number): Argument<ReadonlyArray<A>>;
+} = dual(3, <A>(self: Argument<A>, min: number, max: number) => Param.between(self, min, max));
 
 /**
  * Validates parsed values against a Schema.
@@ -663,13 +684,20 @@ export const between: {
  * @since 4.0.0
  */
 export const withSchema: {
-  <A, B>(schema: Schema.ConstraintCodec<B, A, Environment, unknown>): (self: Argument<A>) => Argument<B>
-  <A, B>(self: Argument<A>, schema: Schema.ConstraintCodec<B, A, Environment, unknown>): Argument<B>
+  <A, B>(
+    schema: Schema.ConstraintCodec<B, A, Environment, unknown>,
+  ): (self: Argument<A>) => Argument<B>;
+  <A, B>(
+    self: Argument<A>,
+    schema: Schema.ConstraintCodec<B, A, Environment, unknown>,
+  ): Argument<B>;
 } = dual(
   2,
-  <A, B>(self: Argument<A>, schema: Schema.ConstraintCodec<B, A, Environment, unknown>): Argument<B> =>
-    Param.withSchema(self, schema)
-)
+  <A, B>(
+    self: Argument<A>,
+    schema: Schema.ConstraintCodec<B, A, Environment, unknown>,
+  ): Argument<B> => Param.withSchema(self, schema),
+);
 
 /**
  * Creates a positional choice argument with custom value mapping.
@@ -693,8 +721,8 @@ export const withSchema: {
  */
 export const choiceWithValue = <const Choices extends ReadonlyArray<readonly [string, any]>>(
   name: string,
-  choices: Choices
-): Argument<Choices[number][1]> => Param.choiceWithValue(Param.argumentKind, name, choices)
+  choices: Choices,
+): Argument<Choices[number][1]> => Param.choiceWithValue(Param.argumentKind, name, choices);
 
 // -------------------------------------------------------------------------------------
 // metadata
@@ -723,9 +751,9 @@ export const choiceWithValue = <const Choices extends ReadonlyArray<readonly [st
  * @since 4.0.0
  */
 export const withMetavar: {
-  <A>(metavar: string): (self: Argument<A>) => Argument<A>
-  <A>(self: Argument<A>, metavar: string): Argument<A>
-} = dual(2, <A>(self: Argument<A>, metavar: string) => Param.withMetavar(self, metavar))
+  <A>(metavar: string): (self: Argument<A>) => Argument<A>;
+  <A>(self: Argument<A>, metavar: string): Argument<A>;
+} = dual(2, <A>(self: Argument<A>, metavar: string) => Param.withMetavar(self, metavar));
 
 /**
  * Filters parsed values, failing with a custom error message if the predicate returns false.
@@ -748,13 +776,11 @@ export const withMetavar: {
  * @since 4.0.0
  */
 export const filter: {
-  <A>(predicate: (a: A) => boolean, onFalse: (a: A) => string): (self: Argument<A>) => Argument<A>
-  <A>(self: Argument<A>, predicate: (a: A) => boolean, onFalse: (a: A) => string): Argument<A>
-} = dual(3, <A>(
-  self: Argument<A>,
-  predicate: (a: A) => boolean,
-  onFalse: (a: A) => string
-) => Param.filter(self, predicate, onFalse))
+  <A>(predicate: (a: A) => boolean, onFalse: (a: A) => string): (self: Argument<A>) => Argument<A>;
+  <A>(self: Argument<A>, predicate: (a: A) => boolean, onFalse: (a: A) => string): Argument<A>;
+} = dual(3, <A>(self: Argument<A>, predicate: (a: A) => boolean, onFalse: (a: A) => string) =>
+  Param.filter(self, predicate, onFalse),
+);
 
 /**
  * Filters and transforms parsed values, failing with a custom error message
@@ -779,13 +805,14 @@ export const filter: {
  * @since 4.0.0
  */
 export const filterMap: {
-  <A, B>(f: (a: A) => Option.Option<B>, onNone: (a: A) => string): (self: Argument<A>) => Argument<B>
-  <A, B>(self: Argument<A>, f: (a: A) => Option.Option<B>, onNone: (a: A) => string): Argument<B>
-} = dual(3, <A, B>(
-  self: Argument<A>,
-  f: (a: A) => Option.Option<B>,
-  onNone: (a: A) => string
-) => Param.filterMap(self, f, onNone))
+  <A, B>(
+    f: (a: A) => Option.Option<B>,
+    onNone: (a: A) => string,
+  ): (self: Argument<A>) => Argument<B>;
+  <A, B>(self: Argument<A>, f: (a: A) => Option.Option<B>, onNone: (a: A) => string): Argument<B>;
+} = dual(3, <A, B>(self: Argument<A>, f: (a: A) => Option.Option<B>, onNone: (a: A) => string) =>
+  Param.filterMap(self, f, onNone),
+);
 
 /**
  * Provides a fallback argument to use if this argument fails to parse.
@@ -805,9 +832,9 @@ export const filterMap: {
  * @since 4.0.0
  */
 export const orElse: {
-  <B>(that: LazyArg<Argument<B>>): <A>(self: Argument<A>) => Argument<A | B>
-  <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>): Argument<A | B>
-} = dual(2, <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>) => Param.orElse(self, that))
+  <B>(that: LazyArg<Argument<B>>): <A>(self: Argument<A>) => Argument<A | B>;
+  <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>): Argument<A | B>;
+} = dual(2, <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>) => Param.orElse(self, that));
 
 /**
  * Provides a fallback argument, wrapping results in Result to distinguish which succeeded.
@@ -828,6 +855,8 @@ export const orElse: {
  * @since 4.0.0
  */
 export const orElseResult: {
-  <B>(that: LazyArg<Argument<B>>): <A>(self: Argument<A>) => Argument<Result.Result<A, B>>
-  <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>): Argument<Result.Result<A, B>>
-} = dual(2, <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>) => Param.orElseResult(self, that))
+  <B>(that: LazyArg<Argument<B>>): <A>(self: Argument<A>) => Argument<Result.Result<A, B>>;
+  <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>): Argument<Result.Result<A, B>>;
+} = dual(2, <A, B>(self: Argument<A>, that: LazyArg<Argument<B>>) =>
+  Param.orElseResult(self, that),
+);

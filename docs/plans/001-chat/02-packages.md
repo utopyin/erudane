@@ -93,7 +93,11 @@ apps/web/
 Same shape as `apps/web/tsconfig.json` minus DOM/JSX for the non-web packages:
 
 ```json
-{ "extends": "../../tsconfig.json", "include": ["**/*.ts"], "compilerOptions": { "lib": ["ES2022"] } }
+{
+  "extends": "../../tsconfig.json",
+  "include": ["**/*.ts"],
+  "compilerOptions": { "lib": ["ES2022"] }
+}
 ```
 
 `apps/api` adds `"types": ["@cloudflare/workers-types"]`. `effect-tsgo` is patched at the root (`prepare`), so each package's `check:types` is `tsc --noEmit`.

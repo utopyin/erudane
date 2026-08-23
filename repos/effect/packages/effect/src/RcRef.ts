@@ -8,14 +8,14 @@
  *
  * @since 3.5.0
  */
-import type * as Duration from "./Duration.ts"
-import type * as Effect from "./Effect.ts"
-import * as internal from "./internal/rcRef.ts"
-import type { Pipeable } from "./Pipeable.ts"
-import type { Scope } from "./Scope.ts"
-import type * as Types from "./Types.ts"
+import type * as Duration from "./Duration.ts";
+import type * as Effect from "./Effect.ts";
+import * as internal from "./internal/rcRef.ts";
+import type { Pipeable } from "./Pipeable.ts";
+import type { Scope } from "./Scope.ts";
+import type * as Types from "./Types.ts";
 
-const TypeId = "~effect/RcRef"
+const TypeId = "~effect/RcRef";
 
 /**
  * A reference counted reference that manages resource lifecycle.
@@ -65,7 +65,7 @@ const TypeId = "~effect/RcRef"
  * @since 3.5.0
  */
 export interface RcRef<out A, out E = never> extends Pipeable {
-  readonly [TypeId]: RcRef.Variance<A, E>
+  readonly [TypeId]: RcRef.Variance<A, E>;
 }
 
 /**
@@ -103,8 +103,8 @@ export declare namespace RcRef {
    * @since 3.5.0
    */
   export interface Variance<A, E> {
-    readonly _A: Types.Covariant<A>
-    readonly _E: Types.Covariant<E>
+    readonly _A: Types.Covariant<A>;
+    readonly _E: Types.Covariant<E>;
   }
 }
 
@@ -154,16 +154,14 @@ export declare namespace RcRef {
  * @category constructors
  * @since 3.5.0
  */
-export const make: <A, E, R>(
-  options: {
-    readonly acquire: Effect.Effect<A, E, R>
-    /**
-     * When the reference count reaches zero, the resource will be released
-     * after this duration.
-     */
-    readonly idleTimeToLive?: Duration.Input | undefined
-  }
-) => Effect.Effect<RcRef<A, E>, never, R | Scope> = internal.make
+export const make: <A, E, R>(options: {
+  readonly acquire: Effect.Effect<A, E, R>;
+  /**
+   * When the reference count reaches zero, the resource will be released
+   * after this duration.
+   */
+  readonly idleTimeToLive?: Duration.Input | undefined;
+}) => Effect.Effect<RcRef<A, E>, never, R | Scope> = internal.make;
 
 /**
  * Gets the value from an `RcRef`, acquiring it first if needed.
@@ -209,7 +207,7 @@ export const make: <A, E, R>(
  * @category combinators
  * @since 3.5.0
  */
-export const get: <A, E>(self: RcRef<A, E>) => Effect.Effect<A, E, Scope> = internal.get
+export const get: <A, E>(self: RcRef<A, E>) => Effect.Effect<A, E, Scope> = internal.get;
 
 /**
  * Invalidates the currently cached resource, if one has been acquired.
@@ -233,4 +231,4 @@ export const get: <A, E>(self: RcRef<A, E>) => Effect.Effect<A, E, Scope> = inte
  * @category combinators
  * @since 3.19.6
  */
-export const invalidate: <A, E>(self: RcRef<A, E>) => Effect.Effect<void> = internal.invalidate
+export const invalidate: <A, E>(self: RcRef<A, E>) => Effect.Effect<void> = internal.invalidate;

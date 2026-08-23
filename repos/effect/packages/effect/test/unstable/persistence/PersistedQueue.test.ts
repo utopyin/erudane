@@ -1,4 +1,4 @@
-import { PersistedQueue } from "effect/unstable/persistence"
-import * as PersistedQueueTest from "./PersistedQueueTest.ts"
+import { PersistedQueue } from "effect/unstable/persistence";
+import * as PersistedQueueTest from "./PersistedQueueTest.ts";
 
-PersistedQueueTest.suite("memory", PersistedQueue.layerStoreMemory)
+PersistedQueueTest.suite("memory", PersistedQueue.layerStoreMemory);

@@ -3,18 +3,18 @@
  *
  * @since 4.0.0
  */
-import * as InternalRecord from "./internal/record.ts"
-import * as InternalFromJsonSchemaDocument from "./internal/schema/fromJsonSchemaDocument.ts"
-import * as InternalFromRepresentation from "./internal/schema/fromRepresentation.ts"
-import * as InternalSchema from "./internal/schema/schema.ts"
-import * as InternalToCodeDocument from "./internal/schema/toCodeDocument.ts"
-import * as InternalToJsonSchemaDocument from "./internal/schema/toJsonSchemaDocument.ts"
-import * as InternalToRepresentation from "./internal/schema/toRepresentation.ts"
-import type * as JsonSchema from "./JsonSchema.ts"
-import * as Option from "./Option.ts"
-import * as Schema from "./Schema.ts"
-import * as SchemaAST from "./SchemaAST.ts"
-import * as SchemaGetter from "./SchemaGetter.ts"
+import * as InternalRecord from "./internal/record.ts";
+import * as InternalFromJsonSchemaDocument from "./internal/schema/fromJsonSchemaDocument.ts";
+import * as InternalFromRepresentation from "./internal/schema/fromRepresentation.ts";
+import * as InternalSchema from "./internal/schema/schema.ts";
+import * as InternalToCodeDocument from "./internal/schema/toCodeDocument.ts";
+import * as InternalToJsonSchemaDocument from "./internal/schema/toJsonSchemaDocument.ts";
+import * as InternalToRepresentation from "./internal/schema/toRepresentation.ts";
+import type * as JsonSchema from "./JsonSchema.ts";
+import * as Option from "./Option.ts";
+import * as Schema from "./Schema.ts";
+import * as SchemaAST from "./SchemaAST.ts";
+import * as SchemaGetter from "./SchemaGetter.ts";
 
 /**
  * Open persistence identity carried by declarations and opaque checks.
@@ -23,8 +23,8 @@ import * as SchemaGetter from "./SchemaGetter.ts"
  * @since 4.0.0
  */
 export interface RepresentationAnnotation {
-  readonly id: string
-  readonly payload: Schema.Json
+  readonly id: string;
+  readonly payload: Schema.Json;
 }
 
 /**
@@ -34,7 +34,7 @@ export interface RepresentationAnnotation {
  * @since 4.0.0
  */
 export interface CheckRepresentationAnnotation<S> extends RepresentationAnnotation {
-  readonly schemas?: ReadonlyArray<S> | undefined
+  readonly schemas?: ReadonlyArray<S> | undefined;
 }
 
 /**
@@ -50,8 +50,8 @@ export declare namespace ToJsonSchema {
    * @since 4.0.0
    */
   export interface CheckInput {
-    readonly type: JsonSchema.Type | undefined
-    readonly schemas: ReadonlyArray<JsonSchema.JsonSchema>
+    readonly type: JsonSchema.Type | undefined;
+    readonly schemas: ReadonlyArray<JsonSchema.JsonSchema>;
   }
 
   /**
@@ -66,7 +66,7 @@ export declare namespace ToJsonSchema {
    * @category models
    * @since 4.0.0
    */
-  export type Check = (input: CheckInput) => JsonSchema.JsonSchema
+  export type Check = (input: CheckInput) => JsonSchema.JsonSchema;
 }
 
 /**
@@ -82,7 +82,7 @@ export declare namespace Generation {
    * @since 4.0.0
    */
   export interface DeclarationInput {
-    readonly typeParameters: ReadonlyArray<Code>
+    readonly typeParameters: ReadonlyArray<Code>;
   }
 
   /**
@@ -92,9 +92,9 @@ export declare namespace Generation {
    * @since 4.0.0
    */
   export interface DeclarationOutput {
-    readonly runtime: string
-    readonly Type: string
-    readonly importDeclarations?: ReadonlyArray<string> | undefined
+    readonly runtime: string;
+    readonly Type: string;
+    readonly importDeclarations?: ReadonlyArray<string> | undefined;
   }
 
   /**
@@ -103,7 +103,7 @@ export declare namespace Generation {
    * @category models
    * @since 4.0.0
    */
-  export type Declaration = (input: DeclarationInput) => DeclarationOutput
+  export type Declaration = (input: DeclarationInput) => DeclarationOutput;
 
   /**
    * Input for check code generation.
@@ -112,7 +112,7 @@ export declare namespace Generation {
    * @since 4.0.0
    */
   export interface CheckInput {
-    readonly schemas: ReadonlyArray<Code>
+    readonly schemas: ReadonlyArray<Code>;
   }
 
   /**
@@ -122,8 +122,8 @@ export declare namespace Generation {
    * @since 4.0.0
    */
   export interface CheckOutput {
-    readonly runtime: string
-    readonly importDeclarations?: ReadonlyArray<string> | undefined
+    readonly runtime: string;
+    readonly importDeclarations?: ReadonlyArray<string> | undefined;
   }
 
   /**
@@ -132,7 +132,7 @@ export declare namespace Generation {
    * @category models
    * @since 4.0.0
    */
-  export type Check = (input: CheckInput) => CheckOutput
+  export type Check = (input: CheckInput) => CheckOutput;
 }
 
 /**
@@ -142,11 +142,11 @@ export declare namespace Generation {
  * @since 4.0.0
  */
 export interface Declaration {
-  readonly _tag: "Declaration"
-  readonly representation?: RepresentationAnnotation | undefined
-  readonly annotations?: Schema.Annotations.Annotations | undefined
-  readonly typeParameters: ReadonlyArray<Representation>
-  readonly checks: ReadonlyArray<Check>
+  readonly _tag: "Declaration";
+  readonly representation?: RepresentationAnnotation | undefined;
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
+  readonly typeParameters: ReadonlyArray<Representation>;
+  readonly checks: ReadonlyArray<Check>;
 }
 
 /**
@@ -156,10 +156,10 @@ export interface Declaration {
  * @since 4.0.0
  */
 export interface Suspend {
-  readonly _tag: "Suspend"
-  readonly annotations?: Schema.Annotations.Annotations | undefined
-  readonly checks: readonly []
-  readonly thunk: Representation
+  readonly _tag: "Suspend";
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
+  readonly checks: readonly [];
+  readonly thunk: Representation;
 }
 
 /**
@@ -169,14 +169,14 @@ export interface Suspend {
  * @since 4.0.0
  */
 export interface Reference {
-  readonly _tag: "Reference"
-  readonly $ref: string
+  readonly _tag: "Reference";
+  readonly $ref: string;
 }
 
 interface Keyword<Tag extends string> {
-  readonly _tag: Tag
-  readonly annotations?: Schema.Annotations.Annotations | undefined
-  readonly checks: ReadonlyArray<Check>
+  readonly _tag: Tag;
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
+  readonly checks: ReadonlyArray<Check>;
 }
 
 /**
@@ -271,7 +271,7 @@ export interface Symbol extends Keyword<"Symbol"> {}
  * @since 4.0.0
  */
 export interface Literal extends Keyword<"Literal"> {
-  readonly literal: SchemaAST.LiteralValue
+  readonly literal: SchemaAST.LiteralValue;
 }
 
 /**
@@ -281,7 +281,7 @@ export interface Literal extends Keyword<"Literal"> {
  * @since 4.0.0
  */
 export interface UniqueSymbol extends Keyword<"UniqueSymbol"> {
-  readonly symbol: symbol
+  readonly symbol: symbol;
 }
 
 /**
@@ -304,7 +304,7 @@ export interface ObjectKeyword extends Keyword<"ObjectKeyword"> {}
  * @since 4.0.0
  */
 export interface Enum extends Keyword<"Enum"> {
-  readonly enums: ReadonlyArray<readonly [string, string | number]>
+  readonly enums: ReadonlyArray<readonly [string, string | number]>;
 }
 
 /**
@@ -314,7 +314,7 @@ export interface Enum extends Keyword<"Enum"> {
  * @since 4.0.0
  */
 export interface TemplateLiteral extends Keyword<"TemplateLiteral"> {
-  readonly parts: ReadonlyArray<Representation>
+  readonly parts: ReadonlyArray<Representation>;
 }
 
 /**
@@ -324,9 +324,9 @@ export interface TemplateLiteral extends Keyword<"TemplateLiteral"> {
  * @since 4.0.0
  */
 export interface Element {
-  readonly isOptional: boolean
-  readonly type: Representation
-  readonly annotations?: Schema.Annotations.Annotations | undefined
+  readonly isOptional: boolean;
+  readonly type: Representation;
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
 }
 
 /**
@@ -336,8 +336,8 @@ export interface Element {
  * @since 4.0.0
  */
 export interface Arrays extends Keyword<"Arrays"> {
-  readonly elements: ReadonlyArray<Element>
-  readonly rest: ReadonlyArray<Representation>
+  readonly elements: ReadonlyArray<Element>;
+  readonly rest: ReadonlyArray<Representation>;
 }
 
 /**
@@ -357,11 +357,11 @@ export interface Arrays extends Keyword<"Arrays"> {
  * @since 4.0.0
  */
 export interface PropertySignature {
-  readonly name: PropertyKey
-  readonly type: Representation
-  readonly isOptional: boolean
-  readonly isMutable: boolean
-  readonly annotations?: Schema.Annotations.Annotations | undefined
+  readonly name: PropertyKey;
+  readonly type: Representation;
+  readonly isOptional: boolean;
+  readonly isMutable: boolean;
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
 }
 
 /**
@@ -371,8 +371,8 @@ export interface PropertySignature {
  * @since 4.0.0
  */
 export interface IndexSignature {
-  readonly parameter: Representation
-  readonly type: Representation
+  readonly parameter: Representation;
+  readonly type: Representation;
 }
 
 /**
@@ -382,8 +382,8 @@ export interface IndexSignature {
  * @since 4.0.0
  */
 export interface Objects extends Keyword<"Objects"> {
-  readonly propertySignatures: ReadonlyArray<PropertySignature>
-  readonly indexSignatures: ReadonlyArray<IndexSignature>
+  readonly propertySignatures: ReadonlyArray<PropertySignature>;
+  readonly indexSignatures: ReadonlyArray<IndexSignature>;
 }
 
 /**
@@ -393,8 +393,8 @@ export interface Objects extends Keyword<"Objects"> {
  * @since 4.0.0
  */
 export interface Union extends Keyword<"Union"> {
-  readonly types: ReadonlyArray<Representation>
-  readonly mode: "anyOf" | "oneOf"
+  readonly types: ReadonlyArray<Representation>;
+  readonly mode: "anyOf" | "oneOf";
 }
 
 /**
@@ -425,7 +425,7 @@ export type Representation =
   | TemplateLiteral
   | Arrays
   | Objects
-  | Union
+  | Union;
 
 /**
  * A structural check.
@@ -433,7 +433,7 @@ export type Representation =
  * @category models
  * @since 4.0.0
  */
-export type Check = Filter | FilterGroup
+export type Check = Filter | FilterGroup;
 
 /**
  * An opaque leaf check.
@@ -442,10 +442,10 @@ export type Check = Filter | FilterGroup
  * @since 4.0.0
  */
 export interface Filter {
-  readonly _tag: "Filter"
-  readonly representation?: CheckRepresentationAnnotation<Representation> | undefined
-  readonly annotations?: Schema.Annotations.Annotations | undefined
-  readonly aborted: boolean
+  readonly _tag: "Filter";
+  readonly representation?: CheckRepresentationAnnotation<Representation> | undefined;
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
+  readonly aborted: boolean;
 }
 
 /**
@@ -455,10 +455,10 @@ export interface Filter {
  * @since 4.0.0
  */
 export interface FilterGroup {
-  readonly _tag: "FilterGroup"
-  readonly representation?: CheckRepresentationAnnotation<Representation> | undefined
-  readonly annotations?: Schema.Annotations.Annotations | undefined
-  readonly checks: readonly [Check, ...Array<Check>]
+  readonly _tag: "FilterGroup";
+  readonly representation?: CheckRepresentationAnnotation<Representation> | undefined;
+  readonly annotations?: Schema.Annotations.Annotations | undefined;
+  readonly checks: readonly [Check, ...Array<Check>];
 }
 
 /**
@@ -468,7 +468,7 @@ export interface FilterGroup {
  * @since 4.0.0
  */
 export interface References {
-  readonly [$ref: string]: Representation
+  readonly [$ref: string]: Representation;
 }
 
 /**
@@ -478,8 +478,8 @@ export interface References {
  * @since 4.0.0
  */
 export interface Document {
-  readonly representation: Representation
-  readonly references: References
+  readonly representation: Representation;
+  readonly references: References;
 }
 
 /**
@@ -489,8 +489,8 @@ export interface Document {
  * @since 4.0.0
  */
 export interface MultiDocument {
-  readonly representations: readonly [Representation, ...Array<Representation>]
-  readonly references: References
+  readonly representations: readonly [Representation, ...Array<Representation>];
+  readonly references: References;
 }
 
 /**
@@ -500,13 +500,13 @@ export interface MultiDocument {
  * @since 4.0.0
  */
 export interface DeclarationReviver<P> {
-  readonly id: string
-  readonly payloadSchema: Schema.Decoder<P>
+  readonly id: string;
+  readonly payloadSchema: Schema.Decoder<P>;
   readonly revive: (input: {
-    readonly payload: P
-    readonly typeParameters: ReadonlyArray<Schema.Top>
-    readonly annotations: Schema.Annotations.Annotations | undefined
-  }) => Schema.Top
+    readonly payload: P;
+    readonly typeParameters: ReadonlyArray<Schema.Top>;
+    readonly annotations: Schema.Annotations.Annotations | undefined;
+  }) => Schema.Top;
 }
 
 /**
@@ -516,13 +516,13 @@ export interface DeclarationReviver<P> {
  * @since 4.0.0
  */
 export interface FilterReviver<P> {
-  readonly id: string
-  readonly payloadSchema: Schema.Decoder<P>
+  readonly id: string;
+  readonly payloadSchema: Schema.Decoder<P>;
   readonly revive: (input: {
-    readonly payload: P
-    readonly schemas: ReadonlyArray<Schema.Top>
-    readonly annotations: Schema.Annotations.Filter | undefined
-  }) => SchemaAST.Filter<any>
+    readonly payload: P;
+    readonly schemas: ReadonlyArray<Schema.Top>;
+    readonly annotations: Schema.Annotations.Filter | undefined;
+  }) => SchemaAST.Filter<any>;
 }
 
 /**
@@ -532,13 +532,13 @@ export interface FilterReviver<P> {
  * @since 4.0.0
  */
 export interface FilterGroupReviver<P> {
-  readonly id: string
-  readonly payloadSchema: Schema.Decoder<P>
+  readonly id: string;
+  readonly payloadSchema: Schema.Decoder<P>;
   readonly revive: (input: {
-    readonly payload: P
-    readonly schemas: ReadonlyArray<Schema.Top>
-    readonly annotations: Schema.Annotations.Filter | undefined
-  }) => SchemaAST.FilterGroup<any>
+    readonly payload: P;
+    readonly schemas: ReadonlyArray<Schema.Top>;
+    readonly annotations: Schema.Annotations.Filter | undefined;
+  }) => SchemaAST.FilterGroup<any>;
 }
 
 /**
@@ -547,7 +547,7 @@ export interface FilterGroupReviver<P> {
  * @category models
  * @since 4.0.0
  */
-export type CheckReviver<P> = FilterReviver<P> | FilterGroupReviver<P>
+export type CheckReviver<P> = FilterReviver<P> | FilterGroupReviver<P>;
 
 /**
  * A typed reviver.
@@ -555,7 +555,7 @@ export type CheckReviver<P> = FilterReviver<P> | FilterGroupReviver<P>
  * @category models
  * @since 4.0.0
  */
-export type Reviver<P> = DeclarationReviver<P> | CheckReviver<P>
+export type Reviver<P> = DeclarationReviver<P> | CheckReviver<P>;
 
 /**
  * A reviver erased only at collection boundaries.
@@ -563,7 +563,7 @@ export type Reviver<P> = DeclarationReviver<P> | CheckReviver<P>
  * @category models
  * @since 4.0.0
  */
-export type AnyReviver = Reviver<any>
+export type AnyReviver = Reviver<any>;
 
 /**
  * Creates a declaration reviver while inferring its payload type from `payloadSchema`.
@@ -574,8 +574,8 @@ export type AnyReviver = Reviver<any>
 export const makeDeclarationReviver: <P>(
   id: string,
   payloadSchema: Schema.Decoder<P>,
-  revive: DeclarationReviver<P>["revive"]
-) => DeclarationReviver<P> = InternalSchema.makeDeclarationReviver
+  revive: DeclarationReviver<P>["revive"],
+) => DeclarationReviver<P> = InternalSchema.makeDeclarationReviver;
 
 /**
  * Creates a filter reviver while inferring its payload type from `payloadSchema`.
@@ -586,8 +586,8 @@ export const makeDeclarationReviver: <P>(
 export const makeFilterReviver: <P>(
   id: string,
   payloadSchema: Schema.Decoder<P>,
-  revive: FilterReviver<P>["revive"]
-) => FilterReviver<P> = InternalSchema.makeFilterReviver
+  revive: FilterReviver<P>["revive"],
+) => FilterReviver<P> = InternalSchema.makeFilterReviver;
 
 /**
  * Creates a filter group reviver while inferring its payload type from `payloadSchema`.
@@ -598,8 +598,8 @@ export const makeFilterReviver: <P>(
 export const makeFilterGroupReviver: <P>(
   id: string,
   payloadSchema: Schema.Decoder<P>,
-  revive: FilterGroupReviver<P>["revive"]
-) => FilterGroupReviver<P> = InternalSchema.makeFilterGroupReviver
+  revive: FilterGroupReviver<P>["revive"],
+) => FilterGroupReviver<P> = InternalSchema.makeFilterGroupReviver;
 
 /**
  * Options for importing JSON Schema Draft 2020-12 documents.
@@ -630,13 +630,13 @@ export const makeFilterGroupReviver: <P>(
  * @since 4.0.0
  */
 export interface FromJsonSchemaOptions {
-  readonly onEnter?: ((schema: JsonSchema.JsonSchema) => JsonSchema.JsonSchema) | undefined
+  readonly onEnter?: ((schema: JsonSchema.JsonSchema) => JsonSchema.JsonSchema) | undefined;
   /**
    * Controls how reached JSON Schema regular expression patterns are imported.
    *
    * @default "error"
    */
-  readonly patterns?: "error" | "ignore" | "apply" | undefined
+  readonly patterns?: "error" | "ignore" | "apply" | undefined;
 }
 
 /**
@@ -646,8 +646,8 @@ export interface FromJsonSchemaOptions {
  * @since 4.0.0
  */
 export interface Code {
-  readonly runtime: string
-  readonly Type: string
+  readonly runtime: string;
+  readonly Type: string;
 }
 
 /**
@@ -656,7 +656,7 @@ export interface Code {
  * @category constructors
  * @since 4.0.0
  */
-export const makeCode: (runtime: string, Type: string) => Code = InternalToCodeDocument.makeCode
+export const makeCode: (runtime: string, Type: string) => Code = InternalToCodeDocument.makeCode;
 
 /**
  * Auxiliary source artifact emitted while generating schema code.
@@ -666,19 +666,19 @@ export const makeCode: (runtime: string, Type: string) => Code = InternalToCodeD
  */
 export type Artifact =
   | {
-    readonly _tag: "Symbol"
-    readonly identifier: string
-    readonly code: Code
-  }
+      readonly _tag: "Symbol";
+      readonly identifier: string;
+      readonly code: Code;
+    }
   | {
-    readonly _tag: "Enum"
-    readonly identifier: string
-    readonly code: Code
-  }
+      readonly _tag: "Enum";
+      readonly identifier: string;
+      readonly code: Code;
+    }
   | {
-    readonly _tag: "Import"
-    readonly importDeclaration: string
-  }
+      readonly _tag: "Import";
+      readonly importDeclaration: string;
+    };
 
 /**
  * Generated schema code together with named references and auxiliary artifacts.
@@ -687,15 +687,15 @@ export type Artifact =
  * @since 4.0.0
  */
 export interface CodeDocument {
-  readonly codes: ReadonlyArray<Code>
+  readonly codes: ReadonlyArray<Code>;
   readonly references: {
     readonly nonRecursives: ReadonlyArray<{
-      readonly $ref: string
-      readonly code: Code
-    }>
-    readonly recursives: Readonly<Record<string, Code>>
-  }
-  readonly artifacts: ReadonlyArray<Artifact>
+      readonly $ref: string;
+      readonly code: Code;
+    }>;
+    readonly recursives: Readonly<Record<string, Code>>;
+  };
+  readonly artifacts: ReadonlyArray<Artifact>;
 }
 
 /**
@@ -706,11 +706,11 @@ export interface CodeDocument {
  */
 export interface ReferencePolicyInput {
   /** The encoded-side AST owner for the candidate. Contextual copies can share the same owner. */
-  readonly ast: SchemaAST.AST
+  readonly ast: SchemaAST.AST;
   /** The number of times this candidate was encountered. Structurally equal ASTs remain distinct candidates. */
-  readonly occurrences: number
+  readonly occurrences: number;
   /** The resolved encoded-side identifier, including an inherited `Encoded` suffix when applicable. */
-  readonly identifier: string | undefined
+  readonly identifier: string | undefined;
 }
 
 /**
@@ -738,7 +738,7 @@ export interface ReferencePolicyInput {
  * @category models
  * @since 4.0.0
  */
-export type ReferencePolicy = (input: ReferencePolicyInput) => string | undefined
+export type ReferencePolicy = (input: ReferencePolicyInput) => string | undefined;
 
 /**
  * Options for generating schema representations.
@@ -761,7 +761,7 @@ export interface ToRepresentationOptions {
    *
    * @default ({ identifier }) => identifier
    */
-  readonly referencePolicy?: ReferencePolicy | undefined
+  readonly referencePolicy?: ReferencePolicy | undefined;
 }
 
 /**
@@ -782,7 +782,7 @@ export interface ToRepresentationOptions {
  * @since 4.0.0
  */
 export function toRepresentation(ast: SchemaAST.AST, options?: ToRepresentationOptions): Document {
-  return InternalToRepresentation.toRepresentation(ast, options)
+  return InternalToRepresentation.toRepresentation(ast, options);
 }
 
 /**
@@ -804,9 +804,9 @@ export function toRepresentation(ast: SchemaAST.AST, options?: ToRepresentationO
  */
 export function toRepresentations(
   asts: readonly [SchemaAST.AST, ...Array<SchemaAST.AST>],
-  options?: ToRepresentationOptions
+  options?: ToRepresentationOptions,
 ): MultiDocument {
-  return InternalToRepresentation.toRepresentations(asts, options)
+  return InternalToRepresentation.toRepresentations(asts, options);
 }
 
 /**
@@ -822,8 +822,8 @@ export function toRepresentations(
 export function toMultiDocument(document: Document): MultiDocument {
   return {
     representations: [document.representation],
-    references: document.references
-  }
+    references: document.references,
+  };
 }
 
 /**
@@ -858,9 +858,9 @@ export function toMultiDocument(document: Document): MultiDocument {
  */
 export function toJsonSchemaDocument(
   document: Document,
-  options?: Schema.ToJsonSchemaOptions
+  options?: Schema.ToJsonSchemaOptions,
 ): JsonSchema.Document<"draft-2020-12"> {
-  return InternalToJsonSchemaDocument.toJsonSchemaDocument(document, options)
+  return InternalToJsonSchemaDocument.toJsonSchemaDocument(document, options);
 }
 
 /**
@@ -886,9 +886,9 @@ export function toJsonSchemaDocument(
  */
 export function toJsonSchemaMultiDocument(
   document: MultiDocument,
-  options?: Schema.ToJsonSchemaOptions
+  options?: Schema.ToJsonSchemaOptions,
 ): JsonSchema.MultiDocument<"draft-2020-12"> {
-  return InternalToJsonSchemaDocument.toJsonSchemaMultiDocument(document, options)
+  return InternalToJsonSchemaDocument.toJsonSchemaMultiDocument(document, options);
 }
 
 /**
@@ -906,34 +906,34 @@ export function toJsonSchemaMultiDocument(
  * @since 4.0.0
  */
 export function toCodeDocument(document: MultiDocument): CodeDocument {
-  return InternalToCodeDocument.toCodeDocument(document)
+  return InternalToCodeDocument.toCodeDocument(document);
 }
 
 const RepresentationSchema = Schema.suspend(
-  (): Schema.Codec<Representation, unknown> => RepresentationUnion
-)
-const RepresentationsSchema = Schema.Array(RepresentationSchema)
+  (): Schema.Codec<Representation, unknown> => RepresentationUnion,
+);
+const RepresentationsSchema = Schema.Array(RepresentationSchema);
 
 const RepresentationAnnotationSchema = Schema.Struct({
   id: Schema.NonEmptyString,
-  payload: Schema.Json
-})
+  payload: Schema.Json,
+});
 
 const CheckRepresentationAnnotationSchema = Schema.Struct({
   ...RepresentationAnnotationSchema.fields,
-  schemas: Schema.optional(RepresentationsSchema)
-})
+  schemas: Schema.optional(RepresentationsSchema),
+});
 
 function pruneAnnotations(
-  annotations: Readonly<Record<string, unknown>>
+  annotations: Readonly<Record<string, unknown>>,
 ): Option.Option<Readonly<Record<string, Schema.Json>>> {
-  const out: Record<string, Schema.Json> = {}
+  const out: Record<string, Schema.Json> = {};
   for (const [key, value] of Object.entries(annotations)) {
     if (SchemaAST.isJson(value)) {
-      InternalRecord.assignProperty(out, key, value)
+      InternalRecord.assignProperty(out, key, value);
     }
   }
-  return Object.keys(out).length === 0 ? Option.none() : Option.some(out)
+  return Object.keys(out).length === 0 ? Option.none() : Option.some(out);
 }
 
 const AnnotationsSchema = Schema.optional(Schema.Record(Schema.String, Schema.Unknown)).pipe(
@@ -942,36 +942,36 @@ const AnnotationsSchema = Schema.optional(Schema.Record(Schema.String, Schema.Un
     encode: SchemaGetter.transformOptional((annotations) =>
       Option.isNone(annotations) || annotations.value === undefined
         ? Option.none()
-        : pruneAnnotations(annotations.value)
-    )
-  })
-)
+        : pruneAnnotations(annotations.value),
+    ),
+  }),
+);
 
-const CheckSchema = Schema.suspend((): Schema.Codec<Check, unknown> => CheckUnion)
-const ChecksSchema = Schema.Array(CheckSchema)
+const CheckSchema = Schema.suspend((): Schema.Codec<Check, unknown> => CheckUnion);
+const ChecksSchema = Schema.Array(CheckSchema);
 const KeywordFields = {
   annotations: AnnotationsSchema,
-  checks: ChecksSchema
-}
+  checks: ChecksSchema,
+};
 const FilterSchema = Schema.Struct({
   _tag: Schema.tag("Filter"),
   representation: CheckRepresentationAnnotationSchema,
   annotations: AnnotationsSchema,
-  aborted: Schema.Boolean
-})
+  aborted: Schema.Boolean,
+});
 const FilterGroupSchema = Schema.Struct({
   _tag: Schema.tag("FilterGroup"),
   representation: Schema.optional(CheckRepresentationAnnotationSchema),
   annotations: AnnotationsSchema,
-  checks: Schema.NonEmptyArray(CheckSchema)
-})
-const CheckUnion = Schema.Union([FilterSchema, FilterGroupSchema])
+  checks: Schema.NonEmptyArray(CheckSchema),
+});
+const CheckUnion = Schema.Union([FilterSchema, FilterGroupSchema]);
 
 function makeKeywordSchema<Tag extends Exclude<Representation["_tag"], "Reference">>(tag: Tag) {
   return Schema.Struct({
     _tag: Schema.tag(tag),
-    ...KeywordFields
-  })
+    ...KeywordFields,
+  });
 }
 
 const DeclarationSchema = Schema.Struct({
@@ -979,24 +979,26 @@ const DeclarationSchema = Schema.Struct({
   representation: RepresentationAnnotationSchema,
   annotations: AnnotationsSchema,
   typeParameters: RepresentationsSchema,
-  checks: ChecksSchema
-})
+  checks: ChecksSchema,
+});
 const SuspendSchema = Schema.Struct({
   _tag: Schema.tag("Suspend"),
   annotations: AnnotationsSchema,
   checks: Schema.Tuple([]),
-  thunk: RepresentationSchema
-})
+  thunk: RepresentationSchema,
+});
 function makeValueSchema<Type extends string, Value>(type: Type, value: Schema.Codec<Value>) {
   return value.pipe(
     Schema.encodeTo(Schema.Struct({ type: Schema.tag(type), value }), {
-      decode: SchemaGetter.transform((encoded: { readonly type: Type; readonly value: Value }) => encoded.value),
-      encode: SchemaGetter.transform((value: Value) => ({ type, value }))
-    })
-  )
+      decode: SchemaGetter.transform(
+        (encoded: { readonly type: Type; readonly value: Value }) => encoded.value,
+      ),
+      encode: SchemaGetter.transform((value: Value) => ({ type, value })),
+    }),
+  );
 }
-const StringValueCodec = makeValueSchema("string", Schema.String)
-const NumberValueCodec = makeValueSchema("number", Schema.Number)
+const StringValueCodec = makeValueSchema("string", Schema.String);
+const NumberValueCodec = makeValueSchema("number", Schema.Number);
 const LiteralSchema = Schema.Struct({
   _tag: Schema.tag("Literal"),
   ...KeywordFields,
@@ -1004,69 +1006,68 @@ const LiteralSchema = Schema.Struct({
     StringValueCodec,
     makeValueSchema("number", Schema.Finite),
     makeValueSchema("bigint", Schema.BigInt),
-    makeValueSchema("boolean", Schema.Boolean)
-  ])
-})
+    makeValueSchema("boolean", Schema.Boolean),
+  ]),
+});
 const UniqueSymbolSchema = Schema.Struct({
   _tag: Schema.tag("UniqueSymbol"),
   ...KeywordFields,
-  symbol: Schema.Symbol
-})
+  symbol: Schema.Symbol,
+});
 const EnumSchema = Schema.Struct({
   _tag: Schema.tag("Enum"),
   ...KeywordFields,
-  enums: Schema.Array(Schema.Tuple([
-    Schema.String,
-    Schema.Union([StringValueCodec, NumberValueCodec])
-  ]))
-})
+  enums: Schema.Array(
+    Schema.Tuple([Schema.String, Schema.Union([StringValueCodec, NumberValueCodec])]),
+  ),
+});
 const TemplateLiteralSchema = Schema.Struct({
   _tag: Schema.tag("TemplateLiteral"),
   ...KeywordFields,
-  parts: RepresentationsSchema
-})
+  parts: RepresentationsSchema,
+});
 const ElementSchema = Schema.Struct({
   isOptional: Schema.Boolean,
   type: RepresentationSchema,
-  annotations: AnnotationsSchema
-})
+  annotations: AnnotationsSchema,
+});
 const ArraysSchema = Schema.Struct({
   _tag: Schema.tag("Arrays"),
   ...KeywordFields,
   elements: Schema.Array(ElementSchema),
-  rest: RepresentationsSchema
-})
+  rest: RepresentationsSchema,
+});
 const PropertySignatureSchema = Schema.Struct({
   name: Schema.Union([
     StringValueCodec,
     NumberValueCodec,
-    makeValueSchema("symbol", Schema.Symbol)
+    makeValueSchema("symbol", Schema.Symbol),
   ]),
   type: RepresentationSchema,
   isOptional: Schema.Boolean,
   isMutable: Schema.Boolean,
-  annotations: AnnotationsSchema
-})
+  annotations: AnnotationsSchema,
+});
 const IndexSignatureSchema = Schema.Struct({
   parameter: RepresentationSchema,
-  type: RepresentationSchema
-})
+  type: RepresentationSchema,
+});
 const ObjectsSchema = Schema.Struct({
   _tag: Schema.tag("Objects"),
   ...KeywordFields,
   propertySignatures: Schema.Array(PropertySignatureSchema),
-  indexSignatures: Schema.Array(IndexSignatureSchema)
-})
+  indexSignatures: Schema.Array(IndexSignatureSchema),
+});
 const UnionSchema = Schema.Struct({
   _tag: Schema.tag("Union"),
   ...KeywordFields,
   types: RepresentationsSchema,
-  mode: Schema.Literals(["anyOf", "oneOf"])
-})
+  mode: Schema.Literals(["anyOf", "oneOf"]),
+});
 const ReferenceSchema = Schema.Struct({
   _tag: Schema.tag("Reference"),
-  $ref: Schema.NonEmptyString
-})
+  $ref: Schema.NonEmptyString,
+});
 
 const RepresentationUnion = Schema.Union([
   DeclarationSchema,
@@ -1090,29 +1091,29 @@ const RepresentationUnion = Schema.Union([
   TemplateLiteralSchema,
   ArraysSchema,
   ObjectsSchema,
-  UnionSchema
-])
+  UnionSchema,
+]);
 
-const ReferencesSchema = Schema.Record(Schema.String, RepresentationSchema)
+const ReferencesSchema = Schema.Record(Schema.String, RepresentationSchema);
 
 const DocumentFromJson: Schema.Codec<Document, Schema.Json> = Schema.toCodecJson(
   Schema.Struct({
     representation: RepresentationSchema,
-    references: ReferencesSchema
-  })
-)
+    references: ReferencesSchema,
+  }),
+);
 
 const MultiDocumentFromJson: Schema.Codec<MultiDocument, Schema.Json> = Schema.toCodecJson(
   Schema.Struct({
     representations: Schema.NonEmptyArray(RepresentationSchema),
-    references: ReferencesSchema
-  })
-)
+    references: ReferencesSchema,
+  }),
+);
 
-const encodeDocument = Schema.encodeSync(DocumentFromJson)
-const encodeMultiDocument = Schema.encodeSync(MultiDocumentFromJson)
-const decodeDocument = Schema.decodeSync(DocumentFromJson)
-const decodeMultiDocument = Schema.decodeSync(MultiDocumentFromJson)
+const encodeDocument = Schema.encodeSync(DocumentFromJson);
+const encodeMultiDocument = Schema.encodeSync(MultiDocumentFromJson);
+const decodeDocument = Schema.decodeSync(DocumentFromJson);
+const decodeMultiDocument = Schema.decodeSync(MultiDocumentFromJson);
 
 /**
  * Projects a live single-root representation document and encodes it as JSON.
@@ -1132,7 +1133,7 @@ const decodeMultiDocument = Schema.decodeSync(MultiDocumentFromJson)
  * @since 4.0.0
  */
 export function toJson(document: Document): Schema.Json {
-  return encodeDocument(document)
+  return encodeDocument(document);
 }
 
 /**
@@ -1153,7 +1154,7 @@ export function toJson(document: Document): Schema.Json {
  * @since 4.0.0
  */
 export function toJsonMultiDocument(document: MultiDocument): Schema.Json {
-  return encodeMultiDocument(document)
+  return encodeMultiDocument(document);
 }
 
 /**
@@ -1175,7 +1176,7 @@ export function toJsonMultiDocument(document: MultiDocument): Schema.Json {
  * @since 4.0.0
  */
 export function fromJson(input: Schema.Json): Document {
-  return decodeDocument(input)
+  return decodeDocument(input);
 }
 
 /**
@@ -1197,7 +1198,7 @@ export function fromJson(input: Schema.Json): Document {
  * @since 4.0.0
  */
 export function fromJsonMultiDocument(input: Schema.Json): MultiDocument {
-  return decodeMultiDocument(input)
+  return decodeMultiDocument(input);
 }
 
 /**
@@ -1233,9 +1234,9 @@ export function fromJsonMultiDocument(input: Schema.Json): MultiDocument {
  */
 export function fromRepresentation(
   document: Document,
-  options: { readonly revivers: ReadonlyArray<AnyReviver> }
+  options: { readonly revivers: ReadonlyArray<AnyReviver> },
 ): Schema.Top {
-  return InternalFromRepresentation.fromRepresentation(document, options.revivers)
+  return InternalFromRepresentation.fromRepresentation(document, options.revivers);
 }
 
 /**
@@ -1257,9 +1258,9 @@ export function fromRepresentation(
  */
 export function fromRepresentations(
   document: MultiDocument,
-  options: { readonly revivers: ReadonlyArray<AnyReviver> }
+  options: { readonly revivers: ReadonlyArray<AnyReviver> },
 ): readonly [Schema.Top, ...Array<Schema.Top>] {
-  return InternalFromRepresentation.fromRepresentations(document, options.revivers)
+  return InternalFromRepresentation.fromRepresentations(document, options.revivers);
 }
 
 /**
@@ -1298,9 +1299,9 @@ export function fromRepresentations(
  */
 export function fromJsonSchemaDocument(
   document: JsonSchema.Document<"draft-2020-12">,
-  options?: FromJsonSchemaOptions
+  options?: FromJsonSchemaOptions,
 ): Schema.Top {
-  return InternalFromJsonSchemaDocument.fromJsonSchemaDocument(document, options)
+  return InternalFromJsonSchemaDocument.fromJsonSchemaDocument(document, options);
 }
 
 /**
@@ -1328,7 +1329,7 @@ export function fromJsonSchemaDocument(
  */
 export function fromJsonSchemaMultiDocument(
   document: JsonSchema.MultiDocument<"draft-2020-12">,
-  options?: FromJsonSchemaOptions
+  options?: FromJsonSchemaOptions,
 ): readonly [Schema.Top, ...Array<Schema.Top>] {
-  return InternalFromJsonSchemaDocument.fromJsonSchemaMultiDocument(document, options)
+  return InternalFromJsonSchemaDocument.fromJsonSchemaMultiDocument(document, options);
 }

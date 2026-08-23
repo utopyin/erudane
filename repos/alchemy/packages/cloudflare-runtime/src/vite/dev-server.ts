@@ -251,7 +251,7 @@ const serve = Effect.fn(function* <B extends BindingHooks = BindingHooks>(
     assets: options.worker?.assets,
     unsafe: {
       moduleFallback,
-      ...(options.worker?.unsafe ?? {}),
+      ...options.worker?.unsafe,
     },
   });
 });

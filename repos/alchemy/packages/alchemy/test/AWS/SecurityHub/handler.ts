@@ -172,11 +172,11 @@ export default SecurityHubTestFunction.make(
 
         if (request.method === "GET" && pathname === "/findings") {
           const id = url.searchParams.get("id");
-          const { Findings } = yield* getFindings({
-            ...(id
+          const { Findings } = yield* getFindings(
+            id
               ? { Filters: { Id: [{ Value: id, Comparison: "EQUALS" }] } }
-              : { MaxResults: 10 }),
-          });
+              : { MaxResults: 10 },
+          );
           return yield* HttpServerResponse.json({
             count: (Findings ?? []).length,
             workflow: Findings?.[0]?.Workflow?.Status,

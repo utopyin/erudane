@@ -6,119 +6,123 @@
  *
  * @internal
  */
-import * as Schema from "../../../../Schema.ts"
-import * as Rpc from "../../../rpc/Rpc.ts"
-import * as RpcGroup from "../../../rpc/RpcGroup.ts"
-import * as Previous from "./v2025_06_18.ts"
+import * as Schema from "../../../../Schema.ts";
+import * as Rpc from "../../../rpc/Rpc.ts";
+import * as RpcGroup from "../../../rpc/RpcGroup.ts";
+import * as Previous from "./v2025_06_18.ts";
 
-export * from "./v2025_06_18.ts"
+export * from "./v2025_06_18.ts";
 
-export const protocolVersion = "2025-11-25"
+export const protocolVersion = "2025-11-25";
 
-const optional = Previous.optional
-const JsonObject = Schema.JsonObject
-const Meta = optional(JsonObject)
+const optional = Previous.optional;
+const JsonObject = Schema.JsonObject;
+const Meta = optional(JsonObject);
 
 export const Icon = Schema.Struct({
   src: Schema.String,
   mimeType: optional(Schema.String),
   sizes: optional(Schema.Array(Schema.String)),
-  theme: optional(Schema.Literals(["light", "dark"]))
-})
+  theme: optional(Schema.Literals(["light", "dark"])),
+});
 
 export const Implementation = Schema.Struct({
   ...Previous.Implementation.fields,
   description: optional(Schema.String),
   websiteUrl: optional(Schema.String),
-  icons: optional(Schema.Array(Icon))
-})
+  icons: optional(Schema.Array(Icon)),
+});
 
 export const ClientCapabilities = Schema.Struct({
   ...Previous.ClientCapabilities.fields,
-  sampling: optional(Schema.Struct({
-    context: optional(JsonObject),
-    tools: optional(JsonObject)
-  })),
-  elicitation: optional(Schema.Struct({
-    form: optional(JsonObject),
-    url: optional(JsonObject)
-  }))
-})
+  sampling: optional(
+    Schema.Struct({
+      context: optional(JsonObject),
+      tools: optional(JsonObject),
+    }),
+  ),
+  elicitation: optional(
+    Schema.Struct({
+      form: optional(JsonObject),
+      url: optional(JsonObject),
+    }),
+  ),
+});
 
 export const Annotations = Schema.Struct({
   ...Previous.Annotations.fields,
-  lastModified: optional(Schema.String)
-})
+  lastModified: optional(Schema.String),
+});
 
 export const Resource = Schema.Struct({
   ...Previous.Resource.fields,
   annotations: optional(Annotations),
-  icons: optional(Schema.Array(Icon))
-})
+  icons: optional(Schema.Array(Icon)),
+});
 
 export const ResourceTemplate = Schema.Struct({
   ...Previous.ResourceTemplate.fields,
   annotations: optional(Annotations),
-  icons: optional(Schema.Array(Icon))
-})
+  icons: optional(Schema.Array(Icon)),
+});
 
 export const Prompt = Schema.Struct({
   ...Previous.Prompt.fields,
-  icons: optional(Schema.Array(Icon))
-})
+  icons: optional(Schema.Array(Icon)),
+});
 
 export const TextContent = Schema.Struct({
   ...Previous.TextContent.fields,
-  annotations: optional(Annotations)
-})
+  annotations: optional(Annotations),
+});
 
 export const ImageContent = Schema.Struct({
   ...Previous.ImageContent.fields,
-  annotations: optional(Annotations)
-})
+  annotations: optional(Annotations),
+});
 
 export const AudioContent = Schema.Struct({
   ...Previous.AudioContent.fields,
-  annotations: optional(Annotations)
-})
+  annotations: optional(Annotations),
+});
 
 export const EmbeddedResource = Schema.Struct({
   ...Previous.EmbeddedResource.fields,
-  annotations: optional(Annotations)
-})
+  annotations: optional(Annotations),
+});
 
 export const ResourceLink = Schema.Struct({
   ...Resource.fields,
-  type: Schema.Literal("resource_link")
-})
+  type: Schema.Literal("resource_link"),
+});
 
 export const ContentBlock = Schema.Union([
   TextContent,
   ImageContent,
   AudioContent,
   ResourceLink,
-  EmbeddedResource
-])
+  EmbeddedResource,
+]);
 
 export const PromptMessage = Schema.Struct({
   role: Previous.Role,
-  content: ContentBlock
-})
+  content: ContentBlock,
+});
 
 export const Tool = Schema.Struct({
   ...Previous.Tool.fields,
-  icons: optional(Schema.Array(Icon))
-})
+  icons: optional(Schema.Array(Icon)),
+});
 
 export const CallToolResult = Schema.Struct({
   ...Previous.CallToolResult.fields,
-  content: Schema.Array(ContentBlock)
-})
+  content: Schema.Array(ContentBlock),
+});
 
 export class CallTool extends Rpc.make("tools/call", {
   success: CallToolResult,
   error: Previous.McpError,
-  payload: Previous.CallTool.payloadSchema
+  payload: Previous.CallTool.payloadSchema,
 }) {}
 
 export const ToolUseContent = Schema.Struct({
@@ -126,8 +130,8 @@ export const ToolUseContent = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   input: JsonObject,
-  _meta: Meta
-})
+  _meta: Meta,
+});
 
 export const ToolResultContent = Schema.Struct({
   type: Schema.Literal("tool_result"),
@@ -135,36 +139,33 @@ export const ToolResultContent = Schema.Struct({
   content: Schema.Array(ContentBlock),
   structuredContent: optional(JsonObject),
   isError: optional(Schema.Boolean),
-  _meta: Meta
-})
+  _meta: Meta,
+});
 
 export const SamplingMessageContentBlock = Schema.Union([
   TextContent,
   ImageContent,
   AudioContent,
   ToolUseContent,
-  ToolResultContent
-])
+  ToolResultContent,
+]);
 
 export const SamplingMessage = Schema.Struct({
   role: Previous.Role,
-  content: Schema.Union([
-    SamplingMessageContentBlock,
-    Schema.Array(SamplingMessageContentBlock)
-  ]),
-  _meta: Meta
-})
+  content: Schema.Union([SamplingMessageContentBlock, Schema.Array(SamplingMessageContentBlock)]),
+  _meta: Meta,
+});
 
 export const ToolChoice = Schema.Struct({
-  mode: optional(Schema.Literals(["auto", "required", "none"]))
-})
+  mode: optional(Schema.Literals(["auto", "required", "none"])),
+});
 
 export const CreateMessageResult = Schema.Struct({
   ...Previous.ResultMeta.fields,
   ...SamplingMessage.fields,
   model: Schema.String,
-  stopReason: optional(Schema.String)
-})
+  stopReason: optional(Schema.String),
+});
 
 export class CreateMessage extends Rpc.make("sampling/createMessage", {
   success: CreateMessageResult,
@@ -174,24 +175,24 @@ export class CreateMessage extends Rpc.make("sampling/createMessage", {
     messages: Schema.Array(SamplingMessage),
     maxTokens: Schema.Int,
     tools: optional(Schema.Array(Tool)),
-    toolChoice: optional(ToolChoice)
-  }
+    toolChoice: optional(ToolChoice),
+  },
 }) {}
 
 export const Root = Schema.Struct({
   ...Previous.Root.fields,
-  _meta: Meta
-})
+  _meta: Meta,
+});
 
 export const ListRootsResult = Schema.Struct({
   ...Previous.ResultMeta.fields,
-  roots: Schema.Array(Root)
-})
+  roots: Schema.Array(Root),
+});
 
 export class ListRoots extends Rpc.make("roots/list", {
   success: ListRootsResult,
   error: Previous.McpError,
-  payload: Schema.UndefinedOr(Previous.RequestMeta)
+  payload: Schema.UndefinedOr(Previous.RequestMeta),
 }) {}
 
 export const StringSchema = Schema.Struct({
@@ -201,8 +202,8 @@ export const StringSchema = Schema.Struct({
   minLength: optional(Schema.Int),
   maxLength: optional(Schema.Int),
   format: optional(Schema.Literals(["email", "uri", "date", "date-time"])),
-  default: optional(Schema.String)
-})
+  default: optional(Schema.String),
+});
 
 export const NumberSchema = Schema.Struct({
   type: Schema.Literals(["number", "integer"]),
@@ -210,41 +211,41 @@ export const NumberSchema = Schema.Struct({
   description: optional(Schema.String),
   minimum: optional(Schema.Finite),
   maximum: optional(Schema.Finite),
-  default: optional(Schema.Finite)
-})
+  default: optional(Schema.Finite),
+});
 
 export const BooleanSchema = Schema.Struct({
   type: Schema.Literal("boolean"),
   title: optional(Schema.String),
   description: optional(Schema.String),
-  default: optional(Schema.Boolean)
-})
+  default: optional(Schema.Boolean),
+});
 
 const EnumOption = Schema.Struct({
   const: Schema.String,
-  title: Schema.String
-})
+  title: Schema.String,
+});
 
 export const UntitledSingleSelectEnumSchema = Schema.Struct({
   type: Schema.Literal("string"),
   title: optional(Schema.String),
   description: optional(Schema.String),
   enum: Schema.Array(Schema.String),
-  default: optional(Schema.String)
-})
+  default: optional(Schema.String),
+});
 
 export const TitledSingleSelectEnumSchema = Schema.Struct({
   type: Schema.Literal("string"),
   title: optional(Schema.String),
   description: optional(Schema.String),
   oneOf: Schema.Array(EnumOption),
-  default: optional(Schema.String)
-})
+  default: optional(Schema.String),
+});
 
 export const SingleSelectEnumSchema = Schema.Union([
   UntitledSingleSelectEnumSchema,
-  TitledSingleSelectEnumSchema
-])
+  TitledSingleSelectEnumSchema,
+]);
 
 export const UntitledMultiSelectEnumSchema = Schema.Struct({
   type: Schema.Literal("array"),
@@ -254,10 +255,10 @@ export const UntitledMultiSelectEnumSchema = Schema.Struct({
   maxItems: optional(Schema.Int),
   items: Schema.Struct({
     type: Schema.Literal("string"),
-    enum: Schema.Array(Schema.String)
+    enum: Schema.Array(Schema.String),
   }),
-  default: optional(Schema.Array(Schema.String))
-})
+  default: optional(Schema.Array(Schema.String)),
+});
 
 export const TitledMultiSelectEnumSchema = Schema.Struct({
   type: Schema.Literal("array"),
@@ -266,15 +267,15 @@ export const TitledMultiSelectEnumSchema = Schema.Struct({
   minItems: optional(Schema.Int),
   maxItems: optional(Schema.Int),
   items: Schema.Struct({
-    anyOf: Schema.Array(EnumOption)
+    anyOf: Schema.Array(EnumOption),
   }),
-  default: optional(Schema.Array(Schema.String))
-})
+  default: optional(Schema.Array(Schema.String)),
+});
 
 export const MultiSelectEnumSchema = Schema.Union([
   UntitledMultiSelectEnumSchema,
-  TitledMultiSelectEnumSchema
-])
+  TitledMultiSelectEnumSchema,
+]);
 
 export const LegacyTitledEnumSchema = Schema.Struct({
   type: Schema.Literal("string"),
@@ -282,50 +283,47 @@ export const LegacyTitledEnumSchema = Schema.Struct({
   description: optional(Schema.String),
   enum: Schema.Array(Schema.String),
   enumNames: optional(Schema.Array(Schema.String)),
-  default: optional(Schema.String)
-})
+  default: optional(Schema.String),
+});
 
 export const EnumSchema = Schema.Union([
   SingleSelectEnumSchema,
   MultiSelectEnumSchema,
-  LegacyTitledEnumSchema
-])
+  LegacyTitledEnumSchema,
+]);
 
 export const PrimitiveSchemaDefinition = Schema.Union([
   StringSchema,
   NumberSchema,
   BooleanSchema,
-  EnumSchema
-])
+  EnumSchema,
+]);
 
 export const RequestedSchema = Schema.Struct({
   $schema: optional(Schema.String),
   type: Schema.Literal("object"),
   properties: Schema.Record(Schema.String, PrimitiveSchemaDefinition),
-  required: optional(Schema.Array(Schema.String))
-})
+  required: optional(Schema.Array(Schema.String)),
+});
 
 export const ElicitRequestFormParams = Schema.Struct({
   ...Previous.RequestMeta.fields,
   mode: optional(Schema.Literal("form")),
   message: Schema.String,
-  requestedSchema: RequestedSchema
-})
+  requestedSchema: RequestedSchema,
+});
 
 export const ElicitRequestURLParams = Schema.Struct({
   ...Previous.RequestMeta.fields,
   mode: Schema.Literal("url"),
   message: Schema.String,
   elicitationId: Schema.String,
-  url: Schema.String
-})
+  url: Schema.String,
+});
 
-export const ElicitRequestParams = Schema.Union([
-  ElicitRequestFormParams,
-  ElicitRequestURLParams
-])
+export const ElicitRequestParams = Schema.Union([ElicitRequestFormParams, ElicitRequestURLParams]);
 
-export const URL_ELICITATION_REQUIRED = -32042
+export const URL_ELICITATION_REQUIRED = -32042;
 
 export const URLElicitationRequiredError = Schema.Struct({
   jsonrpc: Schema.Literal("2.0"),
@@ -335,38 +333,43 @@ export const URLElicitationRequiredError = Schema.Struct({
     message: Schema.String,
     data: Schema.StructWithRest(
       Schema.Struct({
-        elicitations: Schema.Array(ElicitRequestURLParams)
+        elicitations: Schema.Array(ElicitRequestURLParams),
       }),
-      [Schema.JsonObject]
-    )
-  })
-})
+      [Schema.JsonObject],
+    ),
+  }),
+});
 
 export const ElicitResult = Schema.Struct({
   ...Previous.ResultMeta.fields,
   action: Schema.Literals(["accept", "decline", "cancel"]),
-  content: optional(Schema.Record(
-    Schema.String,
-    Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Array(Schema.String)])
-  ))
-})
+  content: optional(
+    Schema.Record(
+      Schema.String,
+      Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Array(Schema.String)]),
+    ),
+  ),
+});
 
 export class Elicit extends Rpc.make("elicitation/create", {
   success: ElicitResult,
   error: Previous.McpError,
-  payload: ElicitRequestParams
+  payload: ElicitRequestParams,
 }) {}
 
-export class ElicitationCompleteNotification extends Rpc.make("notifications/elicitation/complete", {
-  payload: {
-    elicitationId: Schema.String
-  }
-}) {}
+export class ElicitationCompleteNotification extends Rpc.make(
+  "notifications/elicitation/complete",
+  {
+    payload: {
+      elicitationId: Schema.String,
+    },
+  },
+) {}
 
 export const InitializeResult = Schema.Struct({
   ...Previous.InitializeResult.fields,
-  serverInfo: Implementation
-})
+  serverInfo: Implementation,
+});
 
 export class Initialize extends Rpc.make("initialize", {
   success: InitializeResult,
@@ -374,51 +377,51 @@ export class Initialize extends Rpc.make("initialize", {
   payload: {
     ...Previous.Initialize.payloadSchema.fields,
     capabilities: ClientCapabilities,
-    clientInfo: Implementation
-  }
+    clientInfo: Implementation,
+  },
 }) {}
 
 export const ListResourcesResult = Schema.Struct({
   ...Previous.PaginatedResult.fields,
-  resources: Schema.Array(Resource)
-})
+  resources: Schema.Array(Resource),
+});
 
 export const ListResourceTemplatesResult = Schema.Struct({
   ...Previous.PaginatedResult.fields,
-  resourceTemplates: Schema.Array(ResourceTemplate)
-})
+  resourceTemplates: Schema.Array(ResourceTemplate),
+});
 
 export const ListPromptsResult = Schema.Struct({
   ...Previous.PaginatedResult.fields,
-  prompts: Schema.Array(Prompt)
-})
+  prompts: Schema.Array(Prompt),
+});
 
 export const GetPromptResult = Schema.Struct({
   ...Previous.GetPromptResult.fields,
-  messages: Schema.Array(PromptMessage)
-})
+  messages: Schema.Array(PromptMessage),
+});
 
 export const ListToolsResult = Schema.Struct({
   ...Previous.PaginatedResult.fields,
-  tools: Schema.Array(Tool)
-})
+  tools: Schema.Array(Tool),
+});
 
 export class ListResources extends Rpc.make("resources/list", {
   success: ListResourcesResult,
   error: Previous.McpError,
-  payload: Schema.UndefinedOr(Previous.PaginatedRequest)
+  payload: Schema.UndefinedOr(Previous.PaginatedRequest),
 }) {}
 
 export class ListResourceTemplates extends Rpc.make("resources/templates/list", {
   success: ListResourceTemplatesResult,
   error: Previous.McpError,
-  payload: Schema.UndefinedOr(Previous.PaginatedRequest)
+  payload: Schema.UndefinedOr(Previous.PaginatedRequest),
 }) {}
 
 export class ListPrompts extends Rpc.make("prompts/list", {
   success: ListPromptsResult,
   error: Previous.McpError,
-  payload: Schema.UndefinedOr(Previous.PaginatedRequest)
+  payload: Schema.UndefinedOr(Previous.PaginatedRequest),
 }) {}
 
 export class GetPrompt extends Rpc.make("prompts/get", {
@@ -427,14 +430,14 @@ export class GetPrompt extends Rpc.make("prompts/get", {
   payload: {
     ...Previous.RequestMeta.fields,
     name: Schema.String,
-    arguments: optional(Schema.Record(Schema.String, Schema.String))
-  }
+    arguments: optional(Schema.Record(Schema.String, Schema.String)),
+  },
 }) {}
 
 export class ListTools extends Rpc.make("tools/list", {
   success: ListToolsResult,
   error: Previous.McpError,
-  payload: Schema.UndefinedOr(Previous.PaginatedRequest)
+  payload: Schema.UndefinedOr(Previous.PaginatedRequest),
 }) {}
 
 export class ClientRequestRpcs extends RpcGroup.make(
@@ -450,14 +453,14 @@ export class ClientRequestRpcs extends RpcGroup.make(
   Previous.Subscribe,
   Previous.Unsubscribe,
   CallTool,
-  ListTools
+  ListTools,
 ) {}
 
 export class ClientNotificationRpcs extends RpcGroup.make(
   Previous.CancelledNotification,
   Previous.ProgressNotification,
   Previous.InitializedNotification,
-  Previous.RootsListChangedNotification
+  Previous.RootsListChangedNotification,
 ) {}
 
 export class ClientRpcs extends ClientRequestRpcs.merge(ClientNotificationRpcs) {}
@@ -466,7 +469,7 @@ export class ServerRequestRpcs extends RpcGroup.make(
   Previous.Ping,
   CreateMessage,
   ListRoots,
-  Elicit
+  Elicit,
 ) {}
 
 export class ServerNotificationRpcs extends RpcGroup.make(
@@ -477,5 +480,5 @@ export class ServerNotificationRpcs extends RpcGroup.make(
   Previous.ResourceListChangedNotification,
   Previous.ToolListChangedNotification,
   Previous.PromptListChangedNotification,
-  ElicitationCompleteNotification
+  ElicitationCompleteNotification,
 ) {}

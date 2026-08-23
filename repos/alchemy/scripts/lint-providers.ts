@@ -13,7 +13,10 @@ import { Node, Project, type Type } from "ts-morph";
  * call(s) whose requirements include `unknown`.
  */
 
-const tsConfig = path.join(import.meta.dir, "../packages/alchemy/tsconfig.json");
+const tsConfig = path.join(
+  import.meta.dir,
+  "../packages/alchemy/tsconfig.json",
+);
 const srcRoot = path.join(import.meta.dir, "../packages/alchemy/src");
 
 const project = new Project({

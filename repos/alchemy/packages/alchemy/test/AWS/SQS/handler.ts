@@ -238,14 +238,14 @@ export default SQSTestFunction.make(
           const body = (yield* request.json) as unknown as {
             maxNumberOfMessagesPerSecond?: number;
           };
-          const result = yield* startMessageMoveTask({
-            ...(body.maxNumberOfMessagesPerSecond !== undefined
+          const result = yield* startMessageMoveTask(
+            body.maxNumberOfMessagesPerSecond !== undefined
               ? {
                   MaxNumberOfMessagesPerSecond:
                     body.maxNumberOfMessagesPerSecond,
                 }
-              : {}),
-          });
+              : {},
+          );
           return yield* HttpServerResponse.json({
             taskHandle: result.TaskHandle,
           });

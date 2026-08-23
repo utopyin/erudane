@@ -19,7 +19,7 @@ When updating public API JSDoc:
 
 Use a normal multiline JSDoc comment in TypeScript source:
 
-```ts
+````ts
 /**
  * Short description as one paragraph.
  *
@@ -46,7 +46,7 @@ Use a normal multiline JSDoc comment in TypeScript source:
  * @category constructors
  * @since 1.0.0
  */
-```
+````
 
 ## Prose Rules
 

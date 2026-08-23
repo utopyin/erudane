@@ -1,5 +1,5 @@
-import { Schema, type SchemaRepresentation } from "effect"
-import { describe, expect, it } from "tstyche"
+import { Schema, type SchemaRepresentation } from "effect";
+import { describe, expect, it } from "tstyche";
 
 describe("Schema built-in object revivers", () => {
   it("composes every object check reviver without casts", () => {
@@ -7,19 +7,19 @@ describe("Schema built-in object revivers", () => {
       Schema.isMinPropertiesReviver,
       Schema.isMaxPropertiesReviver,
       Schema.isPropertiesLengthBetweenReviver,
-      Schema.isPropertyNamesReviver
-    ]
+      Schema.isPropertyNamesReviver,
+    ];
 
-    expect(revivers).type.toBe<ReadonlyArray<SchemaRepresentation.AnyReviver>>()
+    expect(revivers).type.toBe<ReadonlyArray<SchemaRepresentation.AnyReviver>>();
     expect(Schema.isMinPropertiesReviver).type.toBe<
       SchemaRepresentation.FilterReviver<{ readonly minProperties: number }>
-    >()
+    >();
     expect(Schema.isPropertiesLengthBetweenReviver).type.toBe<
       SchemaRepresentation.FilterReviver<{
-        readonly minimum: number
-        readonly maximum: number
+        readonly minimum: number;
+        readonly maximum: number;
       }>
-    >()
-    expect(Schema.isPropertyNamesReviver).type.toBe<SchemaRepresentation.FilterReviver<null>>()
-  })
-})
+    >();
+    expect(Schema.isPropertyNamesReviver).type.toBe<SchemaRepresentation.FilterReviver<null>>();
+  });
+});

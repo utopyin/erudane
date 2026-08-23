@@ -27,9 +27,7 @@
               "scenario": "object-32-valid",
               "implementation": "effect",
               "family": "objects",
-              "astTags": [
-                "Objects"
-              ],
+              "astTags": ["Objects"],
               "path": "valid",
               "size": 32
             },
@@ -39,9 +37,7 @@
               "scenario": "object-32-invalid-last",
               "implementation": "effect",
               "family": "objects",
-              "astTags": [
-                "Objects"
-              ],
+              "astTags": ["Objects"],
               "path": "invalid",
               "size": 32
             },
@@ -51,9 +47,7 @@
               "scenario": "array-32-valid",
               "implementation": "effect",
               "family": "arrays",
-              "astTags": [
-                "Arrays"
-              ],
+              "astTags": ["Arrays"],
               "path": "valid",
               "size": 32
             },
@@ -63,9 +57,7 @@
               "scenario": "array-32-invalid-last",
               "implementation": "effect",
               "family": "arrays",
-              "astTags": [
-                "Arrays"
-              ],
+              "astTags": ["Arrays"],
               "path": "invalid",
               "size": 32
             },
@@ -75,9 +67,7 @@
               "scenario": "record-32-valid",
               "implementation": "effect",
               "family": "records",
-              "astTags": [
-                "Objects"
-              ],
+              "astTags": ["Objects"],
               "path": "valid",
               "size": 32
             },
@@ -87,9 +77,7 @@
               "scenario": "record-32-invalid-last",
               "implementation": "effect",
               "family": "records",
-              "astTags": [
-                "Objects"
-              ],
+              "astTags": ["Objects"],
               "path": "invalid",
               "size": 32
             },
@@ -99,10 +87,7 @@
               "scenario": "literal-100-valid-last",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Literal"
-              ],
+              "astTags": ["Union", "Literal"],
               "path": "valid",
               "size": 100
             },
@@ -112,10 +97,7 @@
               "scenario": "literal-100-invalid",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Literal"
-              ],
+              "astTags": ["Union", "Literal"],
               "path": "invalid",
               "size": 100
             },
@@ -125,11 +107,7 @@
               "scenario": "tagged-100-valid-last",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "valid",
               "size": 100
             },
@@ -139,11 +117,7 @@
               "scenario": "tagged-100-invalid-selected",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "invalid",
               "size": 100
             },
@@ -153,11 +127,7 @@
               "scenario": "tagged-100-invalid-tag",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "invalid",
               "size": 100
             },
@@ -167,11 +137,7 @@
               "scenario": "multi-sentinel-100-valid-first",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "valid",
               "size": 100
             },
@@ -181,11 +147,7 @@
               "scenario": "multi-sentinel-100-invalid-variant",
               "implementation": "effect",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "invalid",
               "size": 100
             }
@@ -204,9 +166,7 @@
               "export": "checksInvalidFirst",
               "scenario": "checks-invalid-first",
               "family": "checks",
-              "astTags": [
-                "String"
-              ],
+              "astTags": ["String"],
               "path": "invalid",
               "size": 2
             },
@@ -215,9 +175,7 @@
               "export": "checksInvalidLast",
               "scenario": "checks-invalid-last",
               "family": "checks",
-              "astTags": [
-                "String"
-              ],
+              "astTags": ["String"],
               "path": "invalid",
               "size": 2
             },
@@ -226,9 +184,7 @@
               "export": "encodingCheckValid",
               "scenario": "encoding-check-valid",
               "family": "checks",
-              "astTags": [
-                "String"
-              ],
+              "astTags": ["String"],
               "path": "valid",
               "size": 1
             },
@@ -237,10 +193,7 @@
               "export": "templateLiteralLinearValid",
               "scenario": "template-literal-linear-valid",
               "family": "template-literal",
-              "astTags": [
-                "TemplateLiteral",
-                "Arrays"
-              ],
+              "astTags": ["TemplateLiteral", "Arrays"],
               "path": "valid",
               "size": 5
             },
@@ -249,10 +202,7 @@
               "export": "templateLiteralLinearInvalid",
               "scenario": "template-literal-linear-invalid",
               "family": "template-literal",
-              "astTags": [
-                "TemplateLiteral",
-                "Arrays"
-              ],
+              "astTags": ["TemplateLiteral", "Arrays"],
               "path": "invalid",
               "size": 5
             },
@@ -261,11 +211,7 @@
               "export": "templateLiteralBacktrackingValid",
               "scenario": "template-literal-backtracking-valid",
               "family": "template-literal",
-              "astTags": [
-                "TemplateLiteral",
-                "Arrays",
-                "String"
-              ],
+              "astTags": ["TemplateLiteral", "Arrays", "String"],
               "path": "valid",
               "size": 4
             },
@@ -274,11 +220,7 @@
               "export": "templateLiteralBacktrackingInvalid",
               "scenario": "template-literal-backtracking-invalid",
               "family": "template-literal",
-              "astTags": [
-                "TemplateLiteral",
-                "Arrays",
-                "String"
-              ],
+              "astTags": ["TemplateLiteral", "Arrays", "String"],
               "path": "invalid",
               "size": 4
             },
@@ -287,12 +229,7 @@
               "export": "templateLiteralTransformedValid",
               "scenario": "template-literal-transformed-valid",
               "family": "template-literal",
-              "astTags": [
-                "TemplateLiteral",
-                "Arrays",
-                "String",
-                "Number"
-              ],
+              "astTags": ["TemplateLiteral", "Arrays", "String", "Number"],
               "path": "valid",
               "size": 3
             },
@@ -301,12 +238,7 @@
               "export": "templateLiteralRecord32Valid",
               "scenario": "template-literal-record-32-valid",
               "family": "template-literal",
-              "astTags": [
-                "TemplateLiteral",
-                "Objects",
-                "String",
-                "Number"
-              ],
+              "astTags": ["TemplateLiteral", "Objects", "String", "Number"],
               "path": "valid",
               "size": 32
             },
@@ -315,10 +247,7 @@
               "export": "transformationDecodeValid",
               "scenario": "transformation-decode-valid",
               "family": "transformation",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "path": "valid",
               "size": 1
             },
@@ -327,10 +256,7 @@
               "export": "transformationDecodeInvalid",
               "scenario": "transformation-decode-invalid",
               "family": "transformation",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "path": "invalid",
               "size": 1
             },
@@ -339,10 +265,7 @@
               "export": "transformationEncodeValid",
               "scenario": "transformation-encode-valid",
               "family": "transformation",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "operation": "encode",
               "path": "valid",
               "size": 1
@@ -352,10 +275,7 @@
               "export": "encodingChain8DecodeValid",
               "scenario": "encoding-chain-8-decode-valid",
               "family": "transformation",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "path": "valid",
               "size": 8
             },
@@ -364,10 +284,7 @@
               "export": "encodingChain8DecodeInvalid",
               "scenario": "encoding-chain-8-decode-invalid",
               "family": "transformation",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "path": "invalid",
               "size": 8
             },
@@ -376,10 +293,7 @@
               "export": "encodingChain8EncodeValid",
               "scenario": "encoding-chain-8-encode-valid",
               "family": "transformation",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "operation": "encode",
               "path": "valid",
               "size": 8
@@ -389,10 +303,7 @@
               "export": "transformedKeyRecordValid",
               "scenario": "record-32-transformed-keys-valid",
               "family": "records",
-              "astTags": [
-                "Objects",
-                "String"
-              ],
+              "astTags": ["Objects", "String"],
               "path": "valid",
               "size": 32
             },
@@ -401,11 +312,7 @@
               "export": "optionalValid",
               "scenario": "optional-valid",
               "family": "optional",
-              "astTags": [
-                "Objects",
-                "Union",
-                "Undefined"
-              ],
+              "astTags": ["Objects", "Union", "Undefined"],
               "path": "valid",
               "size": 3
             },
@@ -414,11 +321,7 @@
               "export": "optionalPresentValid",
               "scenario": "optional-present-valid",
               "family": "optional",
-              "astTags": [
-                "Objects",
-                "Union",
-                "Undefined"
-              ],
+              "astTags": ["Objects", "Union", "Undefined"],
               "path": "valid",
               "size": 3
             },
@@ -427,11 +330,7 @@
               "export": "optionalPresentInvalid",
               "scenario": "optional-present-invalid",
               "family": "optional",
-              "astTags": [
-                "Objects",
-                "Union",
-                "Undefined"
-              ],
+              "astTags": ["Objects", "Union", "Undefined"],
               "path": "invalid",
               "size": 3
             },
@@ -440,11 +339,7 @@
               "export": "object32SuspendedMiddleValid",
               "scenario": "object-32-suspended-middle-valid",
               "family": "objects",
-              "astTags": [
-                "Objects",
-                "String",
-                "Transformation"
-              ],
+              "astTags": ["Objects", "String", "Transformation"],
               "path": "valid",
               "size": 32
             },
@@ -453,10 +348,7 @@
               "export": "literal2ValidLast",
               "scenario": "literal-2-valid-last",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Literal"
-              ],
+              "astTags": ["Union", "Literal"],
               "path": "valid",
               "size": 2
             },
@@ -465,10 +357,7 @@
               "export": "literal100ValidFirst",
               "scenario": "literal-100-valid-first",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Literal"
-              ],
+              "astTags": ["Union", "Literal"],
               "path": "valid",
               "size": 100
             },
@@ -477,10 +366,7 @@
               "export": "homogeneousUnion100Invalid",
               "scenario": "homogeneous-union-100-invalid",
               "family": "union",
-              "astTags": [
-                "Union",
-                "String"
-              ],
+              "astTags": ["Union", "String"],
               "path": "invalid",
               "size": 100
             },
@@ -489,11 +375,7 @@
               "export": "tagged2ValidLast",
               "scenario": "tagged-2-valid-last",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "valid",
               "size": 2
             },
@@ -502,11 +384,7 @@
               "export": "taggedWithFallbackValid",
               "scenario": "tagged-with-fallback-valid",
               "family": "union",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "path": "valid",
               "size": 2
             },
@@ -515,9 +393,7 @@
               "export": "propertyOrderOriginal",
               "scenario": "property-order-original",
               "family": "parse-options",
-              "astTags": [
-                "Objects"
-              ],
+              "astTags": ["Objects"],
               "path": "valid",
               "size": 3
             },
@@ -526,11 +402,7 @@
               "export": "recursiveTreeDepth16Valid",
               "scenario": "recursive-tree-depth-16-valid",
               "family": "recursion",
-              "astTags": [
-                "Objects",
-                "Arrays",
-                "Suspend"
-              ],
+              "astTags": ["Objects", "Arrays", "Suspend"],
               "path": "valid",
               "size": 16
             }
@@ -542,9 +414,7 @@
             "tier": 2,
             "implementation": "effect",
             "family": "adapters",
-            "astTags": [
-              "Objects"
-            ],
+            "astTags": ["Objects"],
             "path": "valid",
             "size": 2
           },
@@ -617,9 +487,7 @@
           "defaults": {
             "tier": 2,
             "family": "cold",
-            "astTags": [
-              "Objects"
-            ],
+            "astTags": ["Objects"],
             "path": "valid",
             "size": 32
           },
@@ -630,9 +498,7 @@
               "scenario": "schema-creation-template-literal",
               "implementation": "effect",
               "operation": "schema",
-              "astTags": [
-                "TemplateLiteral"
-              ],
+              "astTags": ["TemplateLiteral"],
               "size": 5
             },
             {
@@ -648,9 +514,7 @@
               "scenario": "first-decode-template-literal",
               "implementation": "effect",
               "operation": "first-decode",
-              "astTags": [
-                "TemplateLiteral"
-              ],
+              "astTags": ["TemplateLiteral"],
               "size": 5
             },
             {
@@ -666,10 +530,7 @@
               "scenario": "first-decode-literal-100",
               "implementation": "effect",
               "operation": "first-decode",
-              "astTags": [
-                "Union",
-                "Literal"
-              ],
+              "astTags": ["Union", "Literal"],
               "size": 100
             },
             {
@@ -678,11 +539,7 @@
               "scenario": "first-decode-tagged-100",
               "implementation": "effect",
               "operation": "first-decode",
-              "astTags": [
-                "Union",
-                "Objects",
-                "Literal"
-              ],
+              "astTags": ["Union", "Objects", "Literal"],
               "size": 100
             },
             {
@@ -691,10 +548,7 @@
               "scenario": "first-decode-encoding-chain-8",
               "implementation": "effect",
               "operation": "first-decode",
-              "astTags": [
-                "String",
-                "Number"
-              ],
+              "astTags": ["String", "Number"],
               "size": 8
             }
           ]
@@ -848,15 +702,7 @@
             "tier": 3,
             "implementation": "effect",
             "family": "schema-benchmarks",
-            "astTags": [
-              "Objects",
-              "Arrays",
-              "Literal",
-              "String",
-              "Number",
-              "Null",
-              "Declaration"
-            ],
+            "astTags": ["Objects", "Arrays", "Literal", "String", "Number", "Null", "Declaration"],
             "size": "product"
           },
           "cases": [
@@ -950,10 +796,7 @@
               "scenario": "schema-benchmarks-codec-typed-encode",
               "operation": "encode-sync",
               "path": "valid",
-              "astTags": [
-                "String",
-                "BigInt"
-              ],
+              "astTags": ["String", "BigInt"],
               "size": 1
             },
             {
@@ -962,10 +805,7 @@
               "scenario": "schema-benchmarks-codec-typed-decode",
               "operation": "decode-sync",
               "path": "valid",
-              "astTags": [
-                "String",
-                "BigInt"
-              ],
+              "astTags": ["String", "BigInt"],
               "size": 1
             },
             {
@@ -974,10 +814,7 @@
               "scenario": "schema-benchmarks-codec-unknown-encode",
               "operation": "encode-unknown-sync",
               "path": "valid",
-              "astTags": [
-                "String",
-                "BigInt"
-              ],
+              "astTags": ["String", "BigInt"],
               "size": 1
             },
             {
@@ -986,10 +823,7 @@
               "scenario": "schema-benchmarks-codec-unknown-decode",
               "operation": "decode-unknown-sync",
               "path": "valid",
-              "astTags": [
-                "String",
-                "BigInt"
-              ],
+              "astTags": ["String", "BigInt"],
               "size": 1
             }
           ]

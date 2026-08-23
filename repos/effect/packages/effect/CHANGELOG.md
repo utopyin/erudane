@@ -34,7 +34,7 @@
 
 - [#7317](https://github.com/Effect-TS/effect/pull/7317) [`aac8584`](https://github.com/Effect-TS/effect/commit/aac8584fd997f3ce3341aeb077b816219832de58) Thanks @tim-smart! - Fix `Match.value` terminal combinators failing to typecheck when the input
   contains a generic type parameter.
-  
+
   The fifth type argument of `Matcher` for value matchers is now `ValueFlavor`,
   and `ValueMatcher` has a seventh flavor argument; update hand-written
   annotations accordingly.
@@ -82,11 +82,11 @@
 ### Patch Changes
 
 - [#7234](https://github.com/Effect-TS/effect/pull/7234) [`6eebd0a`](https://github.com/Effect-TS/effect/commit/6eebd0a618308a91f95947bae6e0fb206ae3939d) Thanks @lloydrichards! - MCP servers can now use the 2025-11-25 protocol, including sampling with tools and both form- and URL-based elicitation.
-  
+
   Enable it by adding `McpProtocol.v2025_11_25` to the server's `protocols` option.
 
 - [#7234](https://github.com/Effect-TS/effect/pull/7234) [`6eebd0a`](https://github.com/Effect-TS/effect/commit/6eebd0a618308a91f95947bae6e0fb206ae3939d) Thanks @lloydrichards! - MCP servers can now provide icons for server information, resources, resource templates, prompts, and tools using `McpSchema.Icon`.
-  
+
   Each icon can specify its source URI, MIME type, supported sizes, and light or dark theme.
 
 - [#7291](https://github.com/Effect-TS/effect/pull/7291) [`d10ceb0`](https://github.com/Effect-TS/effect/commit/d10ceb06d56108c11100868f591d2b42ddff5e9f) Thanks @fubhy! - Include traversed edge indexes in graph shortest-path results.
@@ -164,22 +164,22 @@
 - [#7205](https://github.com/Effect-TS/effect/pull/7205) [`3702bed`](https://github.com/Effect-TS/effect/commit/3702bedd8f6bcb3f603b87c640c521878d824eb3) Thanks @tim-smart! - Remove the `kubernetes-types` dependency by vendoring the Kubernetes Pod declarations used by the cluster helpers and exporting them from `effect/unstable/cluster/K8sTypes`.
 
 - [#7236](https://github.com/Effect-TS/effect/pull/7236) [`ccae60e`](https://github.com/Effect-TS/effect/commit/ccae60e5edb2bef553f4af52afb509dfd443cd03) Thanks @roninjin10! - Propagate a failed `BEGIN` or `SAVEPOINT` from `SqlClient.withTransaction` as a typed `SqlError`.
-  
+
   `makeWithTransaction` wrapped the `begin` step together with the transaction body, so a
   failed `BEGIN` took the rollback branch. No transaction was active at that point, the
   `ROLLBACK` failed, and its `Effect.orDie` wrapper replaced the original typed error with a
   defect (`cannot rollback - no transaction is active`). Callers could no longer classify the
   failure as retryable. The path became reachable when the sqlite client started using
   `BEGIN IMMEDIATE`, which acquires a write lock and can fail with `SQLITE_BUSY`.
-  
+
   Commit and rollback now run only after `begin` or `savepoint` succeeds. A failed `begin` or
   `savepoint` fails with its original `SqlError`, leaves the wrapped effect unexecuted, and
   still closes the acquired connection scope.
 
 - [#7206](https://github.com/Effect-TS/effect/pull/7206) [`6ff5396`](https://github.com/Effect-TS/effect/commit/6ff53968138bbd7d4728ce8014e35eae8d6ca5d0) Thanks @tim-smart! - Bound cluster runner entity residency and storage reads.
-  
+
   `ShardingConfig` gains two knobs:
-  
+
   - `maxResidentEntities` (default `10_000`): the maximum number of entities
     that can be resident on a runner at the same time. At the cap, the storage
     read loop stops admitting messages for new entity addresses (they stay in
@@ -188,17 +188,17 @@
     previous behaviour and can only be set programmatically.
   - `unprocessedMessageBatchSize` (default `1024`): the maximum number of
     unprocessed messages read from storage in a single poll.
-  
+
   `MessageStorage.unprocessedMessages` accepts an optional
   `{ limit, addresses }` argument, and only claims the messages it actually
   returns. The memory implementation now applies the same ten-minute claim
   window as SQL, so bounded reads advance past in-flight requests; resetting an
   address or shard makes its claimed messages immediately eligible again.
-  
+
   The encoded driver contract replaces `Encoded.resetAddress` with the batched
   `Encoded.resetAddresses` operation. `SqlMessageStorage.makeEncoded` constructs
   the SQL encoded driver directly for custom storage composition.
-  
+
   `ClusterWorkflowEngine` entities (workflows and the durable clock) now use a
   fixed ten-second idle time, so completed and suspended executions release their
   entity slots quickly. Their state is durable, so an evicted execution is
@@ -244,9 +244,9 @@
 - [#7153](https://github.com/Effect-TS/effect/pull/7153) [`9611ed4`](https://github.com/Effect-TS/effect/commit/9611ed42d11300546b339ab13492a0f7bdb1ebfb) Thanks @rajanpanth! - Fix `Duration`'s `Hash.symbol` implementation to hash a canonical nanoseconds form instead of the raw internal `Millis`/`Nanos` representation. Two durations that `Duration.equals`/`Equal.equals` consider equal (e.g. `Duration.seconds(5)` and `Duration.nanos(5_000_000_000n)`) previously hashed differently, violating the Hash/Equal contract and silently breaking `HashSet`/`HashMap` lookups keyed by `Duration`.
 
 - [#7166](https://github.com/Effect-TS/effect/pull/7166) [`8b91605`](https://github.com/Effect-TS/effect/commit/8b9160548556e4b0ec7ee2f2707716776be49018) Thanks @CDVolvik! - Import migrations through a file URL in `Migrator.fromFileSystem`, so absolute Windows paths are accepted by the ESM loader.
-  
+
   Previously the directory and file name were passed to `import` as a plain path. On Windows that produced a specifier such as `D:\migrations\1_init.ts`, which the ESM loader rejects with `Only URLs with a scheme in: file, data, and node are supported`.
-  
+
   `fromFileSystem` now resolves the specifier through the `Path` service, so its type widens from `Loader<FileSystem>` to `Loader<FileSystem | Path>`. Callers that already provide an aggregate platform layer such as `NodeServices.layer` are unaffected; callers that provide `FileSystem` on its own now also need a `Path` layer, and on Windows it must be a platform-aware one rather than the POSIX `Path.layer`.
 
 - [#7157](https://github.com/Effect-TS/effect/pull/7157) [`d901928`](https://github.com/Effect-TS/effect/commit/d901928efa44f573ed1247f53fdb203a8e4fcede) Thanks @tim-smart! - Add `Channel.mkUint8Array` and reuse it from `Stream` and multipart file collection. This also fixes quadratic buffering in `File.contentEffect`, improving collection of a 16 MiB chunked upload by approximately 90x.
@@ -312,9 +312,9 @@
 - [#7090](https://github.com/Effect-TS/effect/pull/7090) [`b206fa5`](https://github.com/Effect-TS/effect/commit/b206fa5d7655c1634c9993410a9203f6616a5ca2) Thanks @tim-smart! - Expose `stdinIsTerminal` and `stdoutIsTerminal` effects through the `Stdio` service.
 
 - [#7093](https://github.com/Effect-TS/effect/pull/7093) [`b938c8a`](https://github.com/Effect-TS/effect/commit/b938c8ad2823bd88493187922f7d9090eff037b6) Thanks @gcanti! - Add the opt-in `reportInput` parse option for retaining rejected inputs in enumerable fields on value-bearing schema issues and including them in default formatted messages. Value-bearing issue constructors accept the rejected input and parse options directly, and `Schema.Annotations.Issue` now supports `expected` for default messages.
-  
+
   Schema issues no longer format implicitly through `Issue#toString`. Use `SchemaIssue.makeFormatterDefault()` when a human-readable message is needed. The throwing and Promise-based adapters in `SchemaParser` now use the generic message `"Schema validation failed"` and expose the structured `SchemaIssue.Issue` as the error `cause`; consumers that previously read the formatted error message should inspect and explicitly format that cause instead.
-  
+
   `Schema.makeEffect` now returns `SchemaIssue.Issue` failures instead of wrapping them in `SchemaError`, and `Schema.withConstructorDefault` accepts an `Effect` that fails with `SchemaIssue.Issue`. Fallible `Optic` operations return structured `SchemaIssue.Issue` failures, while schema failures from `Schema.toIso` and `Schema.toDifferJsonPatch` use the generic error message and preserve the issue in `cause` instead of formatting it internally.
 
 - [#7097](https://github.com/Effect-TS/effect/pull/7097) [`8525f05`](https://github.com/Effect-TS/effect/commit/8525f05d1e14ea12298e9e1a0df497bfaac2ce9a) Thanks @tim-smart! - Add `Cron.format` for converting a `Cron` instance to a cron expression, with an option to include the seconds field.
@@ -362,17 +362,17 @@
 - [#6943](https://github.com/Effect-TS/effect/pull/6943) [`cb6c837`](https://github.com/Effect-TS/effect/commit/cb6c8376b2f322d4e7cbfc0973fc3b4f2951ee6e) Thanks @fubhy! - Reject zero execution attempts in `ExecutionPlan` steps.
 
 - [#7026](https://github.com/Effect-TS/effect/pull/7026) [`d44cead`](https://github.com/Effect-TS/effect/commit/d44cead7e0e0ce61f0d980906e494f49a07e7899) Thanks @tim-smart! - Add execution-plan lifecycle events via an optional `onEvent` handler on `Effect.withExecutionPlan` and `Stream.withExecutionPlan`.
-  
+
   The handler receives an `ExecutionPlan.Event`, a tagged union of `AttemptStart`, `AttemptSuccess`, and `AttemptFailure`, allowing attempt outcomes to be observed from outside the effect for logging and metrics:
-  
+
   ```ts
-  import { Effect } from "effect"
-  
+  import { Effect } from "effect";
+
   Effect.withExecutionPlan(program, plan, {
-    onEvent: (event) => Effect.log("execution plan event", event)
-  })
+    onEvent: (event) => Effect.log("execution plan event", event),
+  });
   ```
-  
+
   Every `AttemptStart` is followed by exactly one terminal event. `AttemptFailure` carries the full failure `Cause`, so defects and interruption are reported as well as expected errors, and terminal events run like finalizers so they are emitted even when the attempt is interrupted. Event numbering matches `ExecutionPlan.CurrentMetadata`: `attempt` is cumulative across steps, while `stepAttempt` is 1-based within the current step.
 
 - [#7077](https://github.com/Effect-TS/effect/pull/7077) [`88c7632`](https://github.com/Effect-TS/effect/commit/88c7632c2b59a49fcc40d250865bd8d0dccf31b0) Thanks @tim-smart! - Rename `Schedule.andThen` and `Schedule.andThenResult` to `Schedule.concat` and `Schedule.concatResult`.
@@ -438,42 +438,49 @@
 - [#7041](https://github.com/Effect-TS/effect/pull/7041) [`5f3fb81`](https://github.com/Effect-TS/effect/commit/5f3fb814d18d8a54946c1c1cd0b41459cdb24006) Thanks @fubhy! - End runner streams after emitting their terminal replies.
 
 - [#7020](https://github.com/Effect-TS/effect/pull/7020) [`17f0b91`](https://github.com/Effect-TS/effect/commit/17f0b91a243ccfe4a38d27debdc983adf434e738) Thanks @gcanti! - Fix `Schema.make` to preserve existing nested `Schema.Class` instances, including in array fields, while recursively constructing plain class inputs provided at runtime inside unions. Constructor defaults remain scoped to structural field and element occurrences, with `SchemaAST.Context.constructorDefault` representing the single default link for each occurrence.
-  
+
   Optimize `Function.memoize` to use a single `WeakMap` lookup for cached values. Its callback no longer accepts `undefined` as a return type because `undefined` represents a cache miss.
-  
+
   The performance of the two array paths can be reproduced by saving the following program as
   `scratchpad/schema-make-6890-benchmark.ts` and running `node scratchpad/schema-make-6890-benchmark.ts` from the repository
   root:
-  
+
   ```ts
-  import { Schema } from "effect"
-  import { performance } from "node:perf_hooks"
-  
+  import { Schema } from "effect";
+  import { performance } from "node:perf_hooks";
+
   class Row extends Schema.Class<Row>("Row")({ value: Schema.String }) {}
   class DirectTable extends Schema.Class<DirectTable>("DirectTable")({ rows: Schema.Array(Row) }) {}
-  class UnionTable extends Schema.Class<UnionTable>("UnionTable")({ rows: Schema.Array(Schema.Union([Row])) }) {}
-  
-  const rows = Array.from({ length: 30_000 }, (_, value) => Row.make({ value: String(value) }))
-  
+  class UnionTable extends Schema.Class<UnionTable>("UnionTable")({
+    rows: Schema.Array(Schema.Union([Row])),
+  }) {}
+
+  const rows = Array.from({ length: 30_000 }, (_, value) => Row.make({ value: String(value) }));
+
   function benchmark(label: string, make: () => { readonly rows: ReadonlyArray<Row> }) {
-    const samples: Array<number> = []
+    const samples: Array<number> = [];
     for (let i = 0; i < 6; i++) {
-      const start = performance.now()
-      const result = make()
-      samples.push(performance.now() - start)
+      const start = performance.now();
+      const result = make();
+      samples.push(performance.now() - start);
       if (result.rows[0] !== rows[0] || result.rows.at(-1) !== rows.at(-1)) {
-        throw new Error(`${label} did not preserve Row identity`)
+        throw new Error(`${label} did not preserve Row identity`);
       }
     }
-    console.log(`${label}: ${samples.slice(1).map((n) => n.toFixed(3)).join(", ")} ms`)
+    console.log(
+      `${label}: ${samples
+        .slice(1)
+        .map((n) => n.toFixed(3))
+        .join(", ")} ms`,
+    );
   }
-  
-  benchmark("Array(Class)", () => DirectTable.make({ rows }))
-  benchmark("Array(Union([Class]))", () => UnionTable.make({ rows }))
+
+  benchmark("Array(Class)", () => DirectTable.make({ rows }));
+  benchmark("Array(Union([Class]))", () => UnionTable.make({ rows }));
   ```
-  
+
   Representative local results on Node 24.12.0 (six runs, with the first discarded):
-  
+
   ```text
   Array(Class): 0.639, 0.498, 0.447, 0.448, 0.451 ms
   Array(Union([Class])): 3.141, 2.195, 2.126, 2.108, 2.057 ms
@@ -537,7 +544,7 @@
 - [#6952](https://github.com/Effect-TS/effect/pull/6952) [`b4463f4`](https://github.com/Effect-TS/effect/commit/b4463f46fc33d3b01ea5eadd7d012a5abda347a3) Thanks @fubhy! - Register alternate flags used by `Param.orElse` and `Param.orElseResult`.
 
 - [#6732](https://github.com/Effect-TS/effect/pull/6732) [`592dd36`](https://github.com/Effect-TS/effect/commit/592dd361645739ac0cd8e6babb084cd27403c172) Thanks @tim-smart! - Rename the Schema error constructors to align with their `Data` counterparts.
-  
+
   - `Schema.ErrorClass` is now `Schema.Error`.
   - `Schema.TaggedErrorClass` is now `Schema.TaggedError`.
   - The JavaScript `Error` instance schema is now `Schema.ErrorInstance`.
@@ -2086,9 +2093,7 @@
 
   const experimental = Command.make("experimental").pipe(Command.withHidden);
 
-  const root = Command.make("mycli").pipe(
-    Command.withSubcommands([experimental]),
-  );
+  const root = Command.make("mycli").pipe(Command.withSubcommands([experimental]));
   ```
 
 - [#2244](https://github.com/Effect-TS/effect-smol/pull/2244) [`7212d70`](https://github.com/Effect-TS/effect-smol/commit/7212d701a3eee7b3553ff502e2c066126e52e839) Thanks @tim-smart! - Fix TestClock adjustment when its layer is provided to programs run without an ambient Scope.
@@ -3139,9 +3144,7 @@
 
   ```typescript
   const app = Command.make("myapp");
-  Command.run(app, { version: "1.0.0" }).pipe(
-    GlobalFlag.add(CustomFlag, customFlagValue),
-  );
+  Command.run(app, { version: "1.0.0" }).pipe(GlobalFlag.add(CustomFlag, customFlagValue));
   ```
 
 - [#1468](https://github.com/Effect-TS/effect-smol/pull/1468) [`e2d4fbf`](https://github.com/Effect-TS/effect-smol/commit/e2d4fbfeeda6a5d2a4c5aeb0501d8240c248b9eb) Thanks @lucas-barake! - Fix `Rpc.ExtractProvides` to use middleware service ID instead of constructor type.

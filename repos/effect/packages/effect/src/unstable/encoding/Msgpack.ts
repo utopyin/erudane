@@ -9,21 +9,21 @@
  *
  * @since 4.0.0
  */
-import { Packr, Unpackr } from "msgpackr"
-import * as Msgpackr from "msgpackr"
-import * as Arr from "../../Array.ts"
-import * as Cause from "../../Cause.ts"
-import * as Channel from "../../Channel.ts"
-import * as ChannelSchema from "../../ChannelSchema.ts"
-import * as Data from "../../Data.ts"
-import * as Effect from "../../Effect.ts"
-import { dual } from "../../Function.ts"
-import * as Pull from "../../Pull.ts"
-import * as Schema from "../../Schema.ts"
-import * as SchemaIssue from "../../SchemaIssue.ts"
-import * as SchemaTransformation from "../../SchemaTransformation.ts"
+import { Packr, Unpackr } from "msgpackr";
+import * as Msgpackr from "msgpackr";
+import * as Arr from "../../Array.ts";
+import * as Cause from "../../Cause.ts";
+import * as Channel from "../../Channel.ts";
+import * as ChannelSchema from "../../ChannelSchema.ts";
+import * as Data from "../../Data.ts";
+import * as Effect from "../../Effect.ts";
+import { dual } from "../../Function.ts";
+import * as Pull from "../../Pull.ts";
+import * as Schema from "../../Schema.ts";
+import * as SchemaIssue from "../../SchemaIssue.ts";
+import * as SchemaTransformation from "../../SchemaTransformation.ts";
 
-const MsgPackErrorTypeId = "~effect/encoding/MsgPack/MsgPackError"
+const MsgPackErrorTypeId = "~effect/encoding/MsgPack/MsgPackError";
 
 /**
  * Error raised when MessagePack encoding or decoding fails.
@@ -37,15 +37,15 @@ const MsgPackErrorTypeId = "~effect/encoding/MsgPack/MsgPackError"
  * @since 4.0.0
  */
 export class MsgPackError extends Data.TaggedError("MsgPackError")<{
-  readonly kind: "Pack" | "Unpack"
-  readonly cause: unknown
+  readonly kind: "Pack" | "Unpack";
+  readonly cause: unknown;
 }> {
   /**
    * Marks this value as a MessagePack encoding or decoding error for runtime guards.
    *
    * @since 4.0.0
    */
-  readonly [MsgPackErrorTypeId] = MsgPackErrorTypeId
+  readonly [MsgPackErrorTypeId] = MsgPackErrorTypeId;
 
   /**
    * Uses the failed MessagePack operation as the public message.
@@ -53,7 +53,7 @@ export class MsgPackError extends Data.TaggedError("MsgPackError")<{
    * @since 4.0.0
    */
   override get message() {
-    return this.kind
+    return this.kind;
   }
 }
 
@@ -78,16 +78,18 @@ export const encode = <IE = never, Done = unknown>(): Channel.Channel<
 > =>
   Channel.fromTransform((upstream, _scope) =>
     Effect.sync(() => {
-      const packr = new Packr()
+      const packr = new Packr();
       return Effect.flatMap(upstream, (chunk) => {
         try {
-          return Effect.succeed(Arr.map(chunk, (item) => packr.pack(item) as Uint8Array<ArrayBuffer>))
+          return Effect.succeed(
+            Arr.map(chunk, (item) => packr.pack(item) as Uint8Array<ArrayBuffer>),
+          );
         } catch (cause) {
-          return Effect.fail(new MsgPackError({ kind: "Pack", cause }))
+          return Effect.fail(new MsgPackError({ kind: "Pack", cause }));
         }
-      })
-    })
-  )
+      });
+    }),
+  );
 
 /**
  * Creates a MessagePack encoder channel for values of a schema.
@@ -100,18 +102,18 @@ export const encode = <IE = never, Done = unknown>(): Channel.Channel<
  * @category constructors
  * @since 4.0.0
  */
-export const encodeSchema = <S extends Schema.Constraint>(
-  schema: S
-) =>
-<IE = never, Done = unknown>(): Channel.Channel<
-  Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
-  MsgPackError | Schema.SchemaError | IE,
-  Done,
-  Arr.NonEmptyReadonlyArray<S["Type"]>,
-  IE,
-  Done,
-  S["EncodingServices"]
-> => Channel.pipeTo(ChannelSchema.encode(schema)(), encode())
+export const encodeSchema =
+  <S extends Schema.Constraint>(schema: S) =>
+  <IE = never, Done = unknown>(): Channel.Channel<
+    Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
+    MsgPackError | Schema.SchemaError | IE,
+    Done,
+    Arr.NonEmptyReadonlyArray<S["Type"]>,
+    IE,
+    Done,
+    S["EncodingServices"]
+  > =>
+    Channel.pipeTo(ChannelSchema.encode(schema)(), encode());
 
 /**
  * Creates a channel that decodes MessagePack byte chunks into values.
@@ -134,58 +136,59 @@ export const decode = <IE = never, Done = unknown>(): Channel.Channel<
 > =>
   Channel.fromTransform((upstream, _scope) =>
     Effect.sync(() => {
-      const unpackr = new Unpackr()
-      let incomplete: {
-        readonly bytes: Uint8Array<ArrayBuffer>
-        readonly cause: unknown
-      } | undefined = undefined
+      const unpackr = new Unpackr();
+      let incomplete:
+        | {
+            readonly bytes: Uint8Array<ArrayBuffer>;
+            readonly cause: unknown;
+          }
+        | undefined = undefined;
 
-      const pull = Effect.suspend((): Pull.Pull<Arr.NonEmptyReadonlyArray<unknown>, IE | MsgPackError, Done> =>
-        Pull.matchEffect(upstream, {
-          onSuccess: loop,
-          onFailure: Effect.failCause,
-          onDone: (done): Pull.Pull<never, MsgPackError, Done> =>
-            incomplete === undefined
-              ? Cause.done(done)
-              : Effect.fail(new MsgPackError({ kind: "Unpack", cause: incomplete.cause }))
-        })
-      )
+      const pull = Effect.suspend(
+        (): Pull.Pull<Arr.NonEmptyReadonlyArray<unknown>, IE | MsgPackError, Done> =>
+          Pull.matchEffect(upstream, {
+            onSuccess: loop,
+            onFailure: Effect.failCause,
+            onDone: (done): Pull.Pull<never, MsgPackError, Done> =>
+              incomplete === undefined
+                ? Cause.done(done)
+                : Effect.fail(new MsgPackError({ kind: "Unpack", cause: incomplete.cause })),
+          }),
+      );
 
-      function loop(chunk: Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>): Pull.Pull<
-        Arr.NonEmptyReadonlyArray<unknown>,
-        IE | MsgPackError,
-        Done
-      > {
-        const out = Arr.empty<unknown>()
+      function loop(
+        chunk: Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
+      ): Pull.Pull<Arr.NonEmptyReadonlyArray<unknown>, IE | MsgPackError, Done> {
+        const out = Arr.empty<unknown>();
         for (let i = 0; i < chunk.length; i++) {
-          let buf = chunk[i]
+          let buf = chunk[i];
           if (incomplete !== undefined) {
-            const prev = buf
-            buf = new Uint8Array(incomplete.bytes.length + buf.length)
-            buf.set(incomplete.bytes)
-            buf.set(prev, incomplete.bytes.length)
-            incomplete = undefined
+            const prev = buf;
+            buf = new Uint8Array(incomplete.bytes.length + buf.length);
+            buf.set(incomplete.bytes);
+            buf.set(prev, incomplete.bytes.length);
+            incomplete = undefined;
           }
           try {
-            out.push(...unpackr.unpackMultiple(buf))
+            out.push(...unpackr.unpackMultiple(buf));
           } catch (cause) {
-            const error: any = cause
+            const error: any = cause;
             if (error.incomplete) {
-              incomplete = { bytes: buf.subarray(error.lastPosition), cause }
+              incomplete = { bytes: buf.subarray(error.lastPosition), cause };
               if (error.values) {
-                out.push(...error.values)
+                out.push(...error.values);
               }
             } else {
-              return Effect.fail(new MsgPackError({ kind: "Unpack", cause }))
+              return Effect.fail(new MsgPackError({ kind: "Unpack", cause }));
             }
           }
         }
-        return Arr.isReadonlyArrayNonEmpty(out) ? Effect.succeed(out) : pull
+        return Arr.isReadonlyArrayNonEmpty(out) ? Effect.succeed(out) : pull;
       }
 
-      return pull
-    })
-  )
+      return pull;
+    }),
+  );
 
 /**
  * Creates a MessagePack decoder channel for values of a schema.
@@ -198,18 +201,18 @@ export const decode = <IE = never, Done = unknown>(): Channel.Channel<
  * @category constructors
  * @since 4.0.0
  */
-export const decodeSchema = <S extends Schema.Constraint>(
-  schema: S
-) =>
-<IE = never, Done = unknown>(): Channel.Channel<
-  Arr.NonEmptyReadonlyArray<S["Type"]>,
-  Schema.SchemaError | MsgPackError | IE,
-  Done,
-  Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
-  IE,
-  Done,
-  S["DecodingServices"]
-> => Channel.pipeTo(decode<IE, Done>(), ChannelSchema.decodeUnknown(schema)())
+export const decodeSchema =
+  <S extends Schema.Constraint>(schema: S) =>
+  <IE = never, Done = unknown>(): Channel.Channel<
+    Arr.NonEmptyReadonlyArray<S["Type"]>,
+    Schema.SchemaError | MsgPackError | IE,
+    Done,
+    Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
+    IE,
+    Done,
+    S["DecodingServices"]
+  > =>
+    Channel.pipeTo(decode<IE, Done>(), ChannelSchema.decodeUnknown(schema)());
 
 /**
  * Wraps a bidirectional byte channel with MessagePack encoding and decoding.
@@ -231,7 +234,7 @@ export const duplex = <R, IE, OE, OutDone, InDone>(
     IE | MsgPackError,
     InDone,
     R
-  >
+  >,
 ): Channel.Channel<
   Arr.NonEmptyReadonlyArray<unknown>,
   MsgPackError | OE,
@@ -240,11 +243,7 @@ export const duplex = <R, IE, OE, OutDone, InDone>(
   IE,
   InDone,
   R
-> =>
-  encode<IE, InDone>().pipe(
-    Channel.pipeTo(self),
-    Channel.pipeTo(decode())
-  )
+> => encode<IE, InDone>().pipe(Channel.pipeTo(self), Channel.pipeTo(decode()));
 
 /**
  * Wraps a bidirectional byte channel with schema-aware MessagePack encoding and
@@ -260,12 +259,10 @@ export const duplex = <R, IE, OE, OutDone, InDone>(
  * @since 4.0.0
  */
 export const duplexSchema: {
-  <In extends Schema.Constraint, Out extends Schema.Constraint>(
-    options: {
-      readonly inputSchema: In
-      readonly outputSchema: Out
-    }
-  ): <OutErr, OutDone, InErr, InDone, R>(
+  <In extends Schema.Constraint, Out extends Schema.Constraint>(options: {
+    readonly inputSchema: In;
+    readonly outputSchema: Out;
+  }): <OutErr, OutDone, InErr, InDone, R>(
     self: Channel.Channel<
       Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
       OutErr,
@@ -274,7 +271,7 @@ export const duplexSchema: {
       MsgPackError | Schema.SchemaError | InErr,
       InDone,
       R
-    >
+    >,
   ) => Channel.Channel<
     Arr.NonEmptyReadonlyArray<Out["Type"]>,
     MsgPackError | Schema.SchemaError | OutErr,
@@ -283,7 +280,7 @@ export const duplexSchema: {
     InErr,
     InDone,
     R | In["EncodingServices"] | Out["DecodingServices"]
-  >
+  >;
   <Out extends Schema.Constraint, In extends Schema.Constraint, OutErr, OutDone, InErr, InDone, R>(
     self: Channel.Channel<
       Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
@@ -295,9 +292,9 @@ export const duplexSchema: {
       R
     >,
     options: {
-      readonly inputSchema: In
-      readonly outputSchema: Out
-    }
+      readonly inputSchema: In;
+      readonly outputSchema: Out;
+    },
   ): Channel.Channel<
     Arr.NonEmptyReadonlyArray<Out["Type"]>,
     MsgPackError | Schema.SchemaError | OutErr,
@@ -306,30 +303,33 @@ export const duplexSchema: {
     InErr,
     InDone,
     R | In["EncodingServices"] | Out["DecodingServices"]
-  >
-} = dual(2, <Out extends Schema.Constraint, In extends Schema.Constraint, OutErr, OutDone, InErr, InDone, R>(
-  self: Channel.Channel<
-    Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
-    OutErr,
+  >;
+} = dual(
+  2,
+  <Out extends Schema.Constraint, In extends Schema.Constraint, OutErr, OutDone, InErr, InDone, R>(
+    self: Channel.Channel<
+      Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
+      OutErr,
+      OutDone,
+      Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
+      MsgPackError | Schema.SchemaError | InErr,
+      InDone,
+      R
+    >,
+    options: {
+      readonly inputSchema: In;
+      readonly outputSchema: Out;
+    },
+  ): Channel.Channel<
+    Arr.NonEmptyReadonlyArray<Out["Type"]>,
+    MsgPackError | Schema.SchemaError | OutErr,
     OutDone,
-    Arr.NonEmptyReadonlyArray<Uint8Array<ArrayBuffer>>,
-    MsgPackError | Schema.SchemaError | InErr,
+    Arr.NonEmptyReadonlyArray<In["Type"]>,
+    InErr,
     InDone,
-    R
-  >,
-  options: {
-    readonly inputSchema: In
-    readonly outputSchema: Out
-  }
-): Channel.Channel<
-  Arr.NonEmptyReadonlyArray<Out["Type"]>,
-  MsgPackError | Schema.SchemaError | OutErr,
-  OutDone,
-  Arr.NonEmptyReadonlyArray<In["Type"]>,
-  InErr,
-  InDone,
-  R | In["EncodingServices"] | Out["DecodingServices"]
-> => ChannelSchema.duplexUnknown(duplex(self), options))
+    R | In["EncodingServices"] | Out["DecodingServices"]
+  > => ChannelSchema.duplexUnknown(duplex(self), options),
+);
 
 /**
  * Schema type for values encoded as MessagePack bytes.
@@ -342,9 +342,10 @@ export const duplexSchema: {
  * @category schemas
  * @since 4.0.0
  */
-export interface schema<S extends Schema.Constraint>
-  extends Schema.decodeTo<S, Schema.instanceOf<Uint8Array<ArrayBuffer>>>
-{}
+export interface schema<S extends Schema.Constraint> extends Schema.decodeTo<
+  S,
+  Schema.instanceOf<Uint8Array<ArrayBuffer>>
+> {}
 
 /**
  * Schema for decoding MessagePack bytes into values and encoding values back to
@@ -363,31 +364,23 @@ export const transformation: SchemaTransformation.Transformation<
 > = SchemaTransformation.transformOrFail({
   decode(e, options) {
     try {
-      return Effect.succeed(Msgpackr.decode(e))
+      return Effect.succeed(Msgpackr.decode(e));
     } catch {
       return Effect.fail(
-        new SchemaIssue.InvalidValue(
-          { expected: "valid MessagePack bytes" },
-          e,
-          options
-        )
-      )
+        new SchemaIssue.InvalidValue({ expected: "valid MessagePack bytes" }, e, options),
+      );
     }
   },
   encode(t, options) {
     try {
-      return Effect.succeed(Msgpackr.encode(t) as Uint8Array<ArrayBuffer>)
+      return Effect.succeed(Msgpackr.encode(t) as Uint8Array<ArrayBuffer>);
     } catch {
       return Effect.fail(
-        new SchemaIssue.InvalidValue(
-          { expected: "a MessagePack-serializable value" },
-          t,
-          options
-        )
-      )
+        new SchemaIssue.InvalidValue({ expected: "a MessagePack-serializable value" }, t, options),
+      );
     }
-  }
-})
+  },
+});
 
 /**
  * Builds a schema that stores values as MessagePack bytes.
@@ -402,5 +395,5 @@ export const transformation: SchemaTransformation.Transformation<
  */
 export const schema = <S extends Schema.Constraint>(schema: S): schema<S> =>
   (Schema.Uint8Array as Schema.instanceOf<Uint8Array<ArrayBuffer>>).pipe(
-    Schema.decodeTo(schema, transformation)
-  )
+    Schema.decodeTo(schema, transformation),
+  );

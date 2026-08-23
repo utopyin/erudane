@@ -168,15 +168,15 @@ patchedDependencies:
   "@astrojs/starlight@0.41.7": patches/@astrojs%2Fstarlight@0.41.7.patch
   starlight-blog@0.28.0: patches/starlight-blog@0.28.0.patch
 minimumReleaseAgeExclude:
-  - '@effect/atom-react@4.0.0-rc.111'
-  - '@effect/platform-bun@4.0.0-rc.111'
-  - '@effect/platform-node-shared@4.0.0-rc.111'
-  - '@effect/platform-node@4.0.0-rc.111'
-  - '@effect/sql-d1@4.0.0-rc.111'
-  - '@effect/sql-mysql2@4.0.0-rc.111'
-  - '@effect/sql-pg@4.0.0-rc.111'
-  - '@effect/sql-sqlite-do@4.0.0-rc.111'
-  - '@effect/vitest@4.0.0-rc.111'
-  - '@foldkit/vite-plugin@0.16.1'
+  - "@effect/atom-react@4.0.0-rc.111"
+  - "@effect/platform-bun@4.0.0-rc.111"
+  - "@effect/platform-node-shared@4.0.0-rc.111"
+  - "@effect/platform-node@4.0.0-rc.111"
+  - "@effect/sql-d1@4.0.0-rc.111"
+  - "@effect/sql-mysql2@4.0.0-rc.111"
+  - "@effect/sql-pg@4.0.0-rc.111"
+  - "@effect/sql-sqlite-do@4.0.0-rc.111"
+  - "@effect/vitest@4.0.0-rc.111"
+  - "@foldkit/vite-plugin@0.16.1"
   - effect@4.0.0-rc.111
   - foldkit@0.148.2
