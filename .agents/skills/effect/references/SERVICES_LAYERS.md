@@ -30,13 +30,13 @@ export class NotFound extends Schema.TaggedErrorClass<NotFound>()("UserRepo.NotF
   id: UserId,
 }) {}
 
-export * as UserRepo from "./user-repo.js";
+export * as UserRepo from "./user-repo";
 ```
 
 Consumers use the module namespace.
 
 ```ts
-import { UserRepo } from "./user-repo.js";
+import { UserRepo } from "./user-repo";
 
 const program = Effect.gen(function* () {
   const repo = yield* UserRepo.Service;
@@ -48,18 +48,18 @@ The self-export is deliberate. It lets the file remain the module while giving e
 
 ```ts
 // Sibling module: import the owning leaf directly.
-import { UserRepo } from "./user-repo.js";
+import { UserRepo } from "./user-repo";
 
 // Folder or package barrel: relay the identity established by the leaf.
-export { UserRepo } from "./user-repo.js";
+export { UserRepo } from "./user-repo";
 ```
 
 Guidance:
 
 - Do not name the tag class `UserRepo` inside `user-repo.ts`; the module namespace is the domain name.
-- In this module style, single-file modules self-export their canonical namespace at the bottom: `export * as UserRepo from "./user-repo.js"`.
+- In this module style, single-file modules self-export their canonical namespace at the bottom: `export * as UserRepo from "./user-repo"`.
 - Sibling modules import that namespace from the owning leaf; they do not import through their own aggregate barrel.
-- Folder and package barrels relay established leaf identities with `export { UserRepo } from "./user-repo.js"`.
+- Folder and package barrels relay established leaf identities with `export { UserRepo } from "./user-repo"`.
 - The resulting `UserRepo.UserRepo === UserRepo` self-reference is unusual. Use this pattern only where the runtime and toolchain support it; otherwise use named exports or a separate barrel.
 - Export only intentional surface; keep local schemas, row codecs, helpers, and implementation details unexported.
 - Do not introduce TypeScript `namespace` declarations for organization.

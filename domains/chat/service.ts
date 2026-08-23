@@ -6,8 +6,8 @@ import * as LanguageModel from "effect/unstable/ai/LanguageModel";
 import * as Prompt from "effect/unstable/ai/Prompt";
 import * as Response from "effect/unstable/ai/Response";
 import type * as ToolkitModule from "effect/unstable/ai/Toolkit";
-import { ChatError } from "./errors.js";
-import { ChatEvent, type ChatInput, type RegistryTool } from "./types.js";
+import { ChatError } from "./errors";
+import { ChatEvent, type ChatInput, type RegistryTool } from "./types";
 
 const DEFAULT_MAX_STEPS = 5;
 
@@ -90,4 +90,4 @@ export const layer = Layer.effect(
   }),
 );
 
-export * as Chat from "./service.js";
+export * as Chat from "./service";

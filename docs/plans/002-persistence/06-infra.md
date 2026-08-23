@@ -16,7 +16,7 @@ import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as HttpRouter from "effect/unstable/http/HttpRouter";
-import * as Model from "./model.js";
+import * as Model from "./model";
 
 export default class Api extends Cloudflare.Worker<Api>()(
   "Api",
@@ -39,7 +39,7 @@ export default class Api extends Cloudflare.Worker<Api>()(
 - `toHttpEffect` builds the router layer once at boot and yields the per-request `HttpEffect`; route requirements that are not satisfied by the layer (`Db.Runtime` = `Alchemy.RuntimeContext`, `Scope`, `HttpServerRequest`) flow into `fetch`'s requirements, which the worker bridge provides per request.
 - `Layer.succeed(Db.Service, db)`: the service was already built by `Effect.provide(Db.layer)` on the init; re-wrapping it avoids building the layer twice (the resource yields are idempotent, but one is enough).
 - `Model.layer` reads `Config.redacted("OPENAI_API_KEY").pipe(Config.withDefault(Redacted.make("")))`, `Config.string("OPENAI_MODEL").pipe(Config.withDefault("gpt-4.1-mini"))`, `Config.redacted("CHATGPT_OAUTH").pipe(Config.withDefault(Redacted.make("")))`, `Config.string("CHATGPT_MODEL")…`. Any `Config` read during init is intercepted at plan time and bound to the Worker as a secret; at runtime the same read resolves from the env through `WorkerConfigProvider` (`Runtime.ts:85-126`, `Workers/ConfigProvider.ts`).
-- `alchemy.run.ts` imports the class: `import Api from "./apps/api/src/index.js"`; `Website` keeps `env: { API: Api }` (the class is the resource; verify the env binding accepts the class form — `examples/cloudflare-tanstack-rpc-drizzle` binds a class worker the same way).
+- `alchemy.run.ts` imports the class: `import Api from "./apps/api/src/index"`; `Website` keeps `env: { API: Api }` (the class is the resource; verify the env binding accepts the class form — `examples/cloudflare-tanstack-rpc-drizzle` binds a class worker the same way).
 
 ## `alchemy.run.ts`
 

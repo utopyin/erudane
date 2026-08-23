@@ -1,5 +1,5 @@
-import type { ApiEnv } from "./env.js";
-import { runtime } from "./runtime.js";
+import type { ApiEnv } from "./env";
+import { runtime } from "./runtime";
 
 export default {
   fetch: (request: Request, env: ApiEnv): Promise<Response> => runtime(env).handler(request),

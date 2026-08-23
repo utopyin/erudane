@@ -14,7 +14,7 @@ import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as HttpRouter from "effect/unstable/http/HttpRouter";
 import * as HttpServerRequest from "effect/unstable/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
-import * as Token from "./token.js";
+import * as Token from "./token";
 
 const AUTHORIZE_URL = "https://auth.openai.com/oauth/authorize";
 const PORT = 1455;

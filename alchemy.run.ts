@@ -7,7 +7,7 @@ import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import * as ChatGpt from "./scripts/chatgpt/token.js";
+import * as ChatGpt from "./scripts/chatgpt/token";
 
 /**
  * Development-only inference through a ChatGPT subscription: when

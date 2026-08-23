@@ -43,6 +43,8 @@ Use `repos/` for examples of idiomatic usage, tests, module structure, and API d
 
 **Commits:** Use the repo’s terse conventional style: `action(scope): imperative change` when a scope helps (`feat(admin): show feature flags`), otherwise `action: imperative change` or the existing domain prefix (`repo:`, `api:`, `cv2:`).
 
+**Imports carry no file extension.** `from "./service"`, `from "@erudane/db/schema"` — never `.js` or `.ts`. Bundlers and Bun resolve them; the extension is noise.
+
 **Import focused modules from their subpath. Let the path provide scope.**
 
 - When a package exposes a focused subpath (`@erudane/foo/bar`), import from that subpath instead of the package root.
@@ -52,7 +54,7 @@ Use `repos/` for examples of idiomatic usage, tests, module structure, and API d
 
 - If `@erudane/foo/bar` already scopes the code, prefer short local names there: `CommandInput`, `NotImplemented`, `ServiceShape`.
 - Keep long/global names only for identifiers that must stay distinct in traces, DI, or cross-package search — Effect service **tag ids** (`"@erudane/x/Accounts"`) and repo names. The class holding that tag still takes a short local name.
-- Single-service Effect modules use file-local role names (`Interface`, `Service`, `layer`) and project one canonical namespace from the bottom of the file: `export * as Accounts from "./accounts.js"`. See `.agents/skills/effect-design/references/services-layers.md`.
+- Single-service Effect modules use file-local role names (`Interface`, `Service`, `layer`) and project one canonical namespace from the bottom of the file: `export * as Accounts from "./accounts"`. See `.agents/skills/effect-design/references/services-layers.md`.
 - If importers needs a shape, export it from the domain module's `types.ts` / `errors.ts`, so that it's DRY and there's one source of truth.
 - Always try to minimize the public interface / exports of a module. Only export types or functions that need to be imported explicitely outside the module, and ensure the we keep the module exports as high level as possible (Deep modules principle).
 

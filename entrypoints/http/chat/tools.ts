@@ -12,4 +12,4 @@ export const toolkit = Toolkit.merge(ChatTools.toolkit);
 
 export type Tools = typeof toolkit.tools;
 
-export * as Registry from "./tools.js";
+export * as Registry from "./tools";

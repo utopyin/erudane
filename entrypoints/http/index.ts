@@ -1,7 +1,7 @@
 import * as Layer from "effect/Layer";
 import * as HttpRouter from "effect/unstable/http/HttpRouter";
 import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
-import * as ChatRoute from "./chat/route.js";
+import * as ChatRoute from "./chat/route";
 
 /** Every HTTP route of the API, as one router layer. Requires `Chat.Service`. */
 export const layer = Layer.mergeAll(
@@ -9,4 +9,4 @@ export const layer = Layer.mergeAll(
   ChatRoute.layer,
 );
 
-export * as Http from "./index.js";
+export * as Http from "./index";

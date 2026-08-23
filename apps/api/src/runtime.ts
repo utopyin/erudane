@@ -3,8 +3,8 @@ import { Http } from "@erudane/http";
 import { layer as registry } from "@erudane/http/chat/registry";
 import * as Layer from "effect/Layer";
 import * as HttpRouter from "effect/unstable/http/HttpRouter";
-import type { ApiEnv } from "./env.js";
-import * as Model from "./model.js";
+import type { ApiEnv } from "./env";
+import * as Model from "./model";
 
 const make = (env: ApiEnv) => {
   // provideMerge, not provide: toWebHandler satisfies route requirements from

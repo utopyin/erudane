@@ -11,7 +11,7 @@ export const MIGRATIONS_TABLE = `${PREFIX}_migrations`;
 ```ts
 // packages/db/table.ts — LEAF
 import { pgTableCreator } from "drizzle-orm/pg-core";
-import { PREFIX } from "./config.js";
+import { PREFIX } from "./config";
 
 /** The only table factory the schema may use: `table("threads")` → `eru_threads`, snake_case columns. */
 export const table = pgTableCreator((name) => `${PREFIX}_${name}`, "snake_case");
@@ -25,7 +25,7 @@ export const table = pgTableCreator((name) => `${PREFIX}_${name}`, "snake_case")
 // packages/db/schema.ts — LEAF (closure: drizzle-orm)
 import { defineRelations } from "drizzle-orm";
 import { index, integer, jsonb, pgEnum, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { table } from "./table.js";
+import { table } from "./table";
 
 export const threads = table("threads", {
   id: uuid().primaryKey(), // client-minted or server-minted, never DEFAULT — see 05
@@ -77,7 +77,7 @@ Notes:
 ```ts
 // packages/db/drizzle.config.ts
 import { defineConfig } from "drizzle-kit";
-import { MIGRATIONS_TABLE, PREFIX } from "./config.js";
+import { MIGRATIONS_TABLE, PREFIX } from "./config";
 
 export default defineConfig({
   dialect: "postgresql",
@@ -106,8 +106,8 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
-import { Hyperdrive } from "./infra.js";
-import { relations } from "./schema.js";
+import { Hyperdrive } from "./infra";
+import { relations } from "./schema";
 
 /** What every query needs: the worker's per-request runtime (binding access, execution scope). */
 export type Runtime = Alchemy.RuntimeContext;
@@ -133,7 +133,7 @@ export const layer = Layer.effect(
   }),
 ).pipe(Layer.provide(Cloudflare.Hyperdrive.ConnectBinding));
 
-export * as Db from "./service.js";
+export * as Db from "./service";
 ```
 
 How it behaves in the two phases (`infrastructure-as-effects/phases.mdx`):

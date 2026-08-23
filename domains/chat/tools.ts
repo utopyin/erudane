@@ -17,4 +17,4 @@ export const CurrentTime = Tool.make("CurrentTime", {
 
 export const toolkit = Toolkit.make(CurrentTime);
 
-export * as ChatTools from "./tools.js";
+export * as ChatTools from "./tools";

@@ -1,6 +1,6 @@
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import { ChatTools } from "./tools.js";
+import { ChatTools } from "./tools";
 
 /** Handler layer for the chat domain's own tools. */
 export const layer = ChatTools.toolkit.toLayer(
@@ -9,4 +9,4 @@ export const layer = ChatTools.toolkit.toLayer(
   }),
 );
 
-export * as ChatHandlers from "./handlers.js";
+export * as ChatHandlers from "./handlers";

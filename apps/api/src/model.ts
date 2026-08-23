@@ -12,7 +12,7 @@ import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as HttpClient from "effect/unstable/http/HttpClient";
 import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
-import type { ApiEnv } from "./env.js";
+import type { ApiEnv } from "./env";
 
 const CODEX_URL = "https://chatgpt.com/backend-api/codex";
 

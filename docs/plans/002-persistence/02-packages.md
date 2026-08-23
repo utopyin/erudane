@@ -39,8 +39,8 @@ Dependencies: `drizzle-orm`, `@effect/sql-pg`, `pg`, `alchemy`, `effect`. Dev: `
 Exports:
 
 - `config.ts` → `PREFIX`, `MIGRATIONS_TABLE`.
-- `schema.ts` → `threads`, `messages`, `relations`, and the row types `Thread`, `Message` (`$inferSelect`). `export * as Schema from "./schema.js"` is **not** done — importers name the tables directly, the path gives scope.
-- `service.ts` → `Service`, `Interface`, `layer`, `Runtime` (type), `DbError`; `export * as Db from "./service.js"`.
+- `schema.ts` → `threads`, `messages`, `relations`, and the row types `Thread`, `Message` (`$inferSelect`). `export * as Schema from "./schema"` is **not** done — importers name the tables directly, the path gives scope.
+- `service.ts` → `Service`, `Interface`, `layer`, `Runtime` (type), `DbError`; `export * as Db from "./service"`.
 - `infra.ts` → `Hyperdrive`; imported by `service.ts` and by `alchemy.run.ts` (for stack outputs).
 
 Leaf claims: `config.ts`, `table.ts`, `schema.ts` never import `service.ts` or `infra.ts`. Anything may import `@erudane/db/schema` for row shapes (the web app does not; it gets UI shapes from tier 3).
