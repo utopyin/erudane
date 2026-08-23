@@ -10,12 +10,12 @@ import {
   useState,
   type ComponentProps,
   type FormEvent,
-  type KeyboardEvent,
   type MouseEvent,
   type RefObject,
 } from "react";
 
 import { Button } from "@erudane/ui/button";
+import { Textarea } from "@erudane/ui/textarea";
 import { LoaderIcon, SendIcon, StopIcon } from "@erudane/ui/icons";
 import { cn } from "@erudane/ui/utils";
 
@@ -92,10 +92,10 @@ function PromptInputTextarea({
   className,
   onKeyDown,
   ...props
-}: Omit<ComponentProps<"textarea">, "value" | "onChange">) {
-  const { text, setText, submit, textareaRef } = usePrompt();
+}: Omit<ComponentProps<typeof Textarea>, "value" | "onValueChange" | "variant">) {
+  const { text, setText, submit } = usePrompt();
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown: ComponentProps<typeof Textarea>["onKeyDown"] = (event) => {
     onKeyDown?.(event);
     if (event.defaultPrevented) return;
     if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -105,18 +105,15 @@ function PromptInputTextarea({
   };
 
   return (
-    <textarea
-      ref={textareaRef}
+    <Textarea
       data-slot="prompt-input-textarea"
+      variant="ghost"
       value={text}
-      onChange={(event) => setText(event.target.value)}
+      onValueChange={setText}
       onKeyDown={handleKeyDown}
       rows={1}
       aria-label="Message"
-      className={cn(
-        "placeholder:text-muted-foreground field-sizing-content max-h-48 min-h-8 w-full resize-none bg-transparent px-1 py-1 text-base outline-none",
-        className,
-      )}
+      className={cn("max-h-48", className)}
       {...props}
     />
   );

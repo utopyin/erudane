@@ -1,8 +1,21 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
+import type { Ref } from "react";
 
 import { cn } from "@erudane/ui/utils";
 
-function ScrollArea({ className, children, ...props }: ScrollAreaPrimitive.Root.Props) {
+interface ScrollAreaProps extends ScrollAreaPrimitive.Root.Props {
+  /** The element that actually scrolls — for stick-to-bottom, scroll-into-view, etc. */
+  readonly viewportRef?: Ref<HTMLDivElement>;
+  readonly viewportClassName?: string;
+}
+
+function ScrollArea({
+  className,
+  children,
+  viewportRef,
+  viewportClassName,
+  ...props
+}: ScrollAreaProps) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -10,8 +23,12 @@ function ScrollArea({ className, children, ...props }: ScrollAreaPrimitive.Root.
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
+        ref={viewportRef}
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        className={cn(
+          "size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1",
+          viewportClassName,
+        )}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

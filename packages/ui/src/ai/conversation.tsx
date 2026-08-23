@@ -2,7 +2,6 @@
  * Scrolling message column that follows the stream while the user is at the
  * bottom, releases when they scroll up, and offers a "jump to latest" button.
  */
-import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
 import {
   createContext,
   useCallback,
@@ -16,7 +15,7 @@ import {
 
 import { Button } from "@erudane/ui/button";
 import { ArrowDownIcon } from "@erudane/ui/icons";
-import { ScrollBar } from "@erudane/ui/scroll-area";
+import { ScrollArea } from "@erudane/ui/scroll-area";
 import { cn } from "@erudane/ui/utils";
 
 const PIN_THRESHOLD_PX = 32;
@@ -73,26 +72,19 @@ function useStickToBottom(viewport: RefObject<HTMLDivElement | null>) {
   return { pinned, scrollToBottom };
 }
 
-function Conversation({ className, children, ...props }: ScrollAreaPrimitive.Root.Props) {
+function Conversation({ className, children, ...props }: ComponentProps<typeof ScrollArea>) {
   const viewport = useRef<HTMLDivElement>(null);
   const state = useStickToBottom(viewport);
   return (
     <Context.Provider value={state}>
-      <ScrollAreaPrimitive.Root
+      <ScrollArea
         data-slot="conversation"
-        className={cn("relative min-h-0 flex-1", className)}
+        viewportRef={viewport}
+        className={cn("min-h-0 flex-1", className)}
         {...props}
       >
-        <ScrollAreaPrimitive.Viewport
-          ref={viewport}
-          data-slot="conversation-viewport"
-          className="size-full outline-none"
-        >
-          {children}
-        </ScrollAreaPrimitive.Viewport>
-        <ScrollBar />
-        <ScrollAreaPrimitive.Corner />
-      </ScrollAreaPrimitive.Root>
+        {children}
+      </ScrollArea>
     </Context.Provider>
   );
 }
