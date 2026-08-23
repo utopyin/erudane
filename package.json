@@ -1,7 +1,7 @@
 {
-  "name": "seneca",
+  "name": "erudane",
   "version": "0.0.0",
-  "description": "Seneca is a learning platform that empowers you to learn anything.",
+  "description": "Erudane is a learning platform that empowers you to learn anything.",
   "workspaces": {
     "packages": [
       "packages/*",

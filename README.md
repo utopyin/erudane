@@ -1,1 +1,1 @@
-Seneca is a learning platform that empowers you to learn anything.
+Erudane is a learning platform that empowers you to learn anything.

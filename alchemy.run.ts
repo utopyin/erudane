@@ -9,7 +9,7 @@ const Website = Cloudflare.Website.Vite("Website", {
 export type WebsiteEnv = Cloudflare.InferEnv<typeof Website>;
 
 export default Alchemy.Stack(
-  "Seneca",
+  "Erudane",
   {
     providers: Cloudflare.providers(),
     state: Cloudflare.state(),

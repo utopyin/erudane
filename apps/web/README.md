@@ -1,6 +1,6 @@
-# @seneca/web
+# @erudane/web
 
-The Seneca TanStack Start application, deployed to Cloudflare through Alchemy.
+The Erudane TanStack Start application, deployed to Cloudflare through Alchemy.
 
 From the repository root:
 

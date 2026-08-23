@@ -1,5 +1,5 @@
 {
-  "name": "@seneca/web",
+  "name": "@erudane/web",
   "private": true,
   "type": "module",
   "scripts": {

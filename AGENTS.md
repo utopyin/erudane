@@ -37,20 +37,20 @@ Use `repos/` for examples of idiomatic usage, tests, module structure, and API d
 
 **Import focused modules from their subpath. Let the path provide scope.**
 
-- When a package exposes a focused subpath (`@seneca/foo/bar`), import from that subpath instead of the package root.
+- When a package exposes a focused subpath (`@erudane/foo/bar`), import from that subpath instead of the package root.
 - Do not re-export subpath symbols from the root entry unless there is a strong reason. Keep root exports for the general surface only.
 
 **Module exports**
 
-- If `@seneca/foo/bar` already scopes the code, prefer short local names there: `CommandInput`, `NotImplemented`, `ServiceShape`.
-- Keep long/global names only for identifiers that must stay distinct in traces, DI, or cross-package search — Effect service **tag ids** (`"@seneca/x/Accounts"`) and repo names. The class holding that tag still takes a short local name.
+- If `@erudane/foo/bar` already scopes the code, prefer short local names there: `CommandInput`, `NotImplemented`, `ServiceShape`.
+- Keep long/global names only for identifiers that must stay distinct in traces, DI, or cross-package search — Effect service **tag ids** (`"@erudane/x/Accounts"`) and repo names. The class holding that tag still takes a short local name.
 - Single-service Effect modules use file-local role names (`Interface`, `Service`, `layer`) and project one canonical namespace from the bottom of the file: `export * as Accounts from "./accounts.js"`. See `.agents/skills/effect-design/references/services-layers.md`.
 - If importers needs a shape, export it from the domain module's `types.ts` / `errors.ts`, so that it's DRY and there's one source of truth.
 - Always try to minimize the public interface / exports of a module. Only export types or functions that need to be imported explicitely outside the module, and ensure the we keep the module exports as high level as possible (Deep modules principle).
 
 **File and directory naming.**
 
-The import path is the sentence; the filename is its last word. `@seneca/billing/trial/promise` reads well because `trial/` carries the scope, so `promise.ts` gets to be one word. A long hyphenated filename is a diagnostic, not a style violation — it usually means the file sits in the wrong directory, the directory is badly named, or the file should not exist on its own. Use judgement here; the point is to notice when a new file's name obviously doesn't make sense, not to police every hyphen.
+The import path is the sentence; the filename is its last word. `@erudane/billing/trial/promise` reads well because `trial/` carries the scope, so `promise.ts` gets to be one word. A long hyphenated filename is a diagnostic, not a style violation — it usually means the file sits in the wrong directory, the directory is badly named, or the file should not exist on its own. Use judgement here; the point is to notice when a new file's name obviously doesn't make sense, not to police every hyphen.
 
 - Don't repeat a word an ancestor directory already supplies. `campaigns/actions/common/get-campaign-target-execution-state.ts` says "campaign" twice and "action" once, all already in the path.
 - Files are nouns; the exported function is the verb. `getSyncProgress` belongs in `progress.ts`, not `get-sync-progress.ts`.
