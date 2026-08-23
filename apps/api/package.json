@@ -11,6 +11,7 @@
     "@effect/platform-bun": "catalog:",
     "@erudane/chat": "workspace:*",
     "@erudane/db": "workspace:*",
+    "@erudane/documents": "workspace:*",
     "@erudane/files": "workspace:*",
     "@erudane/firecrawl": "workspace:*",
     "@erudane/http": "workspace:*",

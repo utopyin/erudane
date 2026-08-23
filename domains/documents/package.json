@@ -15,11 +15,13 @@
     "check:types": "tsc"
   },
   "dependencies": {
-    "@blocknote/server-util": "catalog:",
+    "@blocknote/core": "catalog:",
     "@erudane/db": "workspace:*",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "lib0": "catalog:",
+    "linkedom": "catalog:",
+    "y-prosemirror": "catalog:",
     "y-protocols": "catalog:",
     "yjs": "catalog:"
   },

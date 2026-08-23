@@ -15,6 +15,7 @@
   "dependencies": {
     "@erudane/chat": "workspace:*",
     "@erudane/db": "workspace:*",
+    "@erudane/documents": "workspace:*",
     "@erudane/files": "workspace:*",
     "@erudane/research": "workspace:*",
     "effect": "catalog:"
