@@ -7,7 +7,8 @@
       "packages/*",
       "domains/*",
       "entrypoints/*",
-      "apps/*"
+      "apps/*",
+      "scripts"
     ],
     "catalog": {
       "react": "^19.0.0",
@@ -30,7 +31,8 @@
     "check": "bun run fix && bun run check:types",
     "prepare": "effect-tsgo patch --typescript --oxlint",
     "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy"
+    "destroy": "alchemy destroy",
+    "login:chatgpt": "bun run scripts/chatgpt/login.ts"
   },
   "dependencies": {
     "@effect/platform-bun": "catalog:",

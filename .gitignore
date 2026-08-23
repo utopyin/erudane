@@ -41,3 +41,6 @@ worker-configuration.d.ts
 
 # alchemy
 .alchemy
+
+# local auth tokens
+.auth
