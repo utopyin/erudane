@@ -1,25 +1,25 @@
 /**
- * Phase-1 collab spike page (throwaway — the real lesson route is phase 7).
- * BlockNote + y-websocket against the DocumentRoom Durable Object: open the
- * same document id in two tabs to watch edits and presence converge.
+ * The collaborative document editor: BlockNote + y-websocket straight to the
+ * document's DocumentRoom DO. The agent co-edits the same doc through its
+ * tools mid-chat-run — its presence and edits appear live.
  */
 import { FRAGMENT } from "@erudane/documents/types";
 import { withCollaboration } from "@blocknote/core/yjs";
 import { BlockNoteViewRaw, useCreateBlockNote } from "@blocknote/react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { WebsocketProvider } from "y-websocket";
 import * as Y from "yjs";
 import "@blocknote/core/style.css";
 
-export const Route = createFileRoute("/doc-spike/$documentId")({ component: SpikePage });
+export const Route = createFileRoute("/doc/$documentId")({ ssr: false, component: DocumentPage });
 
 interface Session {
   readonly doc: Y.Doc;
   readonly provider: WebsocketProvider;
 }
 
-function SpikePage() {
+function DocumentPage() {
   const { documentId } = Route.useParams();
   const [session, setSession] = useState<Session | null>(null);
 
@@ -43,8 +43,20 @@ function SpikePage() {
     };
   }, [documentId]);
 
-  if (session === null) return <main style={{ padding: 32 }}>connecting…</main>;
-  return <Editor key={documentId} session={session} />;
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-4 px-4 py-8">
+      <div className="text-muted-foreground text-sm">
+        <Link to="/subjects" className="hover:underline">
+          Subjects
+        </Link>
+      </div>
+      {session === null ? (
+        <p className="text-muted-foreground">connecting…</p>
+      ) : (
+        <Editor key={documentId} session={session} />
+      )}
+    </main>
+  );
 }
 
 function Editor({ session }: { readonly session: Session }) {
@@ -57,9 +69,5 @@ function Editor({ session }: { readonly session: Session }) {
       },
     }),
   );
-  return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: 32 }}>
-      <BlockNoteViewRaw editor={editor} />
-    </main>
-  );
+  return <BlockNoteViewRaw editor={editor} />;
 }
