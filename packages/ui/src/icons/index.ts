@@ -23,3 +23,5 @@ export { WrenchGlyph18 as ToolIcon } from "./WrenchGlyph18";
 export { GlobeSearchGlyph18 as SearchWebIcon } from "./GlobeSearchGlyph18";
 export { PageGlyph18 as PageIcon } from "./PageGlyph18";
 export { LinkGlyph18 as LinkIcon } from "./LinkGlyph18";
+export { MagnifierGlyph18 as SearchIcon } from "./MagnifierGlyph18";
+export { XmarkGlyph18 as CloseIcon } from "./XmarkGlyph18";
