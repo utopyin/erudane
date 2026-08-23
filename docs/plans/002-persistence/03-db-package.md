@@ -203,4 +203,4 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
 ).pipe(Alchemy.retain());
 ```
 
-Points to verify in phase 1 (they are read from source but not yet executed): `Connection` accepting `Effect<Props>` (Resource.ts:351 says all resources do); `Docker.Container` healthcheck blocking `start` until healthy (else add a `pg_isready` poll in `migrate`'s command); `Command.Exec` running with the repo root as the default `cwd` base; `retain` composing on a resource Effect. In dev the `origin` Config reads still happen so `.env` must be complete — or wrap them in `Config.option` and fail only in deploy; decide when the first dev run complains.
+Points to verify in phase 1 (they are read from source but not yet executed): `Connection` accepting `Effect<Props>` (Resource.ts:351 says all resources do); `Docker.Container` healthcheck blocking `start` until healthy (else add a `pg_isready` poll in `migrate`'s command); `Command.Exec` running with the repo root as the default `cwd` base; `retain` composing on a resource Effect. The `origin` Config reads must sit inside the deploy branch (move them below the `if (dev)`), so `bun run dev` needs no `DB_*`.

@@ -53,7 +53,7 @@ Stack outputs add `hyperdriveId: hyperdrive.hyperdriveId` (from `Hyperdrive` in 
 
 ## Hyperdrive adoption checklist (phase 0, manual)
 
-1. Done: config `main-eu` → `.env.example` carries name, host, port, database, user. Copy to `.env`.
+1. Done: config `main-eu` → `.env.production.example` carries name, host, port, database, user. Copy to `.env.production`.
 2. `DB_PASSWORD`: the password of `pscale_api_gq62g6daakjh.qir2334nbie2` (the role the PlanetScale integration created). If it is not retrievable, create a dedicated role (`pg_read_all_data`, `pg_write_all_data`), set `DB_USER`/`DB_PASSWORD` to it, and the first deploy rotates the Hyperdrive origin.
 3. Done: Postgres 18 → `PG_IMAGE_TAG = "18"`.
 4. `alchemy deploy` once with the new stack: expect `Cloudflare.Hyperdrive.Connection "Db"` to **adopt** `main-eu` (the config was made by the PlanetScale integration — if Cloudflare rejects the update because of `integration_name`, create an alchemy-owned config on the same origin), `Command.Exec "DbMigrate"` to run against PlanetScale, and the Worker to receive the `HYPERDRIVE` binding. The Hyperdrive is `retain`ed — `alchemy destroy` leaves it alone.
@@ -68,8 +68,8 @@ Hyperdrive specifics honoured: transaction-mode pooling (no session state across
 2. Runs `bun run migrate` in `packages/db` with `DATABASE_URL` pointing at it (memoised on `migrations/**` — re-runs only when a migration is added).
 3. Registers the local Hyperdrive with the `dev` origin; the worker's `connectionString` is `postgres://erudane:erudane@localhost:54329/erudane?sslmode=disable`.
 
-The developer needs Docker running. `bun run db:generate` after editing `schema.ts`; `bun run db:studio` to look at rows. The `DATABASE_URL` in `.env` is for those CLI commands only; the stack computes its own.
+The developer needs Docker running. `bun run db:generate` after editing `schema.ts`; `bun run db:studio` to look at rows. `.env` holds only `DATABASE_URL` for those CLI commands; the stack computes its own URL and reads no `DB_*` in dev (the origin Config reads sit on the deploy branch of `Db.infra`).
 
 ## Deploy
 
-`bun run deploy` → migrations run against PlanetScale before the worker is updated (the `Exec` is yielded inside the Connection props, and the Connection is yielded by `Db.layer` inside the worker's init, so the order is Exec → Connection → Worker). A failing migration fails the deploy before any traffic hits the new code.
+`bun run deploy` (`alchemy deploy --env-file .env.production`) → migrations run against PlanetScale before the worker is updated (the `Exec` is yielded inside the Connection props, and the Connection is yielded by `Db.layer` inside the worker's init, so the order is Exec → Connection → Worker). A failing migration fails the deploy before any traffic hits the new code.

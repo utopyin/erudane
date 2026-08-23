@@ -14,7 +14,7 @@ apps/web                @erudane/web         tier 4  (thread routes, persistence
 
 - Catalog: `drizzle-orm: 1.0.0-rc.5-ab785fc`, `drizzle-kit: 1.0.0-rc.5-ab785fc`, `@effect/sql-pg: 4.0.0-rc.111`, `pg: ^8.23.0`, `@types/pg: ^8.20.0`.
 - Scripts: `db:generate` → `bun run --cwd packages/db generate`, `db:migrate`, `db:studio` pass-throughs.
-- `.env.example` (done) carries `HYPERDRIVE_NAME=main-eu`, the PlanetScale origin (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`), an empty `DB_PASSWORD`, and `DATABASE_URL` for the local Docker database (drizzle-kit CLI only).
+- Env files split by phase: `.env` (dev: `DATABASE_URL` for the drizzle-kit CLI, optional `OPENAI_API_KEY`) and `.env.production` (deploy: `OPENAI_API_KEY`, `HYPERDRIVE_NAME`, `DB_*`), loaded by `alchemy deploy --env-file .env.production`. Both have committed `.example` files; `.env.*` is gitignored.
 - `.gitignore`: nothing new (migrations are committed).
 
 ## `packages/db` — `@erudane/db`

@@ -31,8 +31,8 @@
     "check:types": "turbo run check:types",
     "check": "bun run fix && bun run check:types",
     "prepare": "effect-tsgo patch --typescript --oxlint",
-    "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy",
+    "deploy": "alchemy deploy --env-file .env.production",
+    "destroy": "alchemy destroy --env-file .env.production",
     "login:chatgpt": "bun run scripts/chatgpt/login.ts"
   },
   "dependencies": {

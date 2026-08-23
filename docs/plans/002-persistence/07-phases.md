@@ -4,7 +4,7 @@ Each phase ends green on `bun run check` and the named verification; one commit 
 
 ## Phase 0 — Inputs and scaffolding
 
-- Hyperdrive checklist from [06](./06-infra.md): name/origin/Postgres 18 are known and in `.env.example`; only `DB_PASSWORD` remains (filled in `.env` by hand).
+- Hyperdrive checklist from [06](./06-infra.md): name/origin/Postgres 18 are known and in `.env.example`; only `DB_PASSWORD` remains (filled in `.env.production` by hand).
 - Catalog entries (`drizzle-orm`, `drizzle-kit`, `@effect/sql-pg`, `pg`, `@types/pg`); `packages/db` with `package.json`, `tsconfig.json`, `config.ts`, `table.ts`, empty `schema.ts`; root `db:*` scripts; `.env.example`.
 - `docs/plans/002-persistence` committed (this).
 
