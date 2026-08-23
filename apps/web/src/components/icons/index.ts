@@ -7,7 +7,7 @@
 export { CircleCheckGlyph18 as CircleCheckIcon } from "./CircleCheckGlyph18";
 export { CircleStopGlyph18 as StopIcon } from "./CircleStopGlyph18";
 export { LoaderGlyph18 as LoaderIcon } from "./LoaderGlyph18";
-export { PaperPlane3Glyph18 as SendIcon } from "./PaperPlane3Glyph18";
+export { ArrowUpGlyph18 as SendIcon } from "./ArrowUpGlyph18";
 export { SparkleGlyph18 as SparkleIcon } from "./SparkleGlyph18";
 export { TriangleWarningGlyph18 as WarningIcon } from "./TriangleWarningGlyph18";
 export { UserGlyph18 as UserIcon } from "./UserGlyph18";
