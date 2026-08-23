@@ -39,7 +39,7 @@ Verify: in the browser at `/chat`, send a message, see streaming text; ask for t
 
 - `bunx alchemy deploy`, open `websiteUrl/chat`, repeat the phase-4 checks against production.
 - `workersDev: false` on `Api` (binding-only).
-- `createCsrfMiddleware` on the Start app (TanStack warns without it); origin check on `/api/chat`.
+- CSRF middleware: deliberately not added (no sessions yet); revisit with auth if sessions are cookie-based.
 - Request limits in the route: max messages, max total characters, `maxSteps` cap from server not client.
 - README updates: how to run, env vars, where things live.
 
@@ -49,7 +49,7 @@ Client tools / approvals, persistence + resume, structured output, reasoning UI,
 
 ## Status (2026-08-23)
 
-All five phases implemented and deployed to stage `dev_utopy` (`apiUrl` / `websiteUrl` from `bun run deploy`). Verified: loop with fake model (phase 1), AG-UI sequence through `toWebHandler` (2), Effect runtime + OpenAI client inside workerd locally and in production (3), SSR page + TanStack client parsing our stream (4), CSRF (cross-origin POST → 403, GET unaffected) and 413 on oversized transcripts (5).
+All five phases implemented and deployed to stage `dev_utopy` (`apiUrl` / `websiteUrl` from `bun run deploy`). Verified: loop with fake model (phase 1), AG-UI sequence through `toWebHandler` (2), Effect runtime + OpenAI client inside workerd locally and in production (3), SSR page + TanStack client parsing our stream (4), 413 on oversized transcripts (5).
 
 **Not yet verified with a real model**: no `OPENAI_API_KEY` was available; every run ends in `RUN_ERROR: InvalidKey`, which exercises the error path. Set the key in `.env`, `bun run dev` or `bun run deploy`, and ask "what time is it?" to exercise the tool loop.
 
@@ -61,5 +61,4 @@ Findings that changed the plan during implementation:
 - `Schema.Struct({})` tool params produce `anyOf[object,array]`, rejected by OpenAI; parameterless tools omit `parameters`.
 - TanStack's client needs Standard **JSON** Schema for tool advertisement: `Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(schema))`.
 - Vite SSR pre-bundling duplicated React for `@base-ui/react`; `resolve.dedupe: ["react", "react-dom"]` fixes `useId` on null.
-- `createCsrfMiddleware()` defaults reject top-level navigations (`Sec-Fetch-Site: none`); it is scoped to unsafe methods.
 - `workersDev` left on (D6); flip to `false` once the binding-only path is the only consumer.
