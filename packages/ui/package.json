@@ -10,7 +10,7 @@
     "./*": "./src/*.tsx"
   },
   "scripts": {
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -100,4 +100,4 @@ Same shape as `apps/web/tsconfig.json` minus DOM/JSX for the non-web packages:
 }
 ```
 
-`apps/api` adds `"types": ["@cloudflare/workers-types"]`. `effect-tsgo` is patched at the root (`prepare`), so each package's `check:types` is `tsc --noEmit`.
+`apps/api` adds `"types": ["@cloudflare/workers-types"]`. `effect-tsgo` is patched at the root (`prepare`), so each package's `check:types` is `tsc`.

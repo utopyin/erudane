@@ -10,7 +10,7 @@
     "./chat/agui": "./chat/agui.ts"
   },
   "scripts": {
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc"
   },
   "dependencies": {
     "@erudane/chat": "workspace:*",

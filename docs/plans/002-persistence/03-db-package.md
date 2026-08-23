@@ -206,7 +206,7 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
       const url = yield* local;
       yield* migrate(url);
       return {
-        name: yield* Config.string("HYPERDRIVE_NAME"),
+        name: yield* Config.string("HYPERDRIVE_NAME").pipe(Config.withDefault("erudane")),
         origin,
         caching: { disabled: true },
         originConnectionLimit: 15,
@@ -225,7 +225,7 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
       `postgres://${origin.user}:${Redacted.value(origin.password)}@${origin.host}:${origin.port}/${origin.database}?sslmode=verify-full`,
     );
     return {
-      name: yield* Config.string("HYPERDRIVE_NAME"),
+      name: yield* Config.string("HYPERDRIVE_NAME").pipe(Config.withDefault("erudane")),
       origin,
       caching: { disabled: true },
       originConnectionLimit: 15,

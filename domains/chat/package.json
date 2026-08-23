@@ -11,7 +11,7 @@
     "./errors": "./errors.ts"
   },
   "scripts": {
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc"
   },
   "dependencies": {
     "effect": "catalog:"

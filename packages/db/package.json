@@ -10,12 +10,13 @@
     "./service": "./service.ts"
   },
   "scripts": {
-    "check:types": "tsc --noEmit",
+    "check:types": "tsc",
     "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate",
+    "migrate": "bun run migrate.ts",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@effect/platform-bun": "catalog:",
     "@effect/sql-pg": "catalog:",
     "alchemy": "catalog:",
     "drizzle-orm": "catalog:",
