@@ -1180,13 +1180,14 @@ export const memory = Layer.effect(
         use((state, at) =>
           Effect.map(chapterRow(state, id), (row) => {
             state.chapters.delete(id);
-            for (const lesson of [...state.lessons.values()]) {
-              if (lesson.chapterId !== id) continue;
-              state.lessons.delete(lesson.id);
-              for (const exercise of [...state.exercises.values()]) {
-                if (exercise.lessonId === lesson.id) state.exercises.delete(exercise.id);
-              }
-            }
+            const lessonIdsToDrop = [...state.lessons.values()]
+              .filter((lesson) => lesson.chapterId === id)
+              .map((lesson) => lesson.id);
+            const exerciseIdsToDrop = [...state.exercises.values()]
+              .filter((exercise) => lessonIdsToDrop.includes(exercise.lessonId))
+              .map((exercise) => exercise.id);
+            for (const lessonId of lessonIdsToDrop) state.lessons.delete(lessonId);
+            for (const exerciseId of exerciseIdsToDrop) state.exercises.delete(exerciseId);
             renumber(state.chapters, chapterSiblings(state, row.subjectId));
             bump(state, row.subjectId, at);
           }),
@@ -1258,9 +1259,10 @@ export const memory = Layer.effect(
             const row = yield* lessonRow(state, id);
             const subjectId = yield* lessonSubject(state, row);
             state.lessons.delete(id);
-            for (const exercise of [...state.exercises.values()]) {
-              if (exercise.lessonId === id) state.exercises.delete(exercise.id);
-            }
+            const exerciseIdsToDrop = [...state.exercises.values()]
+              .filter((exercise) => exercise.lessonId === id)
+              .map((exercise) => exercise.id);
+            for (const exerciseId of exerciseIdsToDrop) state.exercises.delete(exerciseId);
             renumber(state.lessons, lessonSiblings(state, row.chapterId));
             bump(state, subjectId, at);
           }),
@@ -1358,9 +1360,10 @@ export const memory = Layer.effect(
       replaceSkills: (subjectId, skills) =>
         use((state, at) =>
           Effect.map(subjectRow(state, subjectId), () => {
-            for (const skill of [...state.skills.values()]) {
-              if (skill.subjectId === subjectId) state.skills.delete(skill.id);
-            }
+            const skillIdsToDrop = [...state.skills.values()]
+              .filter((skill) => skill.subjectId === subjectId)
+              .map((skill) => skill.id);
+            for (const skillId of skillIdsToDrop) state.skills.delete(skillId);
             const rows = skills.map((skill): SkillRow => ({
               id: rowId(),
               subjectId,

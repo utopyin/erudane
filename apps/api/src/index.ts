@@ -3,11 +3,16 @@ import { Chat } from "@erudane/chat/service";
 import { ThreadRepo } from "@erudane/chat/threads";
 import { HyperdriveDatabase } from "@erudane/db/hyperdrive";
 import { RoomError } from "@erudane/documents/errors";
+import { DocumentRepo } from "@erudane/documents/repo";
 import { RoomClient } from "@erudane/documents/rooms";
+import { Documents } from "@erudane/documents/service";
 import { Files } from "@erudane/files/service";
 import { Http, PublicUrl } from "@erudane/http";
 import { Registry } from "@erudane/http/chat/registry";
 import { R2FileStore } from "@erudane/storage/r2";
+import { ExerciseRuns } from "@erudane/subjects/exercises";
+import { SubjectRepo } from "@erudane/subjects/repo";
+import { Subjects } from "@erudane/subjects/service";
 import type { RuntimeContext } from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
@@ -16,12 +21,20 @@ import * as HttpRouter from "effect/unstable/http/HttpRouter";
 import DocumentRoom from "./document";
 import * as Model from "./model";
 
+/**
+ * Everything above the repositories. The registry's handler layers reach into
+ * subjects/documents, so those domains sit below it; repositories and the
+ * room client are provided by the worker init (the room client needs the DO
+ * namespace binding).
+ */
 const application = Run.layer.pipe(
   Layer.provideMerge([
     Chat.layer.pipe(Layer.provideMerge([Model.layer, Registry.layer])),
     Files.layer,
-    ThreadRepo.layer,
   ]),
+  Layer.provideMerge([Subjects.layer, ExerciseRuns.layer, ThreadRepo.layer]),
+  Layer.provideMerge(Documents.layer),
+  Layer.provideMerge([SubjectRepo.layer, DocumentRepo.layer]),
 );
 
 /**
@@ -67,7 +80,10 @@ export default class Api extends Cloudflare.Worker<Api>()(
         Layer.provideMerge(Layer.succeed(PublicUrl, remote(url))),
       ),
     );
-    const handler = yield* HttpRouter.toHttpEffect(Http.layer);
+    // The rpc server layer needs its handler services at router build time.
+    const handler = yield* HttpRouter.toHttpEffect(Http.layer).pipe(
+      Effect.provideContext(context),
+    );
 
     return { fetch: handler.pipe(Effect.provideContext(context)) };
   }).pipe(Effect.provide([HyperdriveDatabase.layer, R2FileStore.layer])),

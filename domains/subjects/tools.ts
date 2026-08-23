@@ -11,7 +11,6 @@ import * as Schema from "effect/Schema";
 import * as Tool from "effect/unstable/ai/Tool";
 import * as Toolkit from "effect/unstable/ai/Toolkit";
 import {
-  ChapterId,
   ExerciseId,
   ItemStatus,
   LessonId,

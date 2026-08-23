@@ -16,6 +16,7 @@
     "@erudane/firecrawl": "workspace:*",
     "@erudane/http": "workspace:*",
     "@erudane/storage": "workspace:*",
+    "@erudane/subjects": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },

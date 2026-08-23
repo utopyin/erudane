@@ -17,6 +17,7 @@
     "@erudane/files": "workspace:*",
     "@erudane/http": "workspace:*",
     "@erudane/research": "workspace:*",
+    "@erudane/subjects": "workspace:*",
     "@erudane/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/ai": "catalog:",

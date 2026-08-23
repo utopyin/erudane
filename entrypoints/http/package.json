@@ -18,6 +18,7 @@
     "@erudane/documents": "workspace:*",
     "@erudane/files": "workspace:*",
     "@erudane/research": "workspace:*",
+    "@erudane/subjects": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

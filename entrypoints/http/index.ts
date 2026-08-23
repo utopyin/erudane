@@ -6,7 +6,7 @@ import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
 import * as ChatRoute from "./chat/route";
 import * as DocumentsWs from "./documents/ws";
 import * as FilesRoute from "./files/route";
-import * as ThreadsRoute from "./threads/route";
+import * as RpcRoutes from "./rpc";
 
 /**
  * The API's own public address, provided by the app (the worker knows it via
@@ -32,7 +32,7 @@ export const layer = Layer.mergeAll(
   ),
   ChatRoute.layer,
   FilesRoute.layer,
-  ThreadsRoute.layer,
+  RpcRoutes.layer,
   DocumentsWs.layer,
 );
 
