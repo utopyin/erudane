@@ -1,3 +1,4 @@
+import type { DocumentId } from "@erudane/documents/types";
 import * as Effect from "effect/Effect";
 import type { ChapterId, ExerciseId, LessonId, SubjectId } from "./types";
 
@@ -8,3 +9,5 @@ export const subjectId: Effect.Effect<SubjectId> = uuid as Effect.Effect<Subject
 export const chapterId: Effect.Effect<ChapterId> = uuid as Effect.Effect<ChapterId>;
 export const lessonId: Effect.Effect<LessonId> = uuid as Effect.Effect<LessonId>;
 export const exerciseId: Effect.Effect<ExerciseId> = uuid as Effect.Effect<ExerciseId>;
+/** A lesson's document is minted by this domain — created together, 1:1. */
+export const documentId: Effect.Effect<DocumentId> = uuid as Effect.Effect<DocumentId>;
