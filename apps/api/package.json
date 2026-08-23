@@ -10,6 +10,7 @@
     "@effect/ai-openai": "catalog:",
     "@erudane/chat": "workspace:*",
     "@erudane/http": "workspace:*",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
