@@ -5,11 +5,10 @@ import * as Stream from "effect/Stream";
 import * as LanguageModel from "effect/unstable/ai/LanguageModel";
 import * as Prompt from "effect/unstable/ai/Prompt";
 import * as Response from "effect/unstable/ai/Response";
-import type * as Schema from "effect/Schema";
 import type * as Tool from "effect/unstable/ai/Tool";
 import type * as ToolkitModule from "effect/unstable/ai/Toolkit";
 import { ChatError } from "./errors.js";
-import { ChatEvent, type ChatInput } from "./types.js";
+import { ChatEvent, type ChatInput, type RegistryTool } from "./types.js";
 
 const DEFAULT_MAX_STEPS = 5;
 
@@ -19,24 +18,6 @@ export interface Interface {
 }
 
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/Chat") {}
-
-type PlainSchema = Schema.Codec<any, any, never, never>;
-
-/**
- * A tool the registry may contain: JSON-shaped schemas that need no services,
- * and no per-request requirements. Keeps the run's requirement channel closed
- * without the domain knowing the concrete registry.
- */
-export type RegistryTool = Tool.Tool<
-  string,
-  {
-    readonly parameters: PlainSchema;
-    readonly success: PlainSchema;
-    readonly failure: PlainSchema;
-    readonly failureMode: Tool.FailureMode;
-  },
-  never
->;
 
 /**
  * The tool registry this domain talks to. Assembled and provided by an

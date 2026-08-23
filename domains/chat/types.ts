@@ -1,6 +1,8 @@
 import * as Data from "effect/Data";
+import type * as Schema from "effect/Schema";
 import type * as Prompt from "effect/unstable/ai/Prompt";
 import type * as Response from "effect/unstable/ai/Response";
+import type * as Tool from "effect/unstable/ai/Tool";
 
 export interface ChatInput {
   /** Full transcript, already decoded into Effect AI messages by the caller. */
@@ -27,3 +29,22 @@ export type ChatEvent = Data.TaggedEnum<{
 }>;
 
 export const ChatEvent = Data.taggedEnum<ChatEvent>();
+
+type PlainSchema = Schema.Codec<any, any, never, never>;
+
+/**
+ * A tool the registry may contain: JSON-shaped schemas that need no services,
+ * and no per-request requirements. Keeps the run's requirement channel closed
+ * without the domain knowing the concrete registry, and lets the client derive
+ * Standard Schemas from the same definition.
+ */
+export type RegistryTool = Tool.Tool<
+  string,
+  {
+    readonly parameters: PlainSchema;
+    readonly success: PlainSchema;
+    readonly failure: PlainSchema;
+    readonly failureMode: Tool.FailureMode;
+  },
+  never
+>;
