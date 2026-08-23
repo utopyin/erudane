@@ -51,9 +51,9 @@
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.148 0.004 228.8);
-  --card: oklch(1 0 0);
+  --card: oklch(0.98 0.002 197.1);
   --card-foreground: oklch(0.148 0.004 228.8);
-  --popover: oklch(1 0 0);
+  --popover: oklch(0.98 0.002 197.1);
   --popover-foreground: oklch(0.148 0.004 228.8);
   --primary: oklch(0.218 0.008 223.9);
   --primary-foreground: oklch(0.987 0.002 197.1);
@@ -127,4 +127,8 @@
   html {
     @apply font-sans;
   }
+}
+
+strong {
+  font-weight: 600;
 }
