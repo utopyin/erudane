@@ -1,0 +1,31 @@
+{
+  "name": "@erudane/subjects",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./types.ts",
+    "./errors": "./errors.ts",
+    "./ids": "./ids.ts",
+    "./repo": "./repo.ts",
+    "./service": "./service.ts",
+    "./memory": "./memory.ts",
+    "./exercises": "./exercises.ts",
+    "./tools": "./tools.ts",
+    "./handlers": "./handlers.ts",
+    "./rpc": "./rpc.ts"
+  },
+  "scripts": {
+    "check:types": "tsc"
+  },
+  "dependencies": {
+    "@erudane/chat": "workspace:*",
+    "@erudane/db": "workspace:*",
+    "@erudane/documents": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

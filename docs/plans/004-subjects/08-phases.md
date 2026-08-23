@@ -13,6 +13,7 @@ Verify: `bun install`, `bun run check` green.
 `domains/documents/room.ts` first, as pure functions: Y.Doc ↔ y-protocols messages, markdown → blocks → `Y.transact` via `@blocknote/server-util`, projection to markdown. Then the minimal `DocumentRoom` DO + `/documents/:id/ws` route + a throwaway web page with BlockNote + `WebsocketProvider`.
 
 Verify — the four things D34/D35 bet on, in `alchemy dev`:
+
 1. `@blocknote/server-util` markdown↔blocks paths run under **workerd** (no DOM). If not: the named fallback (DOM shim in the DO, or plain-text Yjs ops behind the same contract) — decided here, not later.
 2. Two tabs, one lesson: concurrent edits converge; presence/cursors render.
 3. A scratch DO RPC `edit` (`replaceBlock`) lands **live** in both tabs while they type — the agent loop, minus the agent.

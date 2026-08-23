@@ -81,17 +81,17 @@ The opening message is authored from `brief` verbatim (deterministic, no model c
 
 `tools.ts` is a leaf module like `chat/tools.ts` (the web app imports it to type tool-call parts). All server-executed, `failureMode: "return"` so the model sees typed failures and can correct.
 
-| Tool               | Payload → success                                        | Backed by                |
-| ------------------ | -------------------------------------------------------- | ------------------------ |
-| `CreateSubject`    | title, about, motivation, dueAt?, initial outline?       | `Subjects.create`        |
-| `UpdateSubject`    | subjectId, patch (about/motivation/dueAt/title)          | `Subjects.update`        |
-| `EditOutline`      | subjectId, ops: insert/move/remove/update chapter‖lesson‖exercise | outline mutations |
-| `SetStatus`        | lessonId or exerciseId, status                           | `Subjects.setStatus`     |
-| `SaveNote`         | subjectId, note (full replacement)                       | `Subjects.rewriteNote`   |
-| `UpdateSkills`     | subjectId, strengths: string[], weaknesses: string[], sourceThreadId? | `replaceSkills` |
-| `CreateExercise`   | lessonId, title, brief, at?                              | `insertExercise`         |
-| `ReadDocument`     | documentId → markdown                                    | Documents (05)           |
-| `EditDocument`     | documentId, edits → applied live                         | Documents (05)           |
+| Tool             | Payload → success                                                     | Backed by              |
+| ---------------- | --------------------------------------------------------------------- | ---------------------- |
+| `CreateSubject`  | title, about, motivation, dueAt?, initial outline?                    | `Subjects.create`      |
+| `UpdateSubject`  | subjectId, patch (about/motivation/dueAt/title)                       | `Subjects.update`      |
+| `EditOutline`    | subjectId, ops: insert/move/remove/update chapter‖lesson‖exercise     | outline mutations      |
+| `SetStatus`      | lessonId or exerciseId, status                                        | `Subjects.setStatus`   |
+| `SaveNote`       | subjectId, note (full replacement)                                    | `Subjects.rewriteNote` |
+| `UpdateSkills`   | subjectId, strengths: string[], weaknesses: string[], sourceThreadId? | `replaceSkills`        |
+| `CreateExercise` | lessonId, title, brief, at?                                           | `insertExercise`       |
+| `ReadDocument`   | documentId → markdown                                                 | Documents (05)         |
+| `EditDocument`   | documentId, edits → applied live                                      | Documents (05)         |
 
 The registry stays where it is (tier 3, `entrypoints/http/chat/registry.ts`) and now adds `SubjectTools` to the existing `ChatTools` + `ResearchTools` merge; the handler layers are provided in the worker init alongside the existing ones. The chat domain still knows only `Toolkit` — it never learns subjects exist.
 
@@ -102,7 +102,7 @@ The registry stays where it is (tier 3, `entrypoints/http/chat/registry.ts`) and
 `POST /chat` today builds `system` from a constant. With subjects, the route (04 stays tier 3):
 
 1. Reads the thread's anchors (`SubjectRepo`, by threadId).
-2. Un-anchored → today's behaviour, plus the subject tools (so a plain chat can *create* subjects — lesson-less mode as the entrypoint).
+2. Un-anchored → today's behaviour, plus the subject tools (so a plain chat can _create_ subjects — lesson-less mode as the entrypoint).
 3. Anchored → `repo.memory(subjectId)` + (if lesson/exercise-anchored) the lesson's `markdown` and/or the exercise `brief` → `memory.ts`'s pure prompt builder → `system`.
 
 `Run`, `Chat`, `ThreadRepo` are untouched. The prompt builder lives in the subjects domain (it is subject behaviour); the route only sequences reads and passes the string in — same pattern as the existing registry split.

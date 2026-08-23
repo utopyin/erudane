@@ -71,12 +71,13 @@ Browser → same-origin `/api/rpc` → TanStack proxy route (identical to `route
 // apps/web/src/rpc.ts
 const Protocol = RpcClient.layerProtocolHttp({ url: "/api/rpc" }).pipe(
   Layer.provide([RpcSerialization.layerNdjson, FetchHttpClient.layer]),
-)
+);
 
-export class Api extends Context.Service<Api, RpcClient.RpcClient<Rpcs<typeof group>, RpcClientError>>()(
-  "@erudane/web/Api",
-) {
-  static layer = Layer.effect(Api)(RpcClient.make(group)).pipe(Layer.provide(Protocol))
+export class Api extends Context.Service<
+  Api,
+  RpcClient.RpcClient<Rpcs<typeof group>, RpcClientError>
+>()("@erudane/web/Api") {
+  static layer = Layer.effect(Api)(RpcClient.make(group)).pipe(Layer.provide(Protocol));
 }
 ```
 

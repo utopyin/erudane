@@ -4,19 +4,19 @@ Lesson documents are **live-collaborative**: the user edits in a Notion-style bl
 
 ## The stack (researched Aug 2026; argued in 01-decisions D34–D37)
 
-| Layer          | Choice                                                                 | Version |
-| -------------- | ---------------------------------------------------------------------- | ------- |
-| CRDT           | Yjs (pure JS, runs in workerd and the DO)                               | `yjs` 13.6.x |
-| Editor         | **BlockNote** (`@blocknote/core`, `@blocknote/react`)                   | 0.54.x  |
-| Agent-side doc machinery | `@blocknote/server-util` (`ServerBlockNoteEditor`: markdown ↔ blocks ↔ `Y.XmlFragment`, headless) | 0.54.x |
-| Sync server    | **Alchemy Effect-form Durable Object** (one per document) speaking the y-websocket wire protocol via `y-protocols` (sync + awareness) | `y-protocols` 1.0.x |
-| Client provider| `y-websocket`'s `WebsocketProvider` (protocol-standard, maintained)     | `y-websocket` 2.x |
-| Transport      | WebSocket, browser → API worker route → DO (`Cloudflare.upgrade()`, hibernatable) | — |
+| Layer                    | Choice                                                                                                                                | Version             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| CRDT                     | Yjs (pure JS, runs in workerd and the DO)                                                                                             | `yjs` 13.6.x        |
+| Editor                   | **BlockNote** (`@blocknote/core`, `@blocknote/react`)                                                                                 | 0.54.x              |
+| Agent-side doc machinery | `@blocknote/server-util` (`ServerBlockNoteEditor`: markdown ↔ blocks ↔ `Y.XmlFragment`, headless)                                     | 0.54.x              |
+| Sync server              | **Alchemy Effect-form Durable Object** (one per document) speaking the y-websocket wire protocol via `y-protocols` (sync + awareness) | `y-protocols` 1.0.x |
+| Client provider          | `y-websocket`'s `WebsocketProvider` (protocol-standard, maintained)                                                                   | `y-websocket` 2.x   |
+| Transport                | WebSocket, browser → API worker route → DO (`Cloudflare.upgrade()`, hibernatable)                                                     | —                   |
 
 Why not the candidates from the discussion — one line each here, full argument in 01-decisions:
 
-- **Lexical**: excellent low-level core, but we'd rebuild the whole Notion block UX *and* invent the nonexistent "agent edits a Lexical-shaped Y.Doc headlessly" layer. BlockNote sits on ProseMirror/Yjs where that tooling exists today (`ServerBlockNoteEditor`), from a team that maintains the Yjs ecosystem.
-- **Durable Streams (ElectricSQL)**: the right long-term primitive — resumable HTTP, one transport for chat tokens *and* doc sync, agent edits replay to closed tabs — and a conformant Cloudflare DO server exists for the *base* protocol. But the **Yjs layer** (`y-durable-streams`' compacting `YjsServer`) targets Node with no Workers port as of Aug 2026. Adopting now means porting compaction ourselves. Re-evaluate in ~6 months; the swap seam (client provider + DO internals, both behind our own contracts) is deliberately narrow.
+- **Lexical**: excellent low-level core, but we'd rebuild the whole Notion block UX _and_ invent the nonexistent "agent edits a Lexical-shaped Y.Doc headlessly" layer. BlockNote sits on ProseMirror/Yjs where that tooling exists today (`ServerBlockNoteEditor`), from a team that maintains the Yjs ecosystem.
+- **Durable Streams (ElectricSQL)**: the right long-term primitive — resumable HTTP, one transport for chat tokens _and_ doc sync, agent edits replay to closed tabs — and a conformant Cloudflare DO server exists for the _base_ protocol. But the **Yjs layer** (`y-durable-streams`' compacting `YjsServer`) targets Node with no Workers port as of Aug 2026. Adopting now means porting compaction ourselves. Re-evaluate in ~6 months; the swap seam (client provider + DO internals, both behind our own contracts) is deliberately narrow.
 - **y-partyserver** (Cloudflare's Yjs-on-DO library): the obvious library pick, but it is a **class-based** partyserver `Server` — alchemy's Worker synthesizes DO classes itself through its `DurableObjectBridge` (verified in `Sources/Rolldown.ts:211-265`), so a foreign DO base class steps outside Infrastructure-as-Layer entirely (hand-rolled export, migrations, bindings). The y-websocket wire protocol is small and stable (`y-protocols` implements it; the server side is ~150 lines over it), and we keep one paradigm, full Effect typing, and full ownership. y-partyserver remains the documented fallback if the native DO fights us.
 
 ## Who owns what
@@ -47,7 +47,7 @@ apps/web
   lesson document route: BlockNote + WebsocketProvider (below).
 ```
 
-Tool *definitions* (`ReadDocument`, `EditDocument`) live in `subjects/tools.ts` (04) — the agent reaches documents through subject work; the handlers call `Documents.Service`.
+Tool _definitions_ (`ReadDocument`, `EditDocument`) live in `subjects/tools.ts` (04) — the agent reaches documents through subject work; the handlers call `Documents.Service`.
 
 ## Alchemy mechanics (verified in `repos/alchemy`)
 
@@ -64,7 +64,7 @@ Tool *definitions* (`ReadDocument`, `EditDocument`) live in `subjects/tools.ts` 
 2. **Postgres projection** (`eru_documents.markdown` + `state` + `version` + `updatedBy`, 03) — the durable read model, written by the DO on debounced save: `markdown` from `yDocToBlocks` → `blocksToMarkdown`, `state = Y.encodeStateAsUpdate(doc)`. This is what prompts, `ReadDocument`, and future search read — nothing outside the sync path reads the DO.
 3. **Blocks/markdown in flight** — converted at the edges only (`server-util` server-side, BlockNote's model in the editor). No third stored format.
 
-Cold start: a fresh DO activation loads snapshot + tail updates from its SQLite; a *brand-new* room (first open ever, or storage lost) seeds from `eru_documents.state`. Postgres is thereby also the backup.
+Cold start: a fresh DO activation loads snapshot + tail updates from its SQLite; a _brand-new_ room (first open ever, or storage lost) seeds from `eru_documents.state`. Postgres is thereby also the backup.
 
 ## Live agent editing — the loop the user watches
 
@@ -90,6 +90,6 @@ CRDT history comes mechanically: the DO keeps its compacted `snapshot` rows (las
 ## Failure modes, named
 
 - **Hibernation vs in-memory doc**: sockets survive hibernation, the Y.Doc doesn't — the bridge re-runs the init on wake and `room.ts` reloads from SQLite before handling the message. Awareness state is rebuilt by the clients' own 30s awareness heartbeats. This is the one piece y-partyserver had hardened; it's the part to test explicitly (08).
-- **DO ↔ Postgres divergence**: projection is debounced; a crash loses ≤ one debounce window of *projection* (never content — DO SQLite has it). Prompts read slightly stale markdown at worst.
+- **DO ↔ Postgres divergence**: projection is debounced; a crash loses ≤ one debounce window of _projection_ (never content — DO SQLite has it). Prompts read slightly stale markdown at worst.
 - **Concurrent agent + human on the same block**: block-replace is coarser than text-merge — last writer wins within that block. Accepted for v1; the streaming refinement shrinks the window.
 - **workerd bundle**: `@blocknote/server-util` pulls ProseMirror internals; verify at spike time that the markdown↔blocks paths are DOM-free under workerd. Fallback that keeps every contract intact: run conversions in the DO with a minimal DOM shim, or temporarily downgrade agent ops to plain-text Yjs edits.

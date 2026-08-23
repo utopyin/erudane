@@ -1,0 +1,29 @@
+{
+  "name": "@erudane/documents",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./types.ts",
+    "./errors": "./errors.ts",
+    "./repo": "./repo.ts",
+    "./room": "./room.ts",
+    "./rooms": "./rooms.ts",
+    "./service": "./service.ts"
+  },
+  "scripts": {
+    "check:types": "tsc"
+  },
+  "dependencies": {
+    "@blocknote/server-util": "catalog:",
+    "@erudane/db": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:",
+    "lib0": "catalog:",
+    "y-protocols": "catalog:",
+    "yjs": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

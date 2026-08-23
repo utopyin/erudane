@@ -1,24 +1,31 @@
 # Runtimes & infra
 
-No new alchemy *resources*: the Durable Object rides inside the existing `Api` worker (alchemy emits the binding and the `new_classes` migration itself), Postgres and Hyperdrive are 002's, and the one schema migration flows through the existing `db:generate`/deploy pipeline (D19).
+No new alchemy _resources_: the Durable Object rides inside the existing `Api` worker (alchemy emits the binding and the `new_classes` migration itself), Postgres and Hyperdrive are 002's, and the one schema migration flows through the existing `db:generate`/deploy pipeline (D19).
 
 ## `apps/api` — the worker init grows
 
 ```ts
-export default class Api extends Cloudflare.Worker<Api, {}, DocumentRoom>()(   // 3rd type arg hosts the DO
+export default class Api extends Cloudflare.Worker<Api, {}, DocumentRoom>()(
+  // 3rd type arg hosts the DO
   "Api",
   { main: import.meta.url, compatibility: { flags: ["nodejs_compat"] } },
   Effect.gen(function* () {
     const db = yield* Database.Service;
-    const rooms = yield* DocumentRoom;                 // DO namespace binding (hosted here)
+    const rooms = yield* DocumentRoom; // DO namespace binding (hosted here)
 
     const services = yield* Layer.build(
       Layer.mergeAll(Run.layer, RpcHandlers /* via Http */, SubjectHandlers).pipe(
-        Layer.provideMerge(Layer.mergeAll(
-          Chat.layer, ThreadRepo.layer,
-          SubjectRepo.layer, Subjects.layer, ExerciseRuns.layer,
-          DocumentRepo.layer, Documents.layer,
-        )),
+        Layer.provideMerge(
+          Layer.mergeAll(
+            Chat.layer,
+            ThreadRepo.layer,
+            SubjectRepo.layer,
+            Subjects.layer,
+            ExerciseRuns.layer,
+            DocumentRepo.layer,
+            Documents.layer,
+          ),
+        ),
         Layer.provide(Layer.mergeAll(Model.layer, registry, RoomClient.fromNamespace(rooms))),
         Layer.provideMerge(Layer.succeed(Database.Service, db)),
       ),
@@ -37,7 +44,7 @@ export default class Api extends Cloudflare.Worker<Api, {}, DocumentRoom>()(   /
 
 - The browser needs the API worker's **public URL** for the WebSocket (the service binding only serves server-side fetches). Wire it through the Website env: `env: { API: Api, API_URL: api.url }` in `alchemy.run.ts` — a plain text var next to the existing binding — read by `src/env.ts`, handed to `WebsocketProvider` as `wss://…/documents/:id/ws`. In `alchemy dev` it's the localhost worker URL (dev-registry proxies pass 101 upgrades through — verified `WorkerProxy.test.ts:42-57`).
 - `/api/rpc` proxy route (same shape as `/api/chat`); `/api/threads` deleted.
-- Origin checks on the upgrade endpoint: deferred to 004 with the rest of auth (same posture as D21 — documents are readable by whoever knows the UUID until then, stated not hidden). WebSockets aren't CORS-governed; there is nothing to configure to make it *work*, only to *restrict* it.
+- Origin checks on the upgrade endpoint: deferred to 004 with the rest of auth (same posture as D21 — documents are readable by whoever knows the UUID until then, stated not hidden). WebSockets aren't CORS-governed; there is nothing to configure to make it _work_, only to _restrict_ it.
 
 ## `alchemy.run.ts`
 

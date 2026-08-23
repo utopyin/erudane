@@ -24,7 +24,7 @@ api  ──▶ http + all domains + db      web ──▶ leaf submodules only (
 
 ## Root
 
-- Catalog additions: `yjs ^13.6`, `y-protocols ^1.0`, `y-websocket ^2` (web only), `lib0` (transitive, pinned via catalog for encode/decode helpers), `@blocknote/core 0.54.x`, `@blocknote/react 0.54.x` (web), `@blocknote/server-util 0.54.x` (documents domain + api).
+- Catalog additions: `yjs ^13.6`, `y-protocols ^1.0`, `y-websocket ^3` (web only; the 3.0 major only dropped the bundled Node server we never use), `lib0` (transitive, pinned via catalog for encode/decode helpers), `@blocknote/core 0.54.x`, `@blocknote/react 0.54.x` (web), `@blocknote/server-util 0.54.x` (documents domain + api).
 - No new scripts; `db:generate` produces this plan's one migration.
 
 ## `domains/subjects` — `@erudane/subjects` (04)
