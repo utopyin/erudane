@@ -7,6 +7,7 @@ import * as Prompt from "effect/unstable/ai/Prompt";
 import * as Response from "effect/unstable/ai/Response";
 import type * as ToolkitModule from "effect/unstable/ai/Toolkit";
 import { ChatError } from "./errors";
+import * as Ids from "./ids";
 import { ChatEvent, type ChatInput, type RegistryTool } from "./types";
 
 const DEFAULT_MAX_STEPS = 5;
@@ -72,10 +73,10 @@ export const layer = Layer.effect(
           return Stream.concat(Stream.make(end), step(next, index + 1, maxSteps));
         });
 
-        return Stream.make(ChatEvent.StepStart({ step: index })).pipe(
-          Stream.concat(round),
-          Stream.concat(after),
+        const start = Stream.fromEffect(
+          Effect.map(Ids.messageId, (messageId) => ChatEvent.StepStart({ step: index, messageId })),
         );
+        return start.pipe(Stream.concat(round), Stream.concat(after));
       });
 
     const stream = (input: ChatInput): Stream.Stream<ChatEvent, ChatError> => {

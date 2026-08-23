@@ -66,6 +66,8 @@
       "name": "@erudane/chat",
       "version": "0.0.0",
       "dependencies": {
+        "@erudane/db": "workspace:*",
+        "drizzle-orm": "catalog:",
         "effect": "catalog:",
       },
       "devDependencies": {

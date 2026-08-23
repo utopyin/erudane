@@ -1,6 +1,6 @@
 import * as Data from "effect/Data";
-import type * as Schema from "effect/Schema";
-import type * as Prompt from "effect/unstable/ai/Prompt";
+import * as Schema from "effect/Schema";
+import * as Prompt from "effect/unstable/ai/Prompt";
 import type * as Response from "effect/unstable/ai/Response";
 import type * as Tool from "effect/unstable/ai/Tool";
 
@@ -18,7 +18,8 @@ export interface ChatInput {
  * inside a step; step markers give adapters a stable boundary per model round.
  */
 export type ChatEvent = Data.TaggedEnum<{
-  StepStart: { readonly step: number };
+  /** `messageId` is the id the step's assistant message is stored under (see `Run`). */
+  StepStart: { readonly step: number; readonly messageId: string };
   Part: { readonly step: number; readonly part: Response.StreamPart<any> };
   StepEnd: {
     readonly step: number;
@@ -48,3 +49,38 @@ export type RegistryTool = Tool.Tool<
   },
   never
 >;
+
+export const ThreadId = Schema.String.check(Schema.isUUID()).pipe(Schema.brand("ThreadId"));
+export type ThreadId = typeof ThreadId.Type;
+
+export const MessageId = Schema.String.check(Schema.isUUID()).pipe(Schema.brand("MessageId"));
+export type MessageId = typeof MessageId.Type;
+
+export class Thread extends Schema.Class<Thread>("Chat.Thread")({
+  id: ThreadId,
+  title: Schema.NullOr(Schema.String),
+  createdAt: Schema.DateTimeUtc,
+  updatedAt: Schema.DateTimeUtc,
+}) {}
+
+/** A stored message: Effect AI's `Prompt.Message` plus identity and order. */
+export class StoredMessage extends Schema.Class<StoredMessage>("Chat.StoredMessage")({
+  id: MessageId,
+  threadId: ThreadId,
+  seq: Schema.Int,
+  message: Prompt.Message,
+  createdAt: Schema.DateTimeUtc,
+}) {}
+
+export interface NewMessage {
+  readonly id: MessageId;
+  readonly message: Prompt.Message;
+}
+
+export interface RunInput {
+  readonly threadId: ThreadId;
+  /** The one new message of this run; history comes from the repository. */
+  readonly message: Prompt.UserMessage;
+  readonly system?: string | undefined;
+  readonly maxSteps?: number | undefined;
+}
