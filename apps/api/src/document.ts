@@ -1,8 +1,13 @@
+import { Database } from "@erudane/db/service";
+import { DocumentRepo } from "@erudane/documents/repo";
 import * as Room from "@erudane/documents/room";
-import type { RoomEdit } from "@erudane/documents/types";
+import type { DocumentActor, DocumentId, RoomEdit } from "@erudane/documents/types";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Clock from "effect/Clock";
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 
 interface Attachment {
   /** Session id, also the y-protocols `origin` for frames from this socket. */
@@ -28,8 +33,17 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
   "DocumentRoom",
   Effect.gen(function* () {
     const state = yield* Cloudflare.DurableObjectState;
+    const db = yield* Database.Service;
+    const repo = Context.get(
+      yield* Layer.build(
+        DocumentRepo.layer.pipe(Layer.provide(Layer.succeed(Database.Service, db))),
+      ),
+      DocumentRepo.Service,
+    );
     // @effect-diagnostics-next-line returnEffectInGen:off -- the DO contract: outer init resolves deps, returns the per-activation Effect
     return Effect.gen(function* () {
+      /** The room name is the document id (`getByName(documentId)`). */
+      const documentId = (state.id.name ?? "") as DocumentId;
       const sql = state.storage.sql;
       /** Write statement: run to completion, discard the cursor. */
       const run = (query: string, ...bindings: ReadonlyArray<string | number | ArrayBuffer>) =>
@@ -43,7 +57,20 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
       const stored = yield* (yield* sql.exec<{ data: ArrayBuffer }>(
         "SELECT data FROM updates ORDER BY seq",
       )).toArray();
-      const room = Room.open({ updates: stored.map((row) => new Uint8Array(row.data)) });
+      // Empty DO storage = brand-new room (or storage lost): seed from the
+      // Postgres snapshot, so the projection doubles as the backup.
+      const seed =
+        stored.length > 0
+          ? Option.none<Uint8Array>()
+          : yield* repo
+              .state(documentId)
+              .pipe(Effect.catchTag("Documents.RepoError", () => Effect.succeed(Option.none())));
+      const room = Room.open({
+        snapshot: Option.getOrUndefined(seed),
+        updates: stored.map((row) => new Uint8Array(row.data)),
+      });
+      /** Attribution for the projection write: who wrote since the last save. */
+      let lastActor: DocumentActor = "user";
 
       // Sessions survive hibernation on the runtime side; rebuild our map.
       const sessions = new Map<string, Cloudflare.WebSocket>();
@@ -109,6 +136,7 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
           for (const reply of Room.receive(room, new Uint8Array(message), attachment.id)) {
             yield* socket.send(reply);
           }
+          if (pending.length > 0) lastActor = "user";
           yield* flush;
         }),
 
@@ -126,18 +154,36 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
           yield* socket.close(code, reason);
         }),
 
-        /** Debounced compaction: the whole log becomes one snapshot row. */
+        /**
+         * Debounced save: compact the log into one snapshot row, then write
+         * the Postgres projection (markdown + snapshot + actor). A missing
+         * row only skips the projection — DO SQLite still has the content.
+         */
         alarm: () =>
           Effect.gen(function* () {
             yield* flush;
             const snapshot = Room.encodeState(room);
             yield* run("DELETE FROM updates");
             yield* run("INSERT INTO updates (data) VALUES (?)", asBuffer(snapshot));
+            yield* repo
+              .saveProjection(documentId, {
+                markdown: Room.markdown(room),
+                state: snapshot,
+                updatedBy: lastActor,
+              })
+              .pipe(
+                Effect.catchTags({
+                  "Documents.DocumentNotFound": () =>
+                    Effect.logDebug("no document row; projection skipped"),
+                  "Documents.RepoError": (error) => Effect.logError("projection failed", error),
+                }),
+              );
           }),
 
         /** Agent write path (RoomClient RPC): ops land live on every editor. */
         edit: (ops: ReadonlyArray<RoomEdit>) =>
           Effect.gen(function* () {
+            lastActor = "agent";
             Room.agentPresence(room, true);
             Room.edit(room, ops);
             Room.agentPresence(room, false);
@@ -148,5 +194,5 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
         read: () => Effect.sync(() => Room.annotatedMarkdown(room)),
       };
     });
-  }),
+  }).pipe(Effect.provide(Database.layer)),
 ) {}

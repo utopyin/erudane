@@ -10,6 +10,18 @@ export type DocumentId = typeof DocumentId.Type;
 export const DocumentActor = Schema.Literals(["user", "agent"]);
 export type DocumentActor = typeof DocumentActor.Type;
 
+/** The Postgres row minus the CRDT snapshot — what readers outside the sync path see. */
+export class DocumentMeta extends Schema.Class<DocumentMeta>("Documents.Meta")({
+  id: DocumentId,
+  title: Schema.String,
+  /** Model-facing projection, refreshed by the room on debounced save. */
+  markdown: Schema.String,
+  version: Schema.Int,
+  updatedBy: Schema.NullOr(DocumentActor),
+  createdAt: Schema.DateTimeUtc,
+  updatedAt: Schema.DateTimeUtc,
+}) {}
+
 /**
  * Block-scoped edit operations the agent applies to a live document.
  * Block-level granularity is what lets a concurrent human edit in one
