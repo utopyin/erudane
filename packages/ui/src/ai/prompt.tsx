@@ -15,6 +15,7 @@ import {
 } from "react";
 
 import { Button } from "@erudane/ui/button";
+import { ScrollArea } from "@erudane/ui/scroll-area";
 import { Textarea } from "@erudane/ui/textarea";
 import { LoaderIcon, SendIcon, StopIcon } from "@erudane/ui/icons";
 import { cn } from "@erudane/ui/utils";
@@ -88,11 +89,25 @@ function PromptInput({ status, onSubmit, onStop, className, onClick, ...props }:
   );
 }
 
+interface PromptInputTextareaProps extends Omit<
+  ComponentProps<typeof Textarea>,
+  "value" | "onValueChange" | "variant"
+> {
+  /** Height at which the composer stops growing and starts scrolling. */
+  readonly maxHeightClassName?: string;
+}
+
+/**
+ * Grows with its content (`field-sizing-content`, no own max-height); past
+ * `maxHeightClassName` the surrounding `ScrollArea` scrolls instead of the
+ * native textarea, so the scrollbar matches the rest of the UI.
+ */
 function PromptInputTextarea({
   className,
   onKeyDown,
+  maxHeightClassName = "max-h-48",
   ...props
-}: Omit<ComponentProps<typeof Textarea>, "value" | "onValueChange" | "variant">) {
+}: PromptInputTextareaProps) {
   const { text, setText, submit } = usePrompt();
 
   const handleKeyDown: ComponentProps<typeof Textarea>["onKeyDown"] = (event) => {
@@ -105,17 +120,19 @@ function PromptInputTextarea({
   };
 
   return (
-    <Textarea
-      data-slot="prompt-input-textarea"
-      variant="ghost"
-      value={text}
-      onValueChange={setText}
-      onKeyDown={handleKeyDown}
-      rows={1}
-      aria-label="Message"
-      className={cn("max-h-48", className)}
-      {...props}
-    />
+    <ScrollArea viewportClassName={maxHeightClassName}>
+      <Textarea
+        data-slot="prompt-input-textarea"
+        variant="ghost"
+        value={text}
+        onValueChange={setText}
+        onKeyDown={handleKeyDown}
+        rows={1}
+        aria-label="Message"
+        className={cn("overflow-hidden md:text-base", className)}
+        {...props}
+      />
+    </ScrollArea>
   );
 }
 
