@@ -54,7 +54,7 @@ export const accountIdFromJwt = (jwt: string): Effect.Effect<string, TokenError>
     const payload = jwt.split(".")[1];
     if (payload === undefined) return yield* new TokenError({ message: "not a JWT" });
     const text = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    const claims = yield* Schema.decodeUnknownEffect(Claims)(text).pipe(
+    const claims = yield* Schema.decodeEffect(Claims)(text).pipe(
       Effect.mapError((error) => new TokenError({ message: `cannot read account id: ${error}` })),
     );
     return claims[JWT_CLAIM].chatgpt_account_id;
@@ -103,7 +103,7 @@ export const load = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   if (!(yield* fs.exists(FILE))) return Option.none<Stored>();
   const text = yield* fs.readFileString(FILE);
-  return Option.some(yield* Schema.decodeUnknownEffect(StoredJson)(text));
+  return Option.some(yield* Schema.decodeEffect(StoredJson)(text));
 });
 
 const REFRESH_WINDOW_MS = 5 * 60 * 1000;

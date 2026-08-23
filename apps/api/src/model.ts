@@ -59,7 +59,7 @@ export const layer = (env: ApiEnv) =>
       const provider =
         env.CHATGPT_OAUTH === ""
           ? apiKey(env)
-          : chatGpt(env, yield* Schema.decodeUnknownEffect(Credentials)(env.CHATGPT_OAUTH));
+          : chatGpt(env, yield* Schema.decodeEffect(Credentials)(env.CHATGPT_OAUTH));
       return provider.pipe(Layer.provide(FetchHttpClient.layer));
     }),
   );

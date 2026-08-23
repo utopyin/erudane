@@ -61,7 +61,7 @@ function PromptInput({ status, onSubmit, onStop, className, ...props }: PromptIn
         data-slot="prompt-input"
         onSubmit={onFormSubmit}
         className={cn(
-          "bg-card text-card-foreground flex flex-col gap-2 rounded-3xl border p-3 shadow-xs transition-shadow focus-within:shadow-sm",
+          "bg-secondary/50 text-card-foreground flex flex-col gap-2 rounded-3xl border p-3",
           className,
         )}
         {...props}
