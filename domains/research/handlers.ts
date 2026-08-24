@@ -1,7 +1,7 @@
 import { Firecrawl } from "@erudane/firecrawl/service";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import { ResearchTools } from "./tools";
-import { Layer } from "effect";
 
 const MAX_RESULTS = 5;
 const SNIPPET_CHARS = 300;
@@ -12,8 +12,7 @@ const clip = (text: string, max: number) =>
 
 const toFailure = (error: { readonly message: string }) => Effect.fail({ message: error.message });
 
-/** Handler layer for the research tools; needs a `Firecrawl.Service`. */
-export const layer = ResearchTools.toolkit
+export const layerFirecrawl = ResearchTools.toolkit
   .toLayer(
     Effect.gen(function* () {
       const firecrawl = yield* Firecrawl.Service;

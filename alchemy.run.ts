@@ -10,7 +10,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import Api from "./apps/api/src/index";
-import { Hyperdrive } from "./packages/db/infra";
+import { Hyperdrive } from "./packages/db/connection";
 import { Bucket } from "./packages/storage/r2";
 import * as ChatGpt from "./scripts/chatgpt/token";
 

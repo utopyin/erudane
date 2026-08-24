@@ -7,7 +7,8 @@
     "./config": "./config.ts",
     "./schema": "./schema.ts",
     "./infra": "./infra.ts",
-    "./service": "./service.ts"
+    "./service": "./service.ts",
+    "./hyperdrive": "./hyperdrive.ts"
   },
   "scripts": {
     "check:types": "tsc",
