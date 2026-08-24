@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { ChapterId, ExerciseId, LessonId, SubjectId } from "./types";
+import { type Anchor, ChapterId, ExerciseId, LessonId, SubjectId } from "./types";
 
 export class SubjectNotFound extends Schema.TaggedError<SubjectNotFound>()(
   "Subjects.SubjectNotFound",
@@ -33,3 +33,12 @@ export class RepoError extends Schema.TaggedError<RepoError>()("Subjects.RepoErr
   message: Schema.String,
   cause: Schema.Unknown,
 }) {}
+
+/** The one NotFound an anchor can raise — its own target. Parent rows are FK-guaranteed. */
+export type AnchorNotFound<A extends Anchor> = A extends { readonly _tag: "Subject" }
+  ? SubjectNotFound
+  : A extends { readonly _tag: "Chapter" }
+    ? ChapterNotFound
+    : A extends { readonly _tag: "Lesson" }
+      ? LessonNotFound
+      : ExerciseNotFound;

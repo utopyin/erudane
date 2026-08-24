@@ -8,11 +8,7 @@
  */
 import { RepoError as ChatRepoError, ThreadNotFound } from "@erudane/chat/errors";
 import { ThreadId } from "@erudane/chat/types";
-import {
-  DocumentNotFound,
-  RepoError as DocumentRepoError,
-  RoomError,
-} from "@erudane/documents/errors";
+import { DocumentNotFound, RepoError as DocumentRepoError } from "@erudane/documents/errors";
 import { DocumentId, DocumentMeta } from "@erudane/documents/types";
 import * as Schema from "effect/Schema";
 import * as Rpc from "effect/unstable/rpc/Rpc";
@@ -39,17 +35,17 @@ import {
 
 const NotFound = Schema.Union([SubjectNotFound, ChapterNotFound, LessonNotFound, ExerciseNotFound]);
 
-/** Everything a write path can surface, documents included (lessons create documents). */
-const WriteError = Schema.Union([...NotFound.members, RepoError, DocumentRepoError]);
+/** An outline edit can target any level, and inserting a lesson creates its document. */
+const OutlineError = Schema.Union([...NotFound.members, RepoError, DocumentRepoError]);
 
-const ReadError = Schema.Union([...NotFound.members, RepoError]);
+const SubjectError = Schema.Union([SubjectNotFound, RepoError]);
 
 export const SubjectRpcs = RpcGroup.make(
   Rpc.make("subjects.list", { success: Schema.Array(Subject), error: RepoError }),
   Rpc.make("subjects.get", {
     payload: { id: SubjectId },
     success: Subject,
-    error: ReadError,
+    error: SubjectError,
   }),
   Rpc.make("subjects.create", {
     payload: {
@@ -60,7 +56,7 @@ export const SubjectRpcs = RpcGroup.make(
       chapters: Schema.optionalKey(NewChapters),
     },
     success: Outline,
-    error: WriteError,
+    error: Schema.Union([RepoError, DocumentRepoError]),
   }),
   Rpc.make("subjects.update", {
     payload: {
@@ -71,17 +67,17 @@ export const SubjectRpcs = RpcGroup.make(
       dueAt: Schema.optionalKey(Schema.NullOr(Schema.DateTimeUtc)),
     },
     success: Subject,
-    error: ReadError,
+    error: SubjectError,
   }),
   Rpc.make("subjects.outline", {
     payload: { id: SubjectId },
     success: Outline,
-    error: ReadError,
+    error: SubjectError,
   }),
   Rpc.make("subjects.editOutline", {
     payload: { id: SubjectId, ops: Schema.Array(OutlineOp) },
     success: Outline,
-    error: WriteError,
+    error: OutlineError,
   }),
   Rpc.make("subjects.setStatus", {
     payload: {
@@ -90,7 +86,7 @@ export const SubjectRpcs = RpcGroup.make(
       status: ItemStatus,
     },
     success: Schema.Void,
-    error: ReadError,
+    error: Schema.Union([LessonNotFound, ExerciseNotFound, RepoError]),
   }),
   Rpc.make("subjects.threads", {
     payload: { id: SubjectId },
@@ -113,16 +109,16 @@ export const SubjectRpcs = RpcGroup.make(
   Rpc.make("subjects.note", {
     payload: { id: SubjectId },
     success: Schema.String,
-    error: ReadError,
+    error: SubjectError,
   }),
   Rpc.make("exercises.start", {
     payload: { id: ExerciseId, restart: Schema.optionalKey(Schema.Boolean) },
     success: Schema.Struct({ threadId: ThreadId }),
-    error: Schema.Union([...NotFound.members, RepoError, ChatRepoError, ThreadNotFound]),
+    error: Schema.Union([ExerciseNotFound, RepoError, ChatRepoError]),
   }),
   Rpc.make("documents.get", {
     payload: { id: DocumentId },
     success: DocumentMeta,
-    error: Schema.Union([DocumentNotFound, DocumentRepoError, RoomError]),
+    error: Schema.Union([DocumentNotFound, DocumentRepoError]),
   }),
 );

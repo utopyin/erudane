@@ -1,6 +1,7 @@
-import type { Database } from "@erudane/db/service";
+import type * as Alchemy from "alchemy";
 import { Documents } from "@erudane/documents/service";
 import * as Effect from "effect/Effect";
+import type { ExerciseNotFound, LessonNotFound, RepoError } from "./errors";
 import { Subjects } from "./service";
 import { SubjectTools } from "./tools";
 
@@ -12,11 +13,11 @@ const toFailure = (error: { readonly _tag: string; readonly message?: string }) 
 
 /**
  * The toolkit's handler type demands a closed requirement channel, but these
- * handlers execute inside the request fiber, where `Database.Runtime` (the
+ * handlers execute inside the request fiber, where `Alchemy.RuntimeContext` (the
  * worker's ambient per-request context) is always present — erased here, found
  * at runtime.
  */
-const ambient = <A, E>(effect: Effect.Effect<A, E, Database.Runtime>): Effect.Effect<A, E> =>
+const ambient = <A, E>(effect: Effect.Effect<A, E, Alchemy.RuntimeContext>): Effect.Effect<A, E> =>
   effect as unknown as Effect.Effect<A, E>;
 
 /** Handler layer for the subject tools; the agent side of the one write path. */
@@ -27,72 +28,69 @@ export const layer = SubjectTools.toolkit.toLayer(
 
     return SubjectTools.toolkit.of({
       CreateSubject: (input) =>
-        ambient(
-          subjects.create(input).pipe(
-            Effect.map((outline) => ({ outline })),
-            Effect.catch(toFailure),
-          ),
+        subjects.create(input).pipe(
+          Effect.map((outline) => ({ outline })),
+          Effect.catch(toFailure),
+          ambient,
         ),
 
       UpdateSubject: ({ subjectId, ...patch }) =>
-        ambient(
-          subjects.update(subjectId, patch).pipe(
-            Effect.map((subject) => ({ subject })),
-            Effect.catch(toFailure),
-          ),
+        subjects.update(subjectId, patch).pipe(
+          Effect.map((subject) => ({ subject })),
+          Effect.catch(toFailure),
+          ambient,
         ),
 
       EditOutline: ({ subjectId, ops }) =>
-        ambient(
-          subjects.editOutline(subjectId, ops).pipe(
-            Effect.map((outline) => ({ outline })),
-            Effect.catch(toFailure),
-          ),
+        subjects.editOutline(subjectId, ops).pipe(
+          Effect.map((outline) => ({ outline })),
+          Effect.catch(toFailure),
+          ambient,
         ),
 
       SetStatus: ({ lessonId, exerciseId, status }) => {
         if (lessonId === undefined && exerciseId === undefined) {
           return Effect.fail({ message: "Pass exactly one of lessonId / exerciseId." });
         }
-        const action =
+        const action: Effect.Effect<
+          void,
+          LessonNotFound | ExerciseNotFound | RepoError,
+          Alchemy.RuntimeContext
+        > =
           lessonId !== undefined
             ? subjects.setLessonStatus(lessonId, status)
             : subjects.setExerciseStatus(exerciseId!, status);
-        return ambient(
-          action.pipe(
-            Effect.map(() => ({ updated: true as const })),
-            Effect.catch(toFailure),
-          ),
+        return action.pipe(
+          Effect.map(() => ({ updated: true as const })),
+          Effect.catch(toFailure),
+          ambient,
         );
       },
 
       SaveNote: ({ subjectId, note }) =>
-        ambient(
-          subjects.rewriteNote(subjectId, note).pipe(
-            Effect.map(() => ({ saved: true as const })),
-            Effect.catch(toFailure),
-          ),
+        subjects.rewriteNote(subjectId, note).pipe(
+          Effect.map(() => ({ saved: true as const })),
+          Effect.catch(toFailure),
+          ambient,
         ),
 
       UpdateSkills: ({ subjectId, strengths, weaknesses }) =>
-        ambient(
-          subjects
-            .replaceSkills(subjectId, [
-              ...strengths.map((text) => ({ kind: "strength" as const, text })),
-              ...weaknesses.map((text) => ({ kind: "weakness" as const, text })),
-            ])
-            .pipe(
-              Effect.map(() => ({ saved: true as const })),
-              Effect.catch(toFailure),
-            ),
-        ),
+        subjects
+          .replaceSkills(subjectId, [
+            ...strengths.map((text) => ({ kind: "strength" as const, text })),
+            ...weaknesses.map((text) => ({ kind: "weakness" as const, text })),
+          ])
+          .pipe(
+            Effect.map(() => ({ saved: true as const })),
+            Effect.catch(toFailure),
+            ambient,
+          ),
 
       CreateExercise: ({ lessonId, title, brief, at }) =>
-        ambient(
-          subjects.addExercise(lessonId, { title, brief, at }).pipe(
-            Effect.map((exercise) => ({ exerciseId: exercise.id })),
-            Effect.catch(toFailure),
-          ),
+        subjects.addExercise(lessonId, { title, brief, at }).pipe(
+          Effect.map((exercise) => ({ exerciseId: exercise.id })),
+          Effect.catch(toFailure),
+          ambient,
         ),
 
       ReadDocument: ({ documentId }) =>

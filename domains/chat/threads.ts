@@ -12,7 +12,7 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Prompt from "effect/unstable/ai/Prompt";
 import { RepoError, ThreadNotFound } from "./errors";
-import { type MessageId, type NewMessage, StoredMessage, Thread, type ThreadId } from "./types";
+import { MessageId, type NewMessage, StoredMessage, Thread, ThreadId } from "./types";
 
 /** Thread aggregate: the thread row and its ordered messages. */
 export interface Interface {
@@ -53,7 +53,7 @@ const fail = (message: string) => (cause: unknown) => new RepoError({ message, c
 
 const toThread = (row: typeof threads.$inferSelect): Thread =>
   new Thread({
-    id: row.id as ThreadId,
+    id: ThreadId.make(row.id),
     title: row.title,
     createdAt: DateTime.makeUnsafe(row.createdAt),
     updatedAt: DateTime.makeUnsafe(row.updatedAt),
@@ -66,8 +66,8 @@ const toStored = (row: typeof messages.$inferSelect) =>
     ),
     (message) =>
       new StoredMessage({
-        id: row.id as MessageId,
-        threadId: row.threadId as ThreadId,
+        id: MessageId.make(row.id),
+        threadId: ThreadId.make(row.threadId),
         seq: row.seq,
         message,
         createdAt: DateTime.makeUnsafe(row.createdAt),

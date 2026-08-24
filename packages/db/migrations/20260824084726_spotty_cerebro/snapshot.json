@@ -1,9 +1,9 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "d8622508-4411-43ac-ac27-428f07f1ddd0",
+  "id": "e992bca6-ce56-4784-aec4-d0b5e7ce7fd3",
   "prevIds": [
-    "78a45228-2418-4e06-9dfb-1ca7399d7ca3"
+    "bf664a34-ea4b-4bc0-b165-cacbe5d8f81f"
   ],
   "ddl": [
     {
@@ -54,6 +54,12 @@
     {
       "isRlsEnabled": false,
       "name": "eru_threads",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "eru_files",
       "entityType": "tables",
       "schema": "public"
     },
@@ -280,6 +286,84 @@
       "entityType": "columns",
       "schema": "public",
       "table": "eru_threads"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "eru_files"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "key",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "eru_files"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "media_type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "eru_files"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "file_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "eru_files"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "size",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "eru_files"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "eru_files"
     },
     {
       "type": "uuid",
@@ -1354,6 +1438,16 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "eru_files_pkey",
+      "schema": "public",
+      "table": "eru_files",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "eru_documents_pkey",
       "schema": "public",
       "table": "eru_documents",
@@ -1418,6 +1512,17 @@
       "schema": "public",
       "table": "eru_subjects",
       "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "key"
+      ],
+      "nullsNotDistinct": false,
+      "name": "eru_files_key_key",
+      "schema": "public",
+      "table": "eru_files",
+      "entityType": "uniques"
     },
     {
       "nameExplicit": false,

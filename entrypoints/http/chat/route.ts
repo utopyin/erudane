@@ -56,9 +56,7 @@ const subjectSystem = (threadId: ThreadId) =>
     const lessonMarkdown =
       lesson === undefined
         ? undefined
-        : yield* documents
-            .markdown(lesson.documentId)
-            .pipe(Effect.catch(() => Effect.succeed(undefined)));
+        : yield* documents.markdown(lesson.documentId).pipe(Effect.orElseSucceed(() => undefined));
     return Memory.system({
       memory,
       anchors,

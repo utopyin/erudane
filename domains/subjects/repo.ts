@@ -1,5 +1,6 @@
+import type * as Alchemy from "alchemy";
 import { ThreadNotFound } from "@erudane/chat/errors";
-import type { ThreadId } from "@erudane/chat/types";
+import { ThreadId } from "@erudane/chat/types";
 import {
   chapters,
   exercises,
@@ -10,9 +11,10 @@ import {
   threads,
 } from "@erudane/db/schema";
 import { Database } from "@erudane/db/service";
-import type { DocumentId } from "@erudane/documents/types";
+import { DocumentId } from "@erudane/documents/types";
 import { eq } from "drizzle-orm";
 import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -20,6 +22,7 @@ import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import {
+  type AnchorNotFound,
   ChapterNotFound,
   ExerciseNotFound,
   LessonNotFound,
@@ -30,12 +33,12 @@ import {
   Anchor,
   AnchoredThread,
   Chapter,
-  type ChapterId,
+  ChapterId,
   Exercise,
-  type ExerciseId,
+  ExerciseId,
   type ItemStatus,
   Lesson,
-  type LessonId,
+  LessonId,
   type NewSkill,
   type NewSubject,
   Outline,
@@ -43,7 +46,7 @@ import {
   OutlineLesson,
   Skill,
   Subject,
-  type SubjectId,
+  SubjectId,
   SubjectMemory,
   type SubjectPatch,
   ThreadAnchors,
@@ -60,19 +63,19 @@ type NotFound = SubjectNotFound | ChapterNotFound | LessonNotFound | ExerciseNot
 export interface Interface {
   readonly create: (
     subject: { readonly id: SubjectId } & NewSubject,
-  ) => Effect.Effect<Subject, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Subject, RepoError, Alchemy.RuntimeContext>;
   readonly get: (
     id: SubjectId,
-  ) => Effect.Effect<Option.Option<Subject>, RepoError, Database.Runtime>;
-  readonly list: Effect.Effect<ReadonlyArray<Subject>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<Subject>, RepoError, Alchemy.RuntimeContext>;
+  readonly list: Effect.Effect<ReadonlyArray<Subject>, RepoError, Alchemy.RuntimeContext>;
   readonly update: (
     id: SubjectId,
     patch: SubjectPatch,
-  ) => Effect.Effect<Subject, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Subject, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   /** The full tree, ordered by position at every level. */
   readonly outline: (
     id: SubjectId,
-  ) => Effect.Effect<Outline, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Outline, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
 
   /** `at` is the desired 1-based position, clamped; omitted = append. */
   readonly insertChapter: (
@@ -84,7 +87,7 @@ export interface Interface {
       readonly dueAt?: DateTime.Utc | undefined;
       readonly at?: number | undefined;
     },
-  ) => Effect.Effect<Chapter, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Chapter, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   readonly updateChapter: (
     id: ChapterId,
     patch: {
@@ -92,14 +95,14 @@ export interface Interface {
       readonly summary?: string | undefined;
       readonly dueAt?: DateTime.Utc | null | undefined;
     },
-  ) => Effect.Effect<Chapter, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Chapter, RepoError | ChapterNotFound, Alchemy.RuntimeContext>;
   readonly moveChapter: (
     id: ChapterId,
     to: number,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | ChapterNotFound, Alchemy.RuntimeContext>;
   readonly removeChapter: (
     id: ChapterId,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | ChapterNotFound, Alchemy.RuntimeContext>;
 
   readonly insertLesson: (
     chapterId: ChapterId,
@@ -110,21 +113,21 @@ export interface Interface {
       readonly dueAt?: DateTime.Utc | undefined;
       readonly at?: number | undefined;
     },
-  ) => Effect.Effect<Lesson, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Lesson, RepoError | ChapterNotFound, Alchemy.RuntimeContext>;
   readonly updateLesson: (
     id: LessonId,
     patch: {
       readonly title?: string | undefined;
       readonly dueAt?: DateTime.Utc | null | undefined;
     },
-  ) => Effect.Effect<Lesson, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Lesson, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
   readonly moveLesson: (
     id: LessonId,
     to: number,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
   readonly removeLesson: (
     id: LessonId,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
 
   readonly insertExercise: (
     lessonId: LessonId,
@@ -134,70 +137,70 @@ export interface Interface {
       readonly brief: string;
       readonly at?: number | undefined;
     },
-  ) => Effect.Effect<Exercise, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Exercise, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
   readonly updateExercise: (
     id: ExerciseId,
     patch: { readonly title?: string | undefined; readonly brief?: string | undefined },
-  ) => Effect.Effect<Exercise, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Exercise, RepoError | ExerciseNotFound, Alchemy.RuntimeContext>;
   readonly moveExercise: (
     id: ExerciseId,
     to: number,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | ExerciseNotFound, Alchemy.RuntimeContext>;
   readonly removeExercise: (
     id: ExerciseId,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | ExerciseNotFound, Alchemy.RuntimeContext>;
 
   readonly setLessonStatus: (
     id: LessonId,
     status: ItemStatus,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
   readonly setExerciseStatus: (
     id: ExerciseId,
     status: ItemStatus,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | ExerciseNotFound, Alchemy.RuntimeContext>;
 
   /** Replaces the whole list — the agent rewrites skills wholesale. */
   readonly replaceSkills: (
     subjectId: SubjectId,
     skills: ReadonlyArray<NewSkill>,
-  ) => Effect.Effect<ReadonlyArray<Skill>, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<Skill>, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   /** Archives the previous value to `note_revisions`, then replaces. */
   readonly rewriteNote: (
     subjectId: SubjectId,
     note: string,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   readonly note: (
     subjectId: SubjectId,
-  ) => Effect.Effect<string, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<string, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   /** Subject + note + skills + outline in one read — what a run consumes. */
   readonly memory: (
     subjectId: SubjectId,
-  ) => Effect.Effect<SubjectMemory, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<SubjectMemory, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
 
   /** One exercise, for seeding its agent-led thread. */
   readonly exercise: (
     id: ExerciseId,
-  ) => Effect.Effect<Exercise, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Exercise, RepoError | ExerciseNotFound, Alchemy.RuntimeContext>;
 
   /** Resolves the parent chain, writes `subjectId` + the one deep column. */
-  readonly anchorThread: (
+  readonly anchorThread: <A extends Anchor>(
     threadId: ThreadId,
-    anchor: Anchor,
-  ) => Effect.Effect<void, RepoError | NotFound | ThreadNotFound, Database.Runtime>;
+    anchor: A,
+  ) => Effect.Effect<void, RepoError | ThreadNotFound | AnchorNotFound<A>, Alchemy.RuntimeContext>;
   readonly anchorsOf: (
     threadId: ThreadId,
-  ) => Effect.Effect<Option.Option<ThreadAnchors>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<ThreadAnchors>, RepoError, Alchemy.RuntimeContext>;
   readonly threadsOf: (
     subjectId: SubjectId,
-  ) => Effect.Effect<ReadonlyArray<AnchoredThread>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<AnchoredThread>, RepoError, Alchemy.RuntimeContext>;
   readonly newestThreadOf: (
     exerciseId: ExerciseId,
-  ) => Effect.Effect<Option.Option<ThreadId>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<ThreadId>, RepoError, Alchemy.RuntimeContext>;
 }
 
 /**
  * @effect-expect-leaking RuntimeContext
- * `Database.Runtime` is the worker's per-request context; queries open their pool on it.
+ * `Alchemy.RuntimeContext` is the worker's per-request context; queries open their pool on it.
  */
 export class Service extends Context.Service<Service, Interface>()(
   "@erudane/subjects/SubjectRepo",
@@ -227,6 +230,14 @@ const mapRepoError =
       isDomainError(error) ? (error as Extract<E, DomainError>) : fail(message)(error),
     );
 
+/** `Anchor.$match` types every branch's NotFound; the anchor's tag picks exactly one. */
+const anchored = <A extends Anchor, R>(
+  _anchor: A,
+  effect: Effect.Effect<void, RepoError | ThreadNotFound | NotFound, R>,
+): Effect.Effect<void, RepoError | ThreadNotFound | AnchorNotFound<A>, R> =>
+  // @effect-diagnostics-next-line unsafeEffectTypeAssertion:off -- the tag → error correlation is not expressible without the cast
+  effect as Effect.Effect<void, RepoError | ThreadNotFound | AnchorNotFound<A>, R>;
+
 const iso = (value: DateTime.Utc) => DateTime.formatIso(value);
 const isoOrNull = (value: DateTime.Utc | null | undefined) => (value ? iso(value) : null);
 const utc = (value: string) => DateTime.makeUnsafe(value);
@@ -234,7 +245,7 @@ const utcOrNull = (value: string | null) => (value === null ? null : utc(value))
 
 const toSubject = (row: typeof subjects.$inferSelect): Subject =>
   new Subject({
-    id: row.id as SubjectId,
+    id: SubjectId.make(row.id),
     title: row.title,
     about: row.about,
     motivation: row.motivation,
@@ -245,8 +256,8 @@ const toSubject = (row: typeof subjects.$inferSelect): Subject =>
 
 const toChapter = (row: typeof chapters.$inferSelect): Chapter =>
   new Chapter({
-    id: row.id as ChapterId,
-    subjectId: row.subjectId as SubjectId,
+    id: ChapterId.make(row.id),
+    subjectId: SubjectId.make(row.subjectId),
     position: row.position,
     title: row.title,
     summary: row.summary,
@@ -257,12 +268,12 @@ const toChapter = (row: typeof chapters.$inferSelect): Chapter =>
 
 const toLesson = (row: typeof lessons.$inferSelect): Lesson =>
   new Lesson({
-    id: row.id as LessonId,
-    chapterId: row.chapterId as ChapterId,
+    id: LessonId.make(row.id),
+    chapterId: ChapterId.make(row.chapterId),
     position: row.position,
     title: row.title,
     status: row.status,
-    documentId: row.documentId as DocumentId,
+    documentId: DocumentId.make(row.documentId),
     dueAt: utcOrNull(row.dueAt),
     createdAt: utc(row.createdAt),
     updatedAt: utc(row.updatedAt),
@@ -270,8 +281,8 @@ const toLesson = (row: typeof lessons.$inferSelect): Lesson =>
 
 const toExercise = (row: typeof exercises.$inferSelect): Exercise =>
   new Exercise({
-    id: row.id as ExerciseId,
-    lessonId: row.lessonId as LessonId,
+    id: ExerciseId.make(row.id),
+    lessonId: LessonId.make(row.lessonId),
     position: row.position,
     title: row.title,
     brief: row.brief,
@@ -283,10 +294,10 @@ const toExercise = (row: typeof exercises.$inferSelect): Exercise =>
 const toSkill = (row: typeof subjectSkills.$inferSelect): Skill =>
   new Skill({
     id: row.id,
-    subjectId: row.subjectId as SubjectId,
+    subjectId: SubjectId.make(row.subjectId),
     kind: row.kind,
     text: row.text,
-    sourceThreadId: row.sourceThreadId as ThreadId | null,
+    sourceThreadId: row.sourceThreadId === null ? null : ThreadId.make(row.sourceThreadId),
   });
 
 const toAnchors = (row: {
@@ -296,10 +307,10 @@ const toAnchors = (row: {
   exerciseId: string | null;
 }): ThreadAnchors =>
   new ThreadAnchors({
-    subjectId: row.subjectId as SubjectId | null,
-    chapterId: row.chapterId as ChapterId | null,
-    lessonId: row.lessonId as LessonId | null,
-    exerciseId: row.exerciseId as ExerciseId | null,
+    subjectId: row.subjectId === null ? null : SubjectId.make(row.subjectId),
+    chapterId: row.chapterId === null ? null : ChapterId.make(row.chapterId),
+    lessonId: row.lessonId === null ? null : LessonId.make(row.lessonId),
+    exerciseId: row.exerciseId === null ? null : ExerciseId.make(row.exerciseId),
   });
 
 /** Splice `id` into `ids` at the (1-based, clamped) position; `ids` must not contain it. */
@@ -308,13 +319,12 @@ const placed = (ids: ReadonlyArray<string>, id: string, at: number | undefined) 
   return [...ids.slice(0, index), id, ...ids.slice(index)];
 };
 
-// @effect-diagnostics-next-line cryptoRandomUUID:off -- repo-internal row ids (skills, revisions), no service worth requiring
-const rowId = () => crypto.randomUUID();
-
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const db = yield* Database.Service;
+    /** Repo-internal row ids (skills, revisions); a failed random source is a defect. */
+    const rowId = Effect.orDie((yield* Crypto.Crypto).randomUUIDv4);
 
     type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -338,13 +348,17 @@ export const layer = Layer.effect(
         row === undefined ? new ExerciseNotFound({ exerciseId: id }) : Effect.succeed(row),
       );
 
-    /** subjectId of a lesson (via its chapter). */
+    /** subjectId of a lesson (via its chapter). Parents are FK-guaranteed: a miss is a defect. */
     const lessonSubject = (tx: Tx, row: typeof lessons.$inferSelect) =>
-      Effect.map(chapterRow(tx, row.chapterId as ChapterId), (chapter) => chapter.subjectId);
+      chapterRow(tx, ChapterId.make(row.chapterId)).pipe(
+        Effect.catchTag("Subjects.ChapterNotFound", Effect.die),
+        Effect.map((chapter) => chapter.subjectId),
+      );
     /** subjectId of an exercise (via lesson → chapter). */
     const exerciseSubject = (tx: Tx, row: typeof exercises.$inferSelect) =>
-      Effect.flatMap(lessonRow(tx, row.lessonId as LessonId), (lesson) =>
-        lessonSubject(tx, lesson),
+      lessonRow(tx, LessonId.make(row.lessonId)).pipe(
+        Effect.catchTag("Subjects.LessonNotFound", Effect.die),
+        Effect.flatMap((lesson) => lessonSubject(tx, lesson)),
       );
 
     const renumberChapters = (tx: Tx, ids: ReadonlyArray<string>) =>
@@ -423,10 +437,12 @@ export const layer = Layer.effect(
             rows.map(
               (chapter) =>
                 new OutlineChapter({
+                  // oxlint-disable-next-line typescript/no-misused-spread
                   ...toChapter(chapter),
                   lessons: chapter.lessons.map(
                     (lesson) =>
                       new OutlineLesson({
+                        // oxlint-disable-next-line typescript/no-misused-spread
                         ...toLesson(lesson),
                         exercises: lesson.exercises.map(toExercise),
                       }),
@@ -782,18 +798,16 @@ export const layer = Layer.effect(
                 yield* bumpSubject(tx, subjectId, at);
                 return [] as ReadonlyArray<Skill>;
               }
-              const rows = yield* tx
-                .insert(subjectSkills)
-                .values(
-                  skills.map((skill) => ({
-                    id: rowId(),
-                    subjectId,
-                    kind: skill.kind,
-                    text: skill.text,
-                    sourceThreadId: skill.sourceThreadId ?? null,
-                  })),
-                )
-                .returning();
+              const values = yield* Effect.forEach(skills, (skill) =>
+                Effect.map(rowId, (id) => ({
+                  id,
+                  subjectId,
+                  kind: skill.kind,
+                  text: skill.text,
+                  sourceThreadId: skill.sourceThreadId ?? null,
+                })),
+              );
+              const rows = yield* tx.insert(subjectSkills).values(values).returning();
               yield* bumpSubject(tx, subjectId, at);
               return rows.map(toSkill);
             }),
@@ -808,7 +822,7 @@ export const layer = Layer.effect(
               const at = iso(yield* DateTime.now);
               yield* tx
                 .insert(subjectNoteRevisions)
-                .values({ id: rowId(), subjectId, note: row.note, replacedAt: at });
+                .values({ id: yield* rowId, subjectId, note: row.note, replacedAt: at });
               yield* tx
                 .update(subjects)
                 .set({ note, updatedAt: at })
@@ -848,57 +862,60 @@ export const layer = Layer.effect(
           ),
         ),
 
-      anchorThread: (threadId, anchor) =>
-        db
-          .transaction((tx) =>
-            Effect.gen(function* () {
-              const columns = yield* Anchor.$match(anchor, {
-                Subject: ({ subjectId }) =>
-                  Effect.map(subjectRow(tx, subjectId), () => ({
-                    subjectId,
-                    chapterId: null,
-                    lessonId: null,
-                    exerciseId: null,
-                  })),
-                Chapter: ({ chapterId }) =>
-                  Effect.map(chapterRow(tx, chapterId), (chapter) => ({
-                    subjectId: chapter.subjectId,
-                    chapterId,
-                    lessonId: null,
-                    exerciseId: null,
-                  })),
-                Lesson: ({ lessonId }) =>
-                  Effect.gen(function* () {
-                    const lesson = yield* lessonRow(tx, lessonId);
-                    return {
-                      subjectId: yield* lessonSubject(tx, lesson),
-                      chapterId: null,
-                      lessonId,
-                      exerciseId: null,
-                    };
-                  }),
-                Exercise: ({ exerciseId }) =>
-                  Effect.gen(function* () {
-                    const exercise = yield* exerciseRow(tx, exerciseId);
-                    return {
-                      subjectId: yield* exerciseSubject(tx, exercise),
+      anchorThread: <A extends Anchor>(threadId: ThreadId, anchor: A) =>
+        anchored(
+          anchor,
+          db
+            .transaction((tx) =>
+              Effect.gen(function* () {
+                const columns = yield* Anchor.$match(anchor, {
+                  Subject: ({ subjectId }) =>
+                    Effect.map(subjectRow(tx, subjectId), () => ({
+                      subjectId,
                       chapterId: null,
                       lessonId: null,
-                      exerciseId,
-                    };
-                  }),
-              });
-              const rows = yield* tx
-                .update(threads)
-                .set(columns)
-                .where(eq(threads.id, threadId))
-                .returning({ id: threads.id });
-              if (rows.length === 0) {
-                return yield* new ThreadNotFound({ threadId });
-              }
-            }),
-          )
-          .pipe(mapRepoError("anchor thread")),
+                      exerciseId: null,
+                    })),
+                  Chapter: ({ chapterId }) =>
+                    Effect.map(chapterRow(tx, chapterId), (chapter) => ({
+                      subjectId: chapter.subjectId,
+                      chapterId,
+                      lessonId: null,
+                      exerciseId: null,
+                    })),
+                  Lesson: ({ lessonId }) =>
+                    Effect.gen(function* () {
+                      const lesson = yield* lessonRow(tx, lessonId);
+                      return {
+                        subjectId: yield* lessonSubject(tx, lesson),
+                        chapterId: null,
+                        lessonId,
+                        exerciseId: null,
+                      };
+                    }),
+                  Exercise: ({ exerciseId }) =>
+                    Effect.gen(function* () {
+                      const exercise = yield* exerciseRow(tx, exerciseId);
+                      return {
+                        subjectId: yield* exerciseSubject(tx, exercise),
+                        chapterId: null,
+                        lessonId: null,
+                        exerciseId,
+                      };
+                    }),
+                });
+                const rows = yield* tx
+                  .update(threads)
+                  .set(columns)
+                  .where(eq(threads.id, threadId))
+                  .returning({ id: threads.id });
+                if (rows.length === 0) {
+                  return yield* new ThreadNotFound({ threadId });
+                }
+              }),
+            )
+            .pipe(mapRepoError("anchor thread")),
+        ),
 
       anchorsOf: (threadId) =>
         db.query.threads
@@ -917,7 +934,7 @@ export const layer = Layer.effect(
             rows.map(
               (row) =>
                 new AnchoredThread({
-                  id: row.id as ThreadId,
+                  id: ThreadId.make(row.id),
                   title: row.title,
                   updatedAt: utc(row.updatedAt),
                   anchors: toAnchors(row),
@@ -930,7 +947,7 @@ export const layer = Layer.effect(
       newestThreadOf: (exerciseId) =>
         db.query.threads.findFirst({ where: { exerciseId }, orderBy: { updatedAt: "desc" } }).pipe(
           Effect.map((row) =>
-            Option.map(Option.fromUndefinedOr(row), (thread) => thread.id as ThreadId),
+            Option.map(Option.fromUndefinedOr(row), (thread) => ThreadId.make(thread.id)),
           ),
           Effect.mapError(fail("newest exercise thread")),
         ),
@@ -984,6 +1001,7 @@ export const memory = Layer.effect(
       revisions: [],
       threads: new Map(),
     });
+    const rowId = Effect.orDie((yield* Crypto.Crypto).randomUUIDv4);
 
     const nowIso = Effect.map(DateTime.now, iso);
 
@@ -1010,11 +1028,24 @@ export const memory = Layer.effect(
         ? new ExerciseNotFound({ exerciseId: id })
         : Effect.succeed(state.exercises.get(id)!);
 
+    /** Parents are FK-guaranteed (the store mirrors the schema): a miss is a defect. */
     const lessonSubject = (state: Store, row: LessonRow) =>
-      Effect.map(chapterRow(state, row.chapterId as ChapterId), (chapter) => chapter.subjectId);
+      Effect.map(
+        Effect.catchTag(
+          chapterRow(state, ChapterId.make(row.chapterId)),
+          "Subjects.ChapterNotFound",
+          Effect.die,
+        ),
+        (chapter) => chapter.subjectId,
+      );
     const exerciseSubject = (state: Store, row: ExerciseRow) =>
-      Effect.flatMap(lessonRow(state, row.lessonId as LessonId), (lesson) =>
-        lessonSubject(state, lesson),
+      Effect.flatMap(
+        Effect.catchTag(
+          lessonRow(state, LessonId.make(row.lessonId)),
+          "Subjects.LessonNotFound",
+          Effect.die,
+        ),
+        (lesson) => lessonSubject(state, lesson),
       );
 
     const ordered = <Row extends { position: number }>(
@@ -1048,10 +1079,12 @@ export const memory = Layer.effect(
       ordered(state.chapters.values(), (row) => row.subjectId === subjectId).map(
         (chapter) =>
           new OutlineChapter({
+            // oxlint-disable-next-line typescript/no-misused-spread
             ...toChapter(chapter),
             lessons: ordered(state.lessons.values(), (row) => row.chapterId === chapter.id).map(
               (lesson) =>
                 new OutlineLesson({
+                  // oxlint-disable-next-line typescript/no-misused-spread
                   ...toLesson(lesson),
                   exercises: ordered(
                     state.exercises.values(),
@@ -1359,20 +1392,23 @@ export const memory = Layer.effect(
 
       replaceSkills: (subjectId, skills) =>
         use((state, at) =>
-          Effect.map(subjectRow(state, subjectId), () => {
+          Effect.gen(function* () {
+            yield* subjectRow(state, subjectId);
+            const rows = yield* Effect.forEach(skills, (skill) =>
+              Effect.map(rowId, (id): SkillRow => ({
+                id,
+                subjectId,
+                kind: skill.kind,
+                text: skill.text,
+                sourceThreadId: skill.sourceThreadId ?? null,
+                createdAt: at,
+                updatedAt: at,
+              })),
+            );
             const skillIdsToDrop = [...state.skills.values()]
               .filter((skill) => skill.subjectId === subjectId)
               .map((skill) => skill.id);
             for (const skillId of skillIdsToDrop) state.skills.delete(skillId);
-            const rows = skills.map((skill): SkillRow => ({
-              id: rowId(),
-              subjectId,
-              kind: skill.kind,
-              text: skill.text,
-              sourceThreadId: skill.sourceThreadId ?? null,
-              createdAt: at,
-              updatedAt: at,
-            }));
             for (const row of rows) state.skills.set(row.id, row);
             bump(state, subjectId, at);
             return rows.map(toSkill);
@@ -1408,56 +1444,59 @@ export const memory = Layer.effect(
 
       exercise: (id) => use((state) => Effect.map(exerciseRow(state, id), toExercise)),
 
-      anchorThread: (threadId, anchor) =>
-        use((state, at) =>
-          Effect.gen(function* () {
-            const columns = yield* Anchor.$match(anchor, {
-              Subject: ({ subjectId }) =>
-                Effect.map(subjectRow(state, subjectId), () => ({
-                  subjectId: subjectId as string,
-                  chapterId: null,
-                  lessonId: null,
-                  exerciseId: null,
-                })),
-              Chapter: ({ chapterId }) =>
-                Effect.map(chapterRow(state, chapterId), (chapter) => ({
-                  subjectId: chapter.subjectId,
-                  chapterId: chapterId as string | null,
-                  lessonId: null,
-                  exerciseId: null,
-                })),
-              Lesson: ({ lessonId }) =>
-                Effect.gen(function* () {
-                  const lesson = yield* lessonRow(state, lessonId);
-                  return {
-                    subjectId: yield* lessonSubject(state, lesson),
-                    chapterId: null,
-                    lessonId: lessonId as string | null,
-                    exerciseId: null,
-                  };
-                }),
-              Exercise: ({ exerciseId }) =>
-                Effect.gen(function* () {
-                  const exercise = yield* exerciseRow(state, exerciseId);
-                  return {
-                    subjectId: yield* exerciseSubject(state, exercise),
+      anchorThread: <A extends Anchor>(threadId: ThreadId, anchor: A) =>
+        anchored(
+          anchor,
+          use((state, at) =>
+            Effect.gen(function* () {
+              const columns = yield* Anchor.$match(anchor, {
+                Subject: ({ subjectId }) =>
+                  Effect.map(subjectRow(state, subjectId), () => ({
+                    subjectId: subjectId as string,
                     chapterId: null,
                     lessonId: null,
-                    exerciseId: exerciseId as string | null,
-                  };
-                }),
-            });
-            const existing = state.threads.get(threadId);
-            state.threads.set(threadId, {
-              id: threadId,
-              title: existing?.title ?? null,
-              updatedAt: at,
-              subjectId: columns.subjectId,
-              chapterId: columns.chapterId,
-              lessonId: columns.lessonId,
-              exerciseId: columns.exerciseId,
-            });
-          }),
+                    exerciseId: null,
+                  })),
+                Chapter: ({ chapterId }) =>
+                  Effect.map(chapterRow(state, chapterId), (chapter) => ({
+                    subjectId: chapter.subjectId,
+                    chapterId: chapterId as string | null,
+                    lessonId: null,
+                    exerciseId: null,
+                  })),
+                Lesson: ({ lessonId }) =>
+                  Effect.gen(function* () {
+                    const lesson = yield* lessonRow(state, lessonId);
+                    return {
+                      subjectId: yield* lessonSubject(state, lesson),
+                      chapterId: null,
+                      lessonId: lessonId as string | null,
+                      exerciseId: null,
+                    };
+                  }),
+                Exercise: ({ exerciseId }) =>
+                  Effect.gen(function* () {
+                    const exercise = yield* exerciseRow(state, exerciseId);
+                    return {
+                      subjectId: yield* exerciseSubject(state, exercise),
+                      chapterId: null,
+                      lessonId: null,
+                      exerciseId: exerciseId as string | null,
+                    };
+                  }),
+              });
+              const existing = state.threads.get(threadId);
+              state.threads.set(threadId, {
+                id: threadId,
+                title: existing?.title ?? null,
+                updatedAt: at,
+                subjectId: columns.subjectId,
+                chapterId: columns.chapterId,
+                lessonId: columns.lessonId,
+                exerciseId: columns.exerciseId,
+              });
+            }),
+          ),
         ),
 
       anchorsOf: (threadId) =>
@@ -1476,7 +1515,7 @@ export const memory = Layer.effect(
               .map(
                 (row) =>
                   new AnchoredThread({
-                    id: row.id as ThreadId,
+                    id: ThreadId.make(row.id),
                     title: row.title,
                     updatedAt: utc(row.updatedAt),
                     anchors: toAnchors(row),
@@ -1494,7 +1533,7 @@ export const memory = Layer.effect(
                   .filter((row) => row.exerciseId === exerciseId)
                   .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0],
               ),
-              (row) => row.id as ThreadId,
+              (row) => ThreadId.make(row.id),
             ),
           ),
         ),

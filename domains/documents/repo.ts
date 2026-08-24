@@ -1,3 +1,4 @@
+import type * as Alchemy from "alchemy";
 import { documents } from "@erudane/db/schema";
 import { Database } from "@erudane/db/service";
 import { eq, sql } from "drizzle-orm";
@@ -9,7 +10,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import { DocumentNotFound, RepoError } from "./errors";
-import { type DocumentActor, type DocumentId, DocumentMeta } from "./types";
+import { type DocumentActor, DocumentId, DocumentMeta } from "./types";
 
 export interface Projection {
   readonly markdown: string;
@@ -23,21 +24,25 @@ export interface Interface {
   readonly create: (document: {
     readonly id: DocumentId;
     readonly title?: string | undefined;
-  }) => Effect.Effect<DocumentMeta, RepoError, Database.Runtime>;
+  }) => Effect.Effect<DocumentMeta, RepoError, Alchemy.RuntimeContext>;
   readonly get: (
     id: DocumentId,
-  ) => Effect.Effect<Option.Option<DocumentMeta>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<DocumentMeta>, RepoError, Alchemy.RuntimeContext>;
   /** The stored CRDT snapshot, for cold-starting a room whose DO storage is empty. */
   readonly state: (
     id: DocumentId,
-  ) => Effect.Effect<Option.Option<Uint8Array>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<Uint8Array>, RepoError, Alchemy.RuntimeContext>;
   /** The room's debounced write: projection + snapshot, bumps `version`. */
   readonly saveProjection: (
     id: DocumentId,
     projection: Projection,
-  ) => Effect.Effect<void, RepoError | DocumentNotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | DocumentNotFound, Alchemy.RuntimeContext>;
 }
 
+/**
+ * @effect-expect-leaking RuntimeContext
+ * `Alchemy.RuntimeContext` is the worker's per-request context; queries open their pool on it.
+ */
 export class Service extends Context.Service<Service, Interface>()(
   "@erudane/documents/DocumentRepo",
 ) {}
@@ -46,7 +51,7 @@ const fail = (message: string) => (cause: unknown) => new RepoError({ message, c
 
 const toMeta = (row: typeof documents.$inferSelect): DocumentMeta =>
   new DocumentMeta({
-    id: row.id as DocumentId,
+    id: DocumentId.make(row.id),
     title: row.title,
     markdown: row.markdown,
     version: row.version,
@@ -158,6 +163,7 @@ export const memory = Layer.effect(
         if (!entry) return yield* new DocumentNotFound({ documentId: id });
         const at = yield* now;
         const meta = new DocumentMeta({
+          // oxlint-disable-next-line typescript/no-misused-spread
           ...entry.meta,
           markdown: projection.markdown,
           updatedBy: projection.updatedBy,

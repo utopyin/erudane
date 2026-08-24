@@ -1,10 +1,13 @@
+import { HyperdriveDatabase } from "@erudane/db/hyperdrive";
 import { Database } from "@erudane/db/service";
 import { DocumentRepo } from "@erudane/documents/repo";
 import * as Room from "@erudane/documents/room";
-import type { DocumentActor, DocumentId, RoomEdit } from "@erudane/documents/types";
+import { type DocumentActor, DocumentId, type RoomEdit } from "@erudane/documents/types";
+import * as BrowserCrypto from "@effect/platform-browser/BrowserCrypto";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -34,6 +37,7 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
   Effect.gen(function* () {
     const state = yield* Cloudflare.DurableObjectState;
     const db = yield* Database.Service;
+    const crypto = yield* Crypto.Crypto;
     const repo = Context.get(
       yield* Layer.build(
         DocumentRepo.layer.pipe(Layer.provide(Layer.succeed(Database.Service, db))),
@@ -42,8 +46,8 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
     );
     // @effect-diagnostics-next-line returnEffectInGen:off -- the DO contract: outer init resolves deps, returns the per-activation Effect
     return Effect.gen(function* () {
-      /** The room name is the document id (`getByName(documentId)`). */
-      const documentId = (state.id.name ?? "") as DocumentId;
+      /** The room name is the document id (`getByName(documentId)`); an unnamed room is a defect. */
+      const documentId = DocumentId.make(state.id.name ?? "");
       const sql = state.storage.sql;
       /** Write statement: run to completion, discard the cursor. */
       const run = (query: string, ...bindings: ReadonlyArray<string | number | ArrayBuffer>) =>
@@ -117,8 +121,7 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
       return {
         fetch: Effect.gen(function* () {
           const [response, socket] = yield* Cloudflare.upgrade();
-          // @effect-diagnostics-next-line cryptoRandomUUIDInEffect:off -- one session id, no service worth requiring for it
-          const id = crypto.randomUUID();
+          const id = yield* crypto.randomUUIDv4.pipe(Effect.orDie);
           socket.serializeAttachment({ id, clients: [] } satisfies Attachment);
           sessions.set(id, socket);
           for (const frame of Room.greeting(room)) yield* socket.send(frame);
@@ -194,5 +197,5 @@ export default class DocumentRoom extends Cloudflare.DurableObject<DocumentRoom>
         read: () => Effect.sync(() => Room.annotatedMarkdown(room)),
       };
     });
-  }).pipe(Effect.provide(Database.layer)),
+  }).pipe(Effect.provide([HyperdriveDatabase.layer, BrowserCrypto.layer])),
 ) {}

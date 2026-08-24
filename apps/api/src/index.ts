@@ -13,6 +13,7 @@ import { R2FileStore } from "@erudane/storage/r2";
 import { ExerciseRuns } from "@erudane/subjects/exercises";
 import { SubjectRepo } from "@erudane/subjects/repo";
 import { Subjects } from "@erudane/subjects/service";
+import * as BrowserCrypto from "@effect/platform-browser/BrowserCrypto";
 import type { RuntimeContext } from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Effect from "effect/Effect";
@@ -32,9 +33,9 @@ const application = Run.layer.pipe(
     Chat.layer.pipe(Layer.provideMerge([Model.layer, Registry.layer])),
     Files.layer,
   ]),
-  Layer.provideMerge([Subjects.layer, ExerciseRuns.layer, ThreadRepo.layer]),
+  Layer.provideMerge([Subjects.layer, ExerciseRuns.layer]),
   Layer.provideMerge(Documents.layer),
-  Layer.provideMerge([SubjectRepo.layer, DocumentRepo.layer]),
+  Layer.provideMerge([SubjectRepo.layer, DocumentRepo.layer, ThreadRepo.layer]),
 );
 
 /**
@@ -63,7 +64,10 @@ export default class Api extends Cloudflare.Worker<Api>()(
       RoomClient.Service,
       RoomClient.Service.of({
         connect: (documentId, request) =>
-          rooms.getByName(documentId).fetch(request).pipe(Effect.mapError(roomError(documentId))),
+          rooms
+            .getByName(documentId)
+            .fetch(request)
+            .pipe(Effect.mapError(roomError(documentId))),
         edit: (documentId, ops) =>
           remote(rooms.getByName(documentId).edit(ops)).pipe(
             Effect.mapError(roomError(documentId)),
@@ -78,12 +82,11 @@ export default class Api extends Cloudflare.Worker<Api>()(
       application.pipe(
         Layer.provideMerge(roomClient),
         Layer.provideMerge(Layer.succeed(PublicUrl, remote(url))),
+        Layer.provideMerge(BrowserCrypto.layer),
       ),
     );
     // The rpc server layer needs its handler services at router build time.
-    const handler = yield* HttpRouter.toHttpEffect(Http.layer).pipe(
-      Effect.provideContext(context),
-    );
+    const handler = yield* HttpRouter.toHttpEffect(Http.layer).pipe(Effect.provideContext(context));
 
     return { fetch: handler.pipe(Effect.provideContext(context)) };
   }).pipe(Effect.provide([HyperdriveDatabase.layer, R2FileStore.layer])),

@@ -1,4 +1,4 @@
-import { Database } from "@erudane/db/service";
+import type * as Alchemy from "alchemy";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -18,10 +18,10 @@ export interface Interface {
   readonly create: (options: {
     readonly id: DocumentId;
     readonly title?: string | undefined;
-  }) => Effect.Effect<DocumentMeta, RepoError, Database.Runtime>;
+  }) => Effect.Effect<DocumentMeta, RepoError, Alchemy.RuntimeContext>;
   readonly get: (
     id: DocumentId,
-  ) => Effect.Effect<Option.Option<DocumentMeta>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<DocumentMeta>, RepoError, Alchemy.RuntimeContext>;
   /** Live markdown annotated with block ids — the agent's `ReadDocument`. */
   readonly read: (id: DocumentId) => Effect.Effect<string, RoomError>;
   /** Agent write path: block ops applied live in the room, mid-run. */
@@ -29,7 +29,7 @@ export interface Interface {
   /** Projection markdown (may trail the live doc by one debounce window). */
   readonly markdown: (
     id: DocumentId,
-  ) => Effect.Effect<string, DocumentNotFound | RepoError, Database.Runtime>;
+  ) => Effect.Effect<string, DocumentNotFound | RepoError, Alchemy.RuntimeContext>;
 }
 
 export class Service extends Context.Service<Service, Interface>()("@erudane/documents") {}

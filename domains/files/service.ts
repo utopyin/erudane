@@ -3,6 +3,7 @@ import { Database } from "@erudane/db/service";
 import { files } from "@erudane/db/schema";
 import { FileStore } from "@erudane/storage/file-store";
 import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -17,7 +18,7 @@ import {
 } from "./errors";
 import {
   File,
-  type FileId,
+  FileId,
   MAX_BYTES,
   type MediaType,
   type ResolvedFile,
@@ -51,7 +52,7 @@ const storageFailed = (operation: string) => (cause: unknown) =>
 
 const toFile = (row: typeof files.$inferSelect): File =>
   new File({
-    id: row.id as FileId,
+    id: FileId.make(row.id),
     mediaType: row.mediaType,
     fileName: row.fileName ?? undefined,
     size: row.size,
@@ -123,6 +124,7 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const db = yield* Database.Service;
     const store = yield* FileStore.Service;
+    const crypto = yield* Crypto.Crypto;
 
     const getRow = Effect.fn("Files.getRow")(function* (id: FileId) {
       const row = yield* db.query.files
@@ -138,8 +140,7 @@ export const layer = Layer.effect(
 
     const upload: Interface["upload"] = Effect.fn("Files.upload")(function* (input) {
       const valid = yield* validate(input);
-      // @effect-diagnostics-next-line cryptoRandomUUIDInEffect:off -- one persisted identity
-      const id = yield* Effect.sync(() => crypto.randomUUID() as FileId);
+      const id = FileId.make(yield* Effect.orDie(crypto.randomUUIDv4));
       const key = `files/${id}`;
 
       yield* store

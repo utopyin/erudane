@@ -1,6 +1,6 @@
+import type * as Alchemy from "alchemy";
 import type { ThreadNotFound } from "@erudane/chat/errors";
 import type { ThreadId } from "@erudane/chat/types";
-import type { Database } from "@erudane/db/service";
 import type { RepoError as DocumentRepoError } from "@erudane/documents/errors";
 import { Documents } from "@erudane/documents/service";
 import * as Context from "effect/Context";
@@ -9,6 +9,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import type {
+  AnchorNotFound,
   ChapterNotFound,
   ExerciseNotFound,
   LessonNotFound,
@@ -39,8 +40,14 @@ import type {
   SubjectPatch,
 } from "./types";
 
-type NotFound = SubjectNotFound | ChapterNotFound | LessonNotFound | ExerciseNotFound;
-type Errors = RepoError | NotFound | DocumentRepoError;
+/** An outline edit can target any level, and inserting a lesson creates its document. */
+type OutlineError =
+  | RepoError
+  | SubjectNotFound
+  | ChapterNotFound
+  | LessonNotFound
+  | ExerciseNotFound
+  | DocumentRepoError;
 
 /**
  * The one write path for subject behaviour: RPC handlers (the user) and tool
@@ -49,20 +56,21 @@ type Errors = RepoError | NotFound | DocumentRepoError;
  * beyond delegation: creating a lesson creates its collab document first.
  */
 export interface Interface {
+  /** Every row is created here, so a NotFound mid-way is a defect, not an error. */
   readonly create: (
     input: NewSubject & { readonly chapters?: NewChapters | undefined },
-  ) => Effect.Effect<Outline, Errors, Database.Runtime>;
+  ) => Effect.Effect<Outline, RepoError | DocumentRepoError, Alchemy.RuntimeContext>;
   readonly get: (
     id: SubjectId,
-  ) => Effect.Effect<Option.Option<Subject>, RepoError, Database.Runtime>;
-  readonly list: Effect.Effect<ReadonlyArray<Subject>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<Option.Option<Subject>, RepoError, Alchemy.RuntimeContext>;
+  readonly list: Effect.Effect<ReadonlyArray<Subject>, RepoError, Alchemy.RuntimeContext>;
   readonly update: (
     id: SubjectId,
     patch: SubjectPatch,
-  ) => Effect.Effect<Subject, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Subject, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   readonly outline: (
     id: SubjectId,
-  ) => Effect.Effect<Outline, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Outline, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
 
   readonly addChapter: (
     subjectId: SubjectId,
@@ -72,7 +80,7 @@ export interface Interface {
       readonly dueAt?: DateTime.Utc | undefined;
       readonly at?: number | undefined;
     },
-  ) => Effect.Effect<Chapter, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Chapter, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   /** Creates the lesson's empty collab document, then the lesson — 1:1. */
   readonly addLesson: (
     chapterId: ChapterId,
@@ -81,7 +89,11 @@ export interface Interface {
       readonly dueAt?: DateTime.Utc | undefined;
       readonly at?: number | undefined;
     },
-  ) => Effect.Effect<Lesson, Errors, Database.Runtime>;
+  ) => Effect.Effect<
+    Lesson,
+    RepoError | ChapterNotFound | DocumentRepoError,
+    Alchemy.RuntimeContext
+  >;
   readonly addExercise: (
     lessonId: LessonId,
     exercise: {
@@ -89,50 +101,50 @@ export interface Interface {
       readonly brief: string;
       readonly at?: number | undefined;
     },
-  ) => Effect.Effect<Exercise, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<Exercise, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
   /** Applies ops in order (the agent restructures several items per round). */
   readonly editOutline: (
     subjectId: SubjectId,
     ops: ReadonlyArray<OutlineOp>,
-  ) => Effect.Effect<Outline, Errors, Database.Runtime>;
+  ) => Effect.Effect<Outline, OutlineError, Alchemy.RuntimeContext>;
 
   readonly setLessonStatus: (
     id: LessonId,
     status: ItemStatus,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | LessonNotFound, Alchemy.RuntimeContext>;
   readonly setExerciseStatus: (
     id: ExerciseId,
     status: ItemStatus,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | ExerciseNotFound, Alchemy.RuntimeContext>;
 
   readonly replaceSkills: (
     subjectId: SubjectId,
     skills: ReadonlyArray<NewSkill>,
-  ) => Effect.Effect<ReadonlyArray<Skill>, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<Skill>, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   readonly rewriteNote: (
     subjectId: SubjectId,
     note: string,
-  ) => Effect.Effect<void, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<void, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   /** The agent's working note — surfaced only behind an explicit interaction. */
   readonly note: (
     subjectId: SubjectId,
-  ) => Effect.Effect<string, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<string, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
   readonly memory: (
     subjectId: SubjectId,
-  ) => Effect.Effect<SubjectMemory, RepoError | NotFound, Database.Runtime>;
+  ) => Effect.Effect<SubjectMemory, RepoError | SubjectNotFound, Alchemy.RuntimeContext>;
 
-  readonly anchorThread: (
+  readonly anchorThread: <A extends Anchor>(
     threadId: ThreadId,
-    anchor: Anchor,
-  ) => Effect.Effect<void, RepoError | NotFound | ThreadNotFound, Database.Runtime>;
+    anchor: A,
+  ) => Effect.Effect<void, RepoError | ThreadNotFound | AnchorNotFound<A>, Alchemy.RuntimeContext>;
   readonly threadsOf: (
     subjectId: SubjectId,
-  ) => Effect.Effect<ReadonlyArray<AnchoredThread>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<AnchoredThread>, RepoError, Alchemy.RuntimeContext>;
 }
 
 /**
  * @effect-expect-leaking RuntimeContext
- * `Database.Runtime` is the worker's per-request context; queries open their pool on it.
+ * `Alchemy.RuntimeContext` is the worker's per-request context; queries open their pool on it.
  */
 export class Service extends Context.Service<Service, Interface>()("@erudane/subjects/Subjects") {}
 
@@ -141,13 +153,14 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const repo = yield* SubjectRepo.Service;
     const documents = yield* Documents.Service;
+    const ids = yield* Ids.make;
 
     const addLesson: Interface["addLesson"] = (chapterId, lesson) =>
       Effect.gen(function* () {
-        const documentId = yield* Ids.documentId;
+        const documentId = yield* ids.documentId;
         yield* documents.create({ id: documentId, title: lesson.title });
         return yield* repo.insertLesson(chapterId, {
-          id: yield* Ids.lessonId,
+          id: yield* ids.lessonId,
           title: lesson.title,
           documentId,
           dueAt: lesson.dueAt,
@@ -157,18 +170,18 @@ export const layer = Layer.effect(
 
     const addChapter: Interface["addChapter"] = (subjectId, chapter) =>
       Effect.gen(function* () {
-        return yield* repo.insertChapter(subjectId, { id: yield* Ids.chapterId, ...chapter });
+        return yield* repo.insertChapter(subjectId, { id: yield* ids.chapterId, ...chapter });
       });
 
     const addExercise: Interface["addExercise"] = (lessonId, exercise) =>
       Effect.gen(function* () {
-        return yield* repo.insertExercise(lessonId, { id: yield* Ids.exerciseId, ...exercise });
+        return yield* repo.insertExercise(lessonId, { id: yield* ids.exerciseId, ...exercise });
       });
 
     const applyOp = (
       subjectId: SubjectId,
       op: OutlineOp,
-    ): Effect.Effect<unknown, Errors, Database.Runtime> => {
+    ): Effect.Effect<unknown, OutlineError, Alchemy.RuntimeContext> => {
       switch (op.op) {
         case "insertChapter":
           return addChapter(subjectId, op);
@@ -206,7 +219,7 @@ export const layer = Layer.effect(
     const create: Interface["create"] = (input) =>
       Effect.gen(function* () {
         const subject = yield* repo.create({
-          id: yield* Ids.subjectId,
+          id: yield* ids.subjectId,
           title: input.title,
           about: input.about,
           motivation: input.motivation,
@@ -229,7 +242,13 @@ export const layer = Layer.effect(
           }
         }
         return yield* repo.outline(subject.id);
-      });
+      }).pipe(
+        // Every id above was minted and inserted in this call; a miss is a broken invariant.
+        Effect.catchTag(
+          ["Subjects.SubjectNotFound", "Subjects.ChapterNotFound", "Subjects.LessonNotFound"],
+          Effect.die,
+        ),
+      );
 
     return Service.of({
       create,
