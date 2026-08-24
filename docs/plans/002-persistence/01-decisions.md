@@ -42,7 +42,7 @@ Consequences, all verified in source:
 
 - The API worker must be the **Effect-form** `Cloudflare.Worker<Api>()("Api", props, init)` with `fetch: yield* HttpRouter.toHttpEffect(appLayer)` (`HttpRouter.ts:617`; alchemy `cloudflare/apis/effect-http-api.mdx`).
 - `Drizzle.Postgres` memoizes the pool **per execution scope** (`Runtime/ExecutionMemo.ts`): one pool per request, closed when the request settles. This is the only legal shape on workerd (sockets are IoContext-pinned) and matches Cloudflare's "new client per request" guidance.
-- Queries carry `Alchemy.RuntimeContext` in their requirements (the connection string is read from the binding at request time). `@erudane/db` re-exports it as `Database.Runtime`; repository interfaces use it; `toHttpEffect` threads it to `fetch`, which the worker bridge provides. The memory layer simply doesn't need it.
+- Queries carry `Alchemy.RuntimeContext` in their requirements; repository interfaces use it; `toHttpEffect` threads it to `fetch`, which the worker bridge provides. The memory layer simply doesn't need it.
 - `nodejs_compat` is required for `pg` (`compatibility: { flags: ["nodejs_compat"] }`, `Worker.ts:799`).
 
 ## D17 — The existing Hyperdrive is adopted by name; its origin is the PlanetScale role, supplied through `.env`

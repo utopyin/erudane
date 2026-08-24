@@ -1,3 +1,4 @@
+import * as Alchemy from "alchemy";
 import { Database } from "@erudane/db/service";
 import { files } from "@erudane/db/schema";
 import { FileStore } from "@erudane/storage/file-store";
@@ -29,12 +30,14 @@ export interface Interface {
   ) => Effect.Effect<
     File,
     InvalidFile | FileTooLarge | UnsupportedMediaType | StorageError,
-    Database.Runtime
+    Alchemy.RuntimeContext
   >;
-  readonly get: (id: FileId) => Effect.Effect<File, FileNotFound | StorageError, Database.Runtime>;
+  readonly get: (
+    id: FileId,
+  ) => Effect.Effect<File, FileNotFound | StorageError, Alchemy.RuntimeContext>;
   readonly resolve: (
     id: FileId,
-  ) => Effect.Effect<ResolvedFile, FileNotFound | StorageError, Database.Runtime>;
+  ) => Effect.Effect<ResolvedFile, FileNotFound | StorageError, Alchemy.RuntimeContext>;
 }
 
 /**
@@ -85,12 +88,8 @@ const normalizeMediaType = (value: string): string =>
 const sanitizeFileName = (value: string | undefined): string | undefined => {
   if (value === undefined) return undefined;
   const leaf = value.split(/[\\/]/).at(-1) ?? "";
-  const clean = [...leaf]
-    .filter((character) => {
-      const code = character.charCodeAt(0);
-      return code >= 32 && code !== 127;
-    })
-    .join("")
+  const clean = leaf
+    .replace(/\p{Cc}/gu, "")
     .trim()
     .slice(0, 255);
   return clean.length === 0 ? undefined : clean;

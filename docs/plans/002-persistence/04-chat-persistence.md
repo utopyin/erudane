@@ -54,25 +54,31 @@ export interface Interface {
   readonly create: (thread: {
     id: ThreadId;
     title?: string;
-  }) => Effect.Effect<Thread, RepoError, Database.Runtime>;
-  readonly get: (id: ThreadId) => Effect.Effect<Option.Option<Thread>, RepoError, Database.Runtime>;
+  }) => Effect.Effect<Thread, RepoError, Alchemy.RuntimeContext>;
+  readonly get: (
+    id: ThreadId,
+  ) => Effect.Effect<Option.Option<Thread>, RepoError, Alchemy.RuntimeContext>;
   readonly list: (options: {
     limit: number;
-  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Database.Runtime>;
+  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Alchemy.RuntimeContext>;
   readonly messages: (
     id: ThreadId,
-  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Alchemy.RuntimeContext>;
   /** Appends in order, assigning `seq` after the current max; bumps `updatedAt`. One transaction. */
   readonly append: (
     id: ThreadId,
     messages: ReadonlyArray<{ id: MessageId; message: Prompt.Message }>,
-  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError | ThreadNotFound, Database.Runtime>;
+  ) => Effect.Effect<
+    ReadonlyArray<StoredMessage>,
+    RepoError | ThreadNotFound,
+    Alchemy.RuntimeContext
+  >;
 }
 
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/ThreadRepo") {}
 ```
 
-`Database.Runtime` is `Alchemy.RuntimeContext` re-exported by `@erudane/db/service` (D16). It appears in the interface because the Drizzle layer needs it; the memory layer ignores it. Nothing in the domain imports `alchemy` directly.
+(D16) `Alchemy.RuntimeContext` appears in the interface because the Drizzle layer needs it; the memory layer ignores it.
 
 **Drizzle layer** (`layer`, requires `Database.Service`):
 
@@ -81,7 +87,7 @@ export class Service extends Context.Service<Service, Interface>()("@erudane/cha
 - `list`: `db.query.threads.findMany({ orderBy: { updatedAt: "desc" }, limit })`.
 - `messages`: `db.query.messages.findMany({ where: { threadId }, orderBy: { seq: "asc" } })`, then `Schema.decodeUnknownEffect(Prompt.Message)(row.content)` per row (a decode failure is a `RepoError` — the row was written by us).
 - `append`: `db.transaction((tx) => …)`: `SELECT max(seq)` for the thread (`ThreadNotFound` if the thread row is missing), insert rows with `content: Schema.encodeSync(Prompt.Message)(m)` and `role: m.role`, `UPDATE threads SET updated_at = now()`.
-- Every drizzle error (`EffectDrizzleQueryError | SqlError`) → `RepoError` via `Effect.mapError`; the `Database.Runtime` requirement stays.
+- Every drizzle error (`EffectDrizzleQueryError | SqlError`) → `RepoError` via `Effect.mapError`; the `Alchemy.RuntimeContext` requirement stays.
 
 Row ↔ domain mapping lives in this file only (`timestamp mode: "string"` → `DateTime.makeUnsafe`).
 
@@ -93,7 +99,7 @@ Row ↔ domain mapping lives in this file only (`timestamp mode: "string"` → `
 export interface Interface {
   readonly start: (
     input: RunInput,
-  ) => Stream.Stream<ChatEvent, ChatError | ThreadNotFound | RepoError, Database.Runtime>;
+  ) => Stream.Stream<ChatEvent, ChatError | ThreadNotFound | RepoError, Alchemy.RuntimeContext>;
 }
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/Run") {}
 

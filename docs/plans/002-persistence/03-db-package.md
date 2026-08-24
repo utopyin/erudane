@@ -114,12 +114,7 @@ export class DatabaseError extends Schema.TaggedError<DatabaseError>()("Db.Error
   cause: Schema.Defect,
 }) {}
 
-export interface Interface {
-  /** Drizzle over the bound Hyperdrive. Every method returns an Effect that requires `Alchemy.RuntimeContext`. */
-  readonly db: Effect.Effect.Success<ReturnType<typeof Drizzle.Postgres<typeof relations>>>;
-}
-
-export class Service extends Context.Service<Service, Interface>()("@erudane/db/Db") {}
+export class Service extends Context.Service<Service, Effect.Effect.Success<ReturnType<typeof Drizzle.Postgres<typeof relations>>>;>()("@erudane/db/Db") {}
 
 export const layer = Layer.effect(
   Service,

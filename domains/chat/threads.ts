@@ -1,3 +1,4 @@
+import * as Alchemy from "alchemy";
 import { Database } from "@erudane/db/service";
 import { messages, threads } from "@erudane/db/schema";
 import { eq } from "drizzle-orm";
@@ -19,24 +20,30 @@ export interface Interface {
   readonly create: (thread: {
     readonly id: ThreadId;
     readonly title?: string | undefined;
-  }) => Effect.Effect<Thread, RepoError, Database.Runtime>;
-  readonly get: (id: ThreadId) => Effect.Effect<Option.Option<Thread>, RepoError, Database.Runtime>;
+  }) => Effect.Effect<Thread, RepoError, Alchemy.RuntimeContext>;
+  readonly get: (
+    id: ThreadId,
+  ) => Effect.Effect<Option.Option<Thread>, RepoError, Alchemy.RuntimeContext>;
   readonly list: (options: {
     readonly limit: number;
-  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Database.Runtime>;
+  }) => Effect.Effect<ReadonlyArray<Thread>, RepoError, Alchemy.RuntimeContext>;
   readonly messages: (
     id: ThreadId,
-  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Database.Runtime>;
+  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError, Alchemy.RuntimeContext>;
   /** Appends in order after the thread's last message; bumps `updatedAt`. */
   readonly append: (
     id: ThreadId,
     messages: ReadonlyArray<NewMessage>,
-  ) => Effect.Effect<ReadonlyArray<StoredMessage>, RepoError | ThreadNotFound, Database.Runtime>;
+  ) => Effect.Effect<
+    ReadonlyArray<StoredMessage>,
+    RepoError | ThreadNotFound,
+    Alchemy.RuntimeContext
+  >;
 }
 
 /**
  * @effect-expect-leaking RuntimeContext
- * `Database.Runtime` is the worker's per-request context; queries open their pool on it.
+ * `Alchemy.RuntimeContext` is the worker's per-request context; queries open their pool on it.
  */
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/ThreadRepo") {}
 
@@ -202,6 +209,7 @@ export const memory = Layer.effect(
               createdAt: at,
             }),
         );
+        // oxlint-disable-next-line typescript/no-misused-spread
         const thread = new Thread({ ...entry.thread, updatedAt: at });
         yield* Ref.set(
           state,

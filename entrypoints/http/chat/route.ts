@@ -1,7 +1,7 @@
 import { Run } from "@erudane/chat/run";
 import { ThreadRepo } from "@erudane/chat/threads";
 import { ThreadId } from "@erudane/chat/types";
-import type { Database } from "@erudane/db/service";
+import * as Alchemy from "alchemy";
 import * as Research from "@erudane/research/prompt";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -62,7 +62,7 @@ const run = HttpRouter.add(
 
     // The response body streams after this handler returns; it keeps the
     // request's runtime context (the per-request pool lives on it).
-    const runtime = yield* Effect.context<Database.Runtime>();
+    const runtime = yield* Effect.context<Alchemy.RuntimeContext>();
     const sse = runs
       .start({ threadId, message, system: SYSTEM, maxSteps: MAX_STEPS })
       .pipe(Agui.encode(body), Stream.encodeText, Stream.provideContext(runtime));

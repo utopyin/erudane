@@ -3,12 +3,6 @@
   "extends": "../../tsconfig.json",
   "include": ["**/*.ts"],
   "compilerOptions": {
-    "types": ["@cloudflare/workers-types"],
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "diagnostics": false
-      }
-    ]
+    "types": ["@cloudflare/workers-types"]
   }
 }

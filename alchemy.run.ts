@@ -44,6 +44,7 @@ export type WebsiteEnv = Cloudflare.InferEnv<typeof Website>;
 export default Alchemy.Stack(
   "Erudane",
   {
+    // oxlint-disable-next-line effecttsgo/any-unknown-in-error-context
     providers: Docker.providers().pipe(
       Layer.provideMerge(Command.providers()),
       Layer.provideMerge(Cloudflare.providers()),

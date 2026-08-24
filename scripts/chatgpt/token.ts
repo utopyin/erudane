@@ -55,7 +55,9 @@ export const accountIdFromJwt = (jwt: string): Effect.Effect<string, TokenError>
     if (payload === undefined) return yield* new TokenError({ message: "not a JWT" });
     const text = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
     const claims = yield* Schema.decodeEffect(Claims)(text).pipe(
-      Effect.mapError((error) => new TokenError({ message: `cannot read account id: ${error}` })),
+      Effect.mapError(
+        (error) => new TokenError({ message: `cannot read account id: ${error.message}` }),
+      ),
     );
     return claims[JWT_CLAIM].chatgpt_account_id;
   });

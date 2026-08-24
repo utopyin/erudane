@@ -5,12 +5,6 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "diagnostics": false
-      }
-    ]
+    "noUnusedParameters": true
   }
 }

@@ -1,4 +1,4 @@
-import type { Database } from "@erudane/db/service";
+import * as Alchemy from "alchemy";
 import { StorageError, type FileNotFound } from "@erudane/files/errors";
 import { Files } from "@erudane/files/service";
 import { fromReference, type File, type FileId, MAX_BYTES } from "@erudane/files/types";
@@ -22,13 +22,13 @@ export interface Interface {
   ) => Stream.Stream<
     ChatEvent,
     ChatError | FileNotFound | StorageError | ThreadNotFound | RepoError,
-    Database.Runtime
+    Alchemy.RuntimeContext
   >;
 }
 
 /**
  * @effect-expect-leaking RuntimeContext
- * `Database.Runtime` is the worker's per-request context, carried by the repository.
+ * `Alchemy.RuntimeContext` is the worker's per-request context, carried by the repository.
  */
 export class Service extends Context.Service<Service, Interface>()("@erudane/chat/Run") {}
 
