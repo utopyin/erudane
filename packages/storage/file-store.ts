@@ -7,9 +7,6 @@ import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 
-/** Binding access and execution scope supplied by an Alchemy worker request. */
-export type Runtime = Alchemy.RuntimeContext;
-
 export class StoreError extends Schema.TaggedError<StoreError>()("FileStore.Error", {
   operation: Schema.String,
   cause: Schema.Unknown,
@@ -33,10 +30,16 @@ export interface PutInput {
 }
 
 export interface Interface {
-  readonly put: (input: PutInput) => Effect.Effect<ObjectMetadata, StoreError, Runtime>;
-  readonly get: (key: string) => Effect.Effect<Option.Option<StoredObject>, StoreError, Runtime>;
-  readonly head: (key: string) => Effect.Effect<Option.Option<ObjectMetadata>, StoreError, Runtime>;
-  readonly delete: (key: string) => Effect.Effect<void, StoreError, Runtime>;
+  readonly put: (
+    input: PutInput,
+  ) => Effect.Effect<ObjectMetadata, StoreError, Alchemy.RuntimeContext>;
+  readonly get: (
+    key: string,
+  ) => Effect.Effect<Option.Option<StoredObject>, StoreError, Alchemy.RuntimeContext>;
+  readonly head: (
+    key: string,
+  ) => Effect.Effect<Option.Option<ObjectMetadata>, StoreError, Alchemy.RuntimeContext>;
+  readonly delete: (key: string) => Effect.Effect<void, StoreError, Alchemy.RuntimeContext>;
 }
 
 /**

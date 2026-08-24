@@ -1,4 +1,3 @@
-import type * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Drizzle from "alchemy/Drizzle/Postgres";
 import * as Context from "effect/Context";
@@ -7,9 +6,6 @@ import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import { Hyperdrive } from "./infra";
 import { relations } from "./schema";
-
-/** What every query needs: the worker's per-request runtime (binding access, execution scope). */
-export type Runtime = Alchemy.RuntimeContext;
 
 export class DatabaseError extends Schema.TaggedError<DatabaseError>()("Database.Error", {
   message: Schema.String,
@@ -20,7 +16,13 @@ export type Instance = Effect.Success<
   ReturnType<typeof Drizzle.Postgres<typeof relations, never, never>>
 >;
 
-/** The service is the Drizzle instance itself: `const db = yield* Database.Service`. Query Effects require `Runtime`. */
+/**
+ * The service is the Drizzle instance. Query Effects require `Alchemy.RuntimeContext`.
+ *
+ * @example
+ * const db = yield* Database.Service
+ * const result = yield* db.query.files.findMany();
+ *  */
 export class Service extends Context.Service<Service, Instance>()("@erudane/db/Database") {}
 
 /**

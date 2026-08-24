@@ -32,7 +32,6 @@ function Reasoning({ content, streaming = false, className, ...props }: Reasonin
       setSeconds(Math.max(1, Math.round((performance.now() - startedAt.current) / 1000)));
     }
     if (userToggled.current) return;
-    // @effect-diagnostics-next-line globalTimers:off
     const timer = setTimeout(() => setOpen(false), AUTO_CLOSE_MS);
     return () => clearTimeout(timer);
   }, [streaming]);

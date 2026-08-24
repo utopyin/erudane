@@ -27,6 +27,6 @@
     "@cloudflare/workers-types": "^5.20260823.1",
     "@types/pg": "catalog:",
     "drizzle-kit": "catalog:",
-    "typescript": "7.0.2"
+    "typescript": "catalog:"
   }
 }

@@ -99,9 +99,7 @@ export function Chat({ threadId }: { readonly threadId: string }) {
     <main className="relative flex h-full flex-col">
       {empty ? (
         <div className="flex flex-1 items-center justify-center px-4 pb-36">
-          <h1 className="font-heading text-3xl font-medium tracking-tight">
-            What do you have on your mind?
-          </h1>
+          <h1 className="font-heading text-3xl font-medium tracking-tight">What's on your mind?</h1>
         </div>
       ) : (
         <Conversation>

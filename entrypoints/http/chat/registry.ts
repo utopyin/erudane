@@ -8,3 +8,5 @@ import { Registry } from "./tools";
 export const layer = Layer.effect(Chat.Toolkit, Registry.toolkit).pipe(
   Layer.provide([ChatHandlers.layer, ResearchHandlers.layer]),
 );
+
+export * as Registry from "./registry";

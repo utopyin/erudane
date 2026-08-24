@@ -1,7 +1,14 @@
 {
+  "$schema": "../../node_modules/@effect/tsgo/schema.json",
   "extends": "../../tsconfig.json",
   "include": ["**/*.ts"],
   "compilerOptions": {
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"],
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnostics": false
+      }
+    ]
   }
 }
