@@ -5,11 +5,24 @@ import type { ExerciseNotFound, LessonNotFound, RepoError } from "./errors";
 import { Subjects } from "./service";
 import { SubjectTools } from "./tools";
 
-/** Every failure reaches the model as `{ message }` so it can correct course. */
-const toFailure = (error: { readonly _tag: string; readonly message?: string }) =>
-  Effect.fail({
-    message: `${error._tag}${error.message !== undefined ? `: ${error.message}` : ""}`,
-  });
+/**
+ * Every failure reaches the model as `{ message }` so it can correct course.
+ * Tagged errors carry their detail in fields, not `message` — serialize them,
+ * so `SubjectNotFound` reads as `…: {"subjectId":"…"}` instead of a bare tag.
+ */
+const toFailure = (error: { readonly _tag: string; readonly message?: string }) => {
+  const hidden = new Set(["_tag", "message", "cause", "stack"]);
+  const fields = Object.fromEntries(
+    Object.entries(error).filter(([key, value]) => !hidden.has(key) && typeof value !== "function"),
+  );
+  const detail =
+    error.message !== undefined && error.message.length > 0
+      ? error.message
+      : Object.keys(fields).length > 0
+        ? JSON.stringify(fields)
+        : "";
+  return Effect.fail({ message: detail.length > 0 ? `${error._tag}: ${detail}` : error._tag });
+};
 
 /**
  * The toolkit's handler type demands a closed requirement channel, but these

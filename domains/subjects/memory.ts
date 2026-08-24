@@ -50,7 +50,7 @@ export const system = (context: RunContext): string => {
   const sections: string[] = [];
 
   sections.push(
-    `# Subject: ${subject.title}`,
+    `# Subject: ${subject.title} [subject:${subject.id}]`,
     subject.about.length > 0 ? subject.about : "(no elaboration yet)",
     `Why the user is learning this: ${subject.motivation.length > 0 ? subject.motivation : "(unknown — worth asking)"}`,
     subject.dueAt === null ? "No deadline set." : `Deadline: ${date(subject.dueAt)}.`,
