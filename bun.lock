@@ -16,7 +16,7 @@
         "oxlint": "1.78.0",
         "oxlint-tsgolint": "7.0.2001",
         "turbo": "^2.10.11",
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
     },
     "apps/api": {
@@ -27,14 +27,16 @@
         "@effect/platform-bun": "catalog:",
         "@erudane/chat": "workspace:*",
         "@erudane/db": "workspace:*",
+        "@erudane/files": "workspace:*",
         "@erudane/firecrawl": "workspace:*",
         "@erudane/http": "workspace:*",
+        "@erudane/storage": "workspace:*",
         "alchemy": "catalog:",
         "effect": "catalog:",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.20260823.1",
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
     },
     "apps/web": {
@@ -42,6 +44,7 @@
       "dependencies": {
         "@base-ui/react": "^1.7.0",
         "@erudane/chat": "workspace:*",
+        "@erudane/files": "workspace:*",
         "@erudane/http": "workspace:*",
         "@erudane/research": "workspace:*",
         "@erudane/ui": "workspace:*",
@@ -61,7 +64,7 @@
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
         "@vitejs/plugin-react": "^6.0.1",
-        "typescript": "^6.0.2",
+        "typescript": "catalog:",
         "vite": "^8.0.0",
       },
     },
@@ -70,11 +73,24 @@
       "version": "0.0.0",
       "dependencies": {
         "@erudane/db": "workspace:*",
+        "@erudane/files": "workspace:*",
         "drizzle-orm": "catalog:",
         "effect": "catalog:",
       },
       "devDependencies": {
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
+      },
+    },
+    "domains/files": {
+      "name": "@erudane/files",
+      "version": "0.0.0",
+      "dependencies": {
+        "@erudane/db": "workspace:*",
+        "@erudane/storage": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "typescript": "catalog:",
       },
     },
     "domains/research": {
@@ -85,7 +101,7 @@
         "effect": "catalog:",
       },
       "devDependencies": {
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
     },
     "entrypoints/http": {
@@ -94,11 +110,12 @@
       "dependencies": {
         "@erudane/chat": "workspace:*",
         "@erudane/db": "workspace:*",
+        "@erudane/files": "workspace:*",
         "@erudane/research": "workspace:*",
         "effect": "catalog:",
       },
       "devDependencies": {
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
     },
     "packages/db": {
@@ -116,7 +133,7 @@
         "@cloudflare/workers-types": "^5.20260823.1",
         "@types/pg": "catalog:",
         "drizzle-kit": "catalog:",
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
     },
     "packages/firecrawl": {
@@ -126,7 +143,19 @@
         "effect": "catalog:",
       },
       "devDependencies": {
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/storage": {
+      "name": "@erudane/storage",
+      "version": "0.0.0",
+      "dependencies": {
+        "alchemy": "catalog:",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260823.1",
+        "typescript": "catalog:",
       },
     },
     "packages/ui": {
@@ -152,7 +181,7 @@
         "@types/react-dom": "^19.2.0",
         "react": "catalog:",
         "react-dom": "catalog:",
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
       "peerDependencies": {
         "react": "catalog:",
@@ -168,7 +197,7 @@
       },
       "devDependencies": {
         "@types/bun": "^1.3.13",
-        "typescript": "7.0.2",
+        "typescript": "catalog:",
       },
     },
   },
@@ -188,6 +217,7 @@
     "pg": "^8.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "typescript": "7.0.2",
   },
   "packages": {
     "@ag-ui/core": ["@ag-ui/core@0.1.1-canary.beta.0", "", { "peerDependencies": { "zod": "^3.25.18 || ^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-zcP3RH5p3HJTZ0kyQxNOL1blnVFTDpaShitR7UMS/thwFdl48V6CAG+WQBcYEu/dfa8mKonRez88N0Ok+nEI+w=="],
@@ -398,6 +428,8 @@
 
     "@erudane/db": ["@erudane/db@workspace:packages/db"],
 
+    "@erudane/files": ["@erudane/files@workspace:domains/files"],
+
     "@erudane/firecrawl": ["@erudane/firecrawl@workspace:packages/firecrawl"],
 
     "@erudane/http": ["@erudane/http@workspace:entrypoints/http"],
@@ -405,6 +437,8 @@
     "@erudane/research": ["@erudane/research@workspace:domains/research"],
 
     "@erudane/scripts": ["@erudane/scripts@workspace:scripts"],
+
+    "@erudane/storage": ["@erudane/storage@workspace:packages/storage"],
 
     "@erudane/ui": ["@erudane/ui@workspace:packages/ui"],
 
@@ -2091,8 +2125,6 @@
     "@dotenvx/dotenvx/undici": ["undici@7.29.0", "", {}, "sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw=="],
 
     "@effect/sql-pg/pg-types": ["pg-types@4.1.0", "", { "dependencies": { "pg-int8": "1.0.1", "pg-numeric": "1.0.2", "postgres-array": "~3.0.1", "postgres-bytea": "~3.0.0", "postgres-date": "~2.1.0", "postgres-interval": "^3.0.0", "postgres-range": "^1.1.1" } }, "sha512-o2XFanIMy/3+mThw69O8d4n1E5zsLhdO+OPqswezu7Z5ekP4hYDqlDjlmOpYMbzY2Br0ufCwJLdDIXeNVwcWFg=="],
-
-    "@erudane/web/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@modelcontextprotocol/sdk/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 

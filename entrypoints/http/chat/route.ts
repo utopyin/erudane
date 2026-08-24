@@ -40,7 +40,7 @@ const checkSize = (input: Agui.RunAgentInput): Effect.Effect<void, TooLarge> => 
 const badRequest = (message: string) =>
   Effect.succeed(HttpServerResponse.text(message, { status: 400 }));
 
-const storageFailed = (error: { readonly message: string }) =>
+const storageFailed = (error: object) =>
   Effect.logError("storage failed", error).pipe(
     Effect.as(HttpServerResponse.text("storage failed", { status: 500 })),
   );
@@ -76,6 +76,7 @@ const run = HttpRouter.add(
       SchemaError: (error) => badRequest(error.message),
       "Agui.UnsupportedInput": (error) => badRequest(error.message),
       "Chat.RepoError": storageFailed,
+      "Files.StorageError": storageFailed,
       "ChatRoute.TooLarge": (error) =>
         Effect.succeed(HttpServerResponse.text(error.message, { status: 413 })),
     }),
@@ -97,7 +98,7 @@ const hydrate = HttpRouter.add(
     const repo = yield* ThreadRepo.Service;
     const stored = yield* repo.messages(threadId);
     return HttpServerResponse.jsonUnsafe({
-      messages: toUiMessages(stored),
+      messages: yield* toUiMessages(stored),
       activeRun: null,
       interrupts: null,
     });
@@ -105,6 +106,8 @@ const hydrate = HttpRouter.add(
     Effect.catchTags({
       SchemaError: (error) => badRequest(error.message),
       "Chat.RepoError": storageFailed,
+      "Files.FileNotFound": storageFailed,
+      "Files.StorageError": storageFailed,
     }),
   ),
 );

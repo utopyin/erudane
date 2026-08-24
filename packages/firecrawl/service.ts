@@ -1,7 +1,7 @@
 /**
- * Firecrawl v2 over Effect's `HttpClient`: only the two calls the research
- * domain needs. Mechanism only — no idea what the pages are for.
+ * Firecrawl v2 over Effect's `HttpClient`
  */
+import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -170,7 +170,7 @@ export const layer = Layer.effect(
 
     return Service.of({ search, scrape });
   }),
-);
+).pipe(Layer.provide(FetchHttpClient.layer));
 
 const describe = (error: { readonly _tag: string; readonly message?: string }): string => {
   switch (error._tag) {

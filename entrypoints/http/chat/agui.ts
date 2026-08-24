@@ -7,6 +7,8 @@
  * Everything TanStack/AG-UI specific lives here.
  */
 import type { ChatEvent } from "@erudane/chat/types";
+import { Files } from "@erudane/files/service";
+import { FileId, reference } from "@erudane/files/types";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
@@ -22,7 +24,31 @@ import * as Sse from "effect/unstable/encoding/Sse";
 
 const TextContent = Schema.Struct({ type: Schema.Literal("text"), text: Schema.String });
 
-const WireContent = Schema.Union([Schema.String, Schema.Array(TextContent)]);
+const FileMetadata = Schema.Struct({
+  fileId: FileId,
+  fileName: Schema.optional(Schema.String),
+  size: Schema.Int,
+});
+
+const Source = Schema.Struct({ type: Schema.Literal("url"), value: Schema.String });
+
+const MediaContent = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal("image"),
+    source: Source,
+    metadata: Schema.optional(Schema.Unknown),
+  }),
+  Schema.Struct({
+    type: Schema.Literal("document"),
+    source: Source,
+    metadata: Schema.optional(Schema.Unknown),
+  }),
+]);
+
+const WireContent = Schema.Union([
+  Schema.String,
+  Schema.Array(Schema.Union([TextContent, MediaContent])),
+]);
 
 const ToolCall = Schema.Struct({
   id: Schema.String,
@@ -70,24 +96,64 @@ export class UnsupportedInput extends Schema.TaggedError<UnsupportedInput>()(
  * The run's new message: the last wire message, which must be from the user.
  * Everything before it is the client's copy of history; the server's is authoritative.
  */
-export const toUserMessage = (
-  input: RunAgentInput,
-): Effect.Effect<Prompt.UserMessage, UnsupportedInput> => {
-  const last = input.messages[input.messages.length - 1];
-  if (last === undefined || last.role !== "user") {
-    return Effect.fail(
-      new UnsupportedInput({ message: "the last message must be a user message" }),
-    );
-  }
-  return Effect.succeed(
-    Prompt.userMessage({
-      content:
-        typeof last.content === "string"
-          ? [Prompt.textPart({ text: last.content })]
-          : last.content.map((part) => Prompt.textPart({ text: part.text })),
-    }),
-  );
-};
+export const toUserMessage = (input: RunAgentInput) =>
+  Effect.gen(function* () {
+    const last = input.messages[input.messages.length - 1];
+    if (last === undefined || last.role !== "user") {
+      return yield* new UnsupportedInput({ message: "the last message must be a user message" });
+    }
+
+    if (typeof last.content === "string") {
+      if (last.content.trim().length === 0) {
+        return yield* new UnsupportedInput({ message: "the user message is empty" });
+      }
+      return Prompt.userMessage({ content: [Prompt.textPart({ text: last.content })] });
+    }
+
+    const files = yield* Files.Service;
+    const content: Array<Prompt.TextPart | Prompt.FilePart> = [];
+    for (const part of last.content) {
+      if (part.type === "text") {
+        if (part.text.length > 0) content.push(Prompt.textPart({ text: part.text }));
+        continue;
+      }
+
+      const metadata = yield* Schema.decodeUnknownEffect(FileMetadata)(part.metadata).pipe(
+        Effect.mapError(
+          () => new UnsupportedInput({ message: "file attachments require uploaded metadata" }),
+        ),
+      );
+      const file = yield* files
+        .get(metadata.fileId)
+        .pipe(
+          Effect.catchTag("Files.FileNotFound", () =>
+            Effect.fail(new UnsupportedInput({ message: `unknown file ${metadata.fileId}` })),
+          ),
+        );
+      const expectedType = file.mediaType.startsWith("image/") ? "image" : "document";
+      const expectedSource = `/api/files/${file.id}`;
+      if (
+        part.type !== expectedType ||
+        part.source.value !== expectedSource ||
+        metadata.size !== file.size ||
+        metadata.fileName !== file.fileName
+      ) {
+        return yield* new UnsupportedInput({ message: `invalid metadata for file ${file.id}` });
+      }
+      content.push(
+        Prompt.filePart({
+          mediaType: file.mediaType,
+          fileName: file.fileName,
+          data: reference(file.id),
+        }),
+      );
+    }
+
+    if (content.length === 0) {
+      return yield* new UnsupportedInput({ message: "the user message is empty" });
+    }
+    return Prompt.userMessage({ content });
+  });
 
 // ---------------------------------------------------------------------------
 // Outbound

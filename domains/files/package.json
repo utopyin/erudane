@@ -1,0 +1,22 @@
+{
+  "name": "@erudane/files",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./types.ts",
+    "./errors": "./errors.ts",
+    "./service": "./service.ts"
+  },
+  "scripts": {
+    "check:types": "tsc"
+  },
+  "dependencies": {
+    "@erudane/db": "workspace:*",
+    "@erudane/storage": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

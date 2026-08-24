@@ -6,7 +6,11 @@
  * their call and mirrored as `tool-result` parts.
  */
 import type { StoredMessage } from "@erudane/chat/types";
+import { Files } from "@erudane/files/service";
+import { fromReference } from "@erudane/files/types";
 import * as DateTime from "effect/DateTime";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import type * as Prompt from "effect/unstable/ai/Prompt";
 
 type Json = Record<string, unknown>;
@@ -22,10 +26,50 @@ const metadata = (stored: StoredMessage) => ({
   tanstack: { createdAt: DateTime.formatIso(stored.createdAt) },
 });
 
-const userParts = (message: Prompt.UserMessage): Array<Json> =>
-  message.content.flatMap((part) =>
-    part.type === "text" ? [{ type: "text", content: part.text }] : [],
-  );
+const publicUrl = (value: string | URL): URL | undefined => {
+  try {
+    const url = typeof value === "string" ? new URL(value) : value;
+    return url.protocol === "http:" || url.protocol === "https:" ? url : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const userParts = (message: Prompt.UserMessage) =>
+  Effect.gen(function* () {
+    const files = yield* Files.Service;
+    const parts: Array<Json> = [];
+    for (const part of message.content) {
+      if (part.type === "text") {
+        parts.push({ type: "text", content: part.text });
+        continue;
+      }
+      if (typeof part.data === "string" || part.data instanceof URL) {
+        const id = fromReference(part.data);
+        if (Option.isSome(id)) {
+          const file = yield* files.get(id.value);
+          parts.push({
+            type: file.mediaType.startsWith("image/") ? "image" : "document",
+            source: { type: "url", value: `/api/files/${file.id}` },
+            metadata: { fileId: file.id, fileName: file.fileName, size: file.size },
+          });
+        } else {
+          const url = publicUrl(part.data);
+          if (
+            url !== undefined &&
+            (part.mediaType.startsWith("image/") || part.mediaType === "application/pdf")
+          ) {
+            parts.push({
+              type: part.mediaType.startsWith("image/") ? "image" : "document",
+              source: { type: "url", value: url.toString(), mimeType: part.mediaType },
+              metadata: { fileName: part.fileName },
+            });
+          }
+        }
+      }
+    }
+    return parts;
+  });
 
 const assistantParts = (message: Prompt.AssistantMessage): Array<Json> =>
   message.content.flatMap((part): Array<Json> => {
@@ -67,40 +111,41 @@ const applyResults = (target: UiMessage, message: Prompt.ToolMessage): void => {
   }
 };
 
-export const toUiMessages = (stored: ReadonlyArray<StoredMessage>): ReadonlyArray<UiMessage> => {
-  const out: Array<UiMessage> = [];
-  for (const item of stored) {
-    const message = item.message;
-    switch (message.role) {
-      case "user":
-        out.push({
-          id: item.id,
-          role: "user",
-          parts: userParts(message),
-          metadata: metadata(item),
-        });
-        break;
-      case "assistant":
-        out.push({
-          id: item.id,
-          role: "assistant",
-          parts: assistantParts(message),
-          metadata: metadata(item),
-        });
-        break;
-      case "tool": {
-        for (let index = out.length - 1; index >= 0; index -= 1) {
-          const candidate = out[index];
-          if (candidate?.role === "assistant") {
-            applyResults(candidate, message);
-            break;
+export const toUiMessages = (stored: ReadonlyArray<StoredMessage>) =>
+  Effect.gen(function* () {
+    const out: Array<UiMessage> = [];
+    for (const item of stored) {
+      const message = item.message;
+      switch (message.role) {
+        case "user":
+          out.push({
+            id: item.id,
+            role: "user",
+            parts: yield* userParts(message),
+            metadata: metadata(item),
+          });
+          break;
+        case "assistant":
+          out.push({
+            id: item.id,
+            role: "assistant",
+            parts: assistantParts(message),
+            metadata: metadata(item),
+          });
+          break;
+        case "tool": {
+          for (let index = out.length - 1; index >= 0; index -= 1) {
+            const candidate = out[index];
+            if (candidate?.role === "assistant") {
+              applyResults(candidate, message);
+              break;
+            }
           }
+          break;
         }
-        break;
+        case "system":
+          break;
       }
-      case "system":
-        break;
     }
-  }
-  return out;
-};
+    return out;
+  });
