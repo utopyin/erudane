@@ -30,7 +30,7 @@ import * as Model from "./model";
  */
 const application = Run.layer.pipe(
   Layer.provideMerge([
-    Chat.layer.pipe(Layer.provideMerge([Model.layer, Registry.layer])),
+    Chat.layer.pipe(Layer.provideMerge([Model.smart, Registry.layer])),
     Files.layer,
   ]),
   Layer.provideMerge([Subjects.layer, ExerciseRuns.layer]),
