@@ -8,13 +8,16 @@
   },
   "dependencies": {
     "@effect/ai-openai": "catalog:",
+    "@effect/platform-browser": "catalog:",
     "@effect/platform-bun": "catalog:",
     "@erudane/chat": "workspace:*",
     "@erudane/db": "workspace:*",
+    "@erudane/documents": "workspace:*",
     "@erudane/files": "workspace:*",
     "@erudane/firecrawl": "workspace:*",
     "@erudane/http": "workspace:*",
     "@erudane/storage": "workspace:*",
+    "@erudane/subjects": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },

@@ -51,24 +51,25 @@ const publicUrl = (value: string | URL): URL | undefined => {
   }
 };
 
-/** What a finished run stores: per step, the assistant message and (if tools ran) the tool message. */
-const toMessages = (steps: ReadonlyArray<Step>): Effect.Effect<ReadonlyArray<NewMessage>> =>
-  Effect.forEach(steps, (step) =>
-    Effect.forEach(
-      Prompt.fromResponseParts(step.parts).content,
-      (message): Effect.Effect<NewMessage> =>
-        message.role === "assistant"
-          ? Effect.succeed({ id: step.messageId, message })
-          : Effect.map(Ids.messageId, (id) => ({ id, message })),
-    ),
-  ).pipe(Effect.map((nested) => nested.flat()));
-
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const chat = yield* Chat.Service;
     const files = yield* Files.Service;
     const repo = yield* ThreadRepo.Service;
+    const ids = yield* Ids.make;
+
+    /** What a finished run stores: per step, the assistant message and (if tools ran) the tool message. */
+    const toMessages = (steps: ReadonlyArray<Step>): Effect.Effect<ReadonlyArray<NewMessage>> =>
+      Effect.forEach(steps, (step) =>
+        Effect.forEach(
+          Prompt.fromResponseParts(step.parts).content,
+          (message): Effect.Effect<NewMessage> =>
+            message.role === "assistant"
+              ? Effect.succeed({ id: step.messageId, message })
+              : Effect.map(ids.messageId, (id) => ({ id, message })),
+        ),
+      ).pipe(Effect.map((nested) => nested.flat()));
 
     const bytes = (chunks: ReadonlyArray<Uint8Array>): Uint8Array => {
       const output = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.byteLength, 0));
@@ -171,14 +172,14 @@ export const layer = Layer.effect(
       Stream.unwrap(
         Effect.gen(function* () {
           const history = yield* repo.messages(input.threadId);
-          const userId = yield* Ids.messageId;
+          const userId = yield* ids.messageId;
           yield* repo.append(input.threadId, [{ id: userId, message: input.message }]);
 
           const steps: Array<Step> = [];
           const collect = (event: ChatEvent) =>
             Effect.sync(() => {
               if (event._tag === "StepStart") {
-                steps.push({ messageId: event.messageId as MessageId, parts: [] });
+                steps.push({ messageId: event.messageId, parts: [] });
               } else if (event._tag === "Part") {
                 steps[steps.length - 1]?.parts.push(event.part);
               }

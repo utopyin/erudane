@@ -19,7 +19,7 @@ export interface ChatInput {
  */
 export type ChatEvent = Data.TaggedEnum<{
   /** `messageId` is the id the step's assistant message is stored under (see `Run`). */
-  StepStart: { readonly step: number; readonly messageId: string };
+  StepStart: { readonly step: number; readonly messageId: MessageId };
   Part: { readonly step: number; readonly part: Response.StreamPart<any> };
   StepEnd: {
     readonly step: number;

@@ -37,6 +37,7 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const model = yield* LanguageModel.LanguageModel;
     const toolkit = asRegistry(yield* Toolkit);
+    const ids = yield* Ids.make;
 
     const step = (
       prompt: Prompt.Prompt,
@@ -74,7 +75,7 @@ export const layer = Layer.effect(
         });
 
         const start = Stream.fromEffect(
-          Effect.map(Ids.messageId, (messageId) => ChatEvent.StepStart({ step: index, messageId })),
+          Effect.map(ids.messageId, (messageId) => ChatEvent.StepStart({ step: index, messageId })),
         );
         return start.pipe(Stream.concat(round), Stream.concat(after));
       });

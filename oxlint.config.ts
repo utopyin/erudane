@@ -2,7 +2,7 @@ import { defineConfig, type DummyRuleMap } from "oxlint";
 import { recommended } from "@effect/tsgo/oxlint-presets";
 
 export default defineConfig({
-  ignorePatterns: ["repos", "**/routeTree.gen.ts"],
+  ignorePatterns: ["repos", "**/routeTree.gen.ts", "packages/db/migrations"],
   extends: [recommended],
   overrides: [
     {

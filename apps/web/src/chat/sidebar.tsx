@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@erudane/ui/button";
-import { ChatIcon, ComposeIcon } from "@erudane/ui/icons";
+import { BrainIcon, ChatIcon, ComposeIcon } from "@erudane/ui/icons";
 import { cn } from "@erudane/ui/utils";
 import type { ThreadSummary } from "./threads";
 
@@ -24,6 +24,10 @@ export function Sidebar({
       >
         <ComposeIcon />
         New chat
+      </Button>
+      <Button variant="ghost" className="justify-start gap-2" render={<Link to="/subjects" />}>
+        <BrainIcon />
+        Subjects
       </Button>
       <nav className="flex flex-col gap-0.5 overflow-y-auto">
         {threads.map((thread) => (

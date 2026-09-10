@@ -10,10 +10,14 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@blocknote/core": "catalog:",
+    "@blocknote/react": "catalog:",
     "@erudane/chat": "workspace:*",
+    "@erudane/documents": "workspace:*",
     "@erudane/files": "workspace:*",
     "@erudane/http": "workspace:*",
     "@erudane/research": "workspace:*",
+    "@erudane/subjects": "workspace:*",
     "@erudane/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/ai": "catalog:",
@@ -23,7 +27,9 @@
     "@tanstack/react-start": "^1.168.49",
     "effect": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "y-websocket": "catalog:",
+    "yjs": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260823.1",

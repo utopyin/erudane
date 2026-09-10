@@ -2,10 +2,17 @@
   "version": "8",
   "dialect": "postgres",
   "id": "78a45228-2418-4e06-9dfb-1ca7399d7ca3",
-  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
   "ddl": [
     {
-      "values": ["system", "user", "assistant", "tool"],
+      "values": [
+        "system",
+        "user",
+        "assistant",
+        "tool"
+      ],
       "name": "eru_message_role",
       "entityType": "enums",
       "schema": "public"
@@ -182,10 +189,14 @@
     },
     {
       "nameExplicit": false,
-      "columns": ["thread_id"],
+      "columns": [
+        "thread_id"
+      ],
       "schemaTo": "public",
       "tableTo": "eru_threads",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "eru_messages_thread_id_eru_threads_id_fkey",
@@ -194,7 +205,9 @@
       "table": "eru_messages"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "eru_messages_pkey",
       "schema": "public",
@@ -202,7 +215,9 @@
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "eru_threads_pkey",
       "schema": "public",

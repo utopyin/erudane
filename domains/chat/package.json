@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./tools": "./tools.ts",
+    "./rpc": "./rpc.ts",
     "./handlers": "./handlers.ts",
     "./service": "./service.ts",
     "./types": "./types.ts",

@@ -13,9 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiFilesRouteImport } from './routes/api/files_'
-import { Route as ApiThreadsRouteImport } from './routes/api/threads'
+import { Route as ApiInfoRouteImport } from './routes/api/info'
+import { Route as ApiRpcRouteImport } from './routes/api/rpc'
 import { Route as ChatIndexRouteImport } from './routes/chat.index'
 import { Route as ChatThreadIdRouteImport } from './routes/chat.$threadId'
+import { Route as DocDocumentIdRouteImport } from './routes/doc.$documentId'
+import { Route as SubjectsIndexRouteImport } from './routes/subjects.index'
+import { Route as SubjectsSubjectIdRouteImport } from './routes/subjects.$subjectId'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files_.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -38,9 +42,14 @@ const ApiFilesRoute = ApiFilesRouteImport.update({
   path: '/api/files',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiThreadsRoute = ApiThreadsRouteImport.update({
-  id: '/api/threads',
-  path: '/api/threads',
+const ApiInfoRoute = ApiInfoRouteImport.update({
+  id: '/api/info',
+  path: '/api/info',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRpcRoute = ApiRpcRouteImport.update({
+  id: '/api/rpc',
+  path: '/api/rpc',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatIndexRoute = ChatIndexRouteImport.update({
@@ -53,6 +62,21 @@ const ChatThreadIdRoute = ChatThreadIdRouteImport.update({
   path: '/$threadId',
   getParentRoute: () => ChatRoute,
 } as any)
+const DocDocumentIdRoute = DocDocumentIdRouteImport.update({
+  id: '/doc/$documentId',
+  path: '/doc/$documentId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubjectsIndexRoute = SubjectsIndexRouteImport.update({
+  id: '/subjects/',
+  path: '/subjects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubjectsSubjectIdRoute = SubjectsSubjectIdRouteImport.update({
+  id: '/subjects/$subjectId',
+  path: '/subjects/$subjectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/$',
   path: '/$',
@@ -64,18 +88,26 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/api/files': typeof ApiFilesRouteWithChildren
-  '/api/threads': typeof ApiThreadsRoute
+  '/api/info': typeof ApiInfoRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
+  '/doc/$documentId': typeof DocDocumentIdRoute
+  '/subjects/$subjectId': typeof SubjectsSubjectIdRoute
   '/chat/': typeof ChatIndexRoute
+  '/subjects/': typeof SubjectsIndexRoute
   '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/chat': typeof ApiChatRoute
   '/api/files': typeof ApiFilesRouteWithChildren
-  '/api/threads': typeof ApiThreadsRoute
+  '/api/info': typeof ApiInfoRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
+  '/doc/$documentId': typeof DocDocumentIdRoute
+  '/subjects/$subjectId': typeof SubjectsSubjectIdRoute
   '/chat': typeof ChatIndexRoute
+  '/subjects': typeof SubjectsIndexRoute
   '/api/files/$': typeof ApiFilesSplatRoute
 }
 export interface FileRoutesById {
@@ -84,9 +116,13 @@ export interface FileRoutesById {
   '/chat': typeof ChatRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/api/files_': typeof ApiFilesRouteWithChildren
-  '/api/threads': typeof ApiThreadsRoute
+  '/api/info': typeof ApiInfoRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/chat/$threadId': typeof ChatThreadIdRoute
+  '/doc/$documentId': typeof DocDocumentIdRoute
+  '/subjects/$subjectId': typeof SubjectsSubjectIdRoute
   '/chat/': typeof ChatIndexRoute
+  '/subjects/': typeof SubjectsIndexRoute
   '/api/files_/$': typeof ApiFilesSplatRoute
 }
 export interface FileRouteTypes {
@@ -96,18 +132,26 @@ export interface FileRouteTypes {
     | '/chat'
     | '/api/chat'
     | '/api/files'
-    | '/api/threads'
+    | '/api/info'
+    | '/api/rpc'
     | '/chat/$threadId'
+    | '/doc/$documentId'
+    | '/subjects/$subjectId'
     | '/chat/'
+    | '/subjects/'
     | '/api/files/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/api/chat'
     | '/api/files'
-    | '/api/threads'
+    | '/api/info'
+    | '/api/rpc'
     | '/chat/$threadId'
+    | '/doc/$documentId'
+    | '/subjects/$subjectId'
     | '/chat'
+    | '/subjects'
     | '/api/files/$'
   id:
     | '__root__'
@@ -115,9 +159,13 @@ export interface FileRouteTypes {
     | '/chat'
     | '/api/chat'
     | '/api/files_'
-    | '/api/threads'
+    | '/api/info'
+    | '/api/rpc'
     | '/chat/$threadId'
+    | '/doc/$documentId'
+    | '/subjects/$subjectId'
     | '/chat/'
+    | '/subjects/'
     | '/api/files_/$'
   fileRoutesById: FileRoutesById
 }
@@ -126,7 +174,11 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
   ApiFilesRoute: typeof ApiFilesRouteWithChildren
-  ApiThreadsRoute: typeof ApiThreadsRoute
+  ApiInfoRoute: typeof ApiInfoRoute
+  ApiRpcRoute: typeof ApiRpcRoute
+  DocDocumentIdRoute: typeof DocDocumentIdRoute
+  SubjectsSubjectIdRoute: typeof SubjectsSubjectIdRoute
+  SubjectsIndexRoute: typeof SubjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -159,11 +211,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFilesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/threads': {
-      id: '/api/threads'
-      path: '/api/threads'
-      fullPath: '/api/threads'
-      preLoaderRoute: typeof ApiThreadsRouteImport
+    '/api/info': {
+      id: '/api/info'
+      path: '/api/info'
+      fullPath: '/api/info'
+      preLoaderRoute: typeof ApiInfoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rpc': {
+      id: '/api/rpc'
+      path: '/api/rpc'
+      fullPath: '/api/rpc'
+      preLoaderRoute: typeof ApiRpcRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat/': {
@@ -179,6 +238,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/chat/$threadId'
       preLoaderRoute: typeof ChatThreadIdRouteImport
       parentRoute: typeof ChatRoute
+    }
+    '/doc/$documentId': {
+      id: '/doc/$documentId'
+      path: '/doc/$documentId'
+      fullPath: '/doc/$documentId'
+      preLoaderRoute: typeof DocDocumentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subjects/': {
+      id: '/subjects/'
+      path: '/subjects'
+      fullPath: '/subjects/'
+      preLoaderRoute: typeof SubjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subjects/$subjectId': {
+      id: '/subjects/$subjectId'
+      path: '/subjects/$subjectId'
+      fullPath: '/subjects/$subjectId'
+      preLoaderRoute: typeof SubjectsSubjectIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/files_/$': {
       id: '/api/files_/$'
@@ -219,7 +299,11 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
   ApiFilesRoute: ApiFilesRouteWithChildren,
-  ApiThreadsRoute: ApiThreadsRoute,
+  ApiInfoRoute: ApiInfoRoute,
+  ApiRpcRoute: ApiRpcRoute,
+  DocDocumentIdRoute: DocDocumentIdRoute,
+  SubjectsSubjectIdRoute: SubjectsSubjectIdRoute,
+  SubjectsIndexRoute: SubjectsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

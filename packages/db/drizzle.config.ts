@@ -5,7 +5,7 @@ const url = process.env.DATABASE_URL ?? "";
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./schema.ts",
+  schema: "./schema/index.ts",
   out: "./migrations",
   tablesFilter: [`${PREFIX}_*`],
   migrations: { table: MIGRATIONS_TABLE, schema: "public" },
