@@ -2,14 +2,12 @@ import type { Connection as CallbackConnection } from 'mysql2';
 import type {
 	Connection,
 	FieldPacket,
-	OkPacket,
 	Pool,
 	PoolConnection,
 	ResultSetHeader,
 	RowDataPacket,
 	TypeCast,
 } from 'mysql2/promise';
-import { once } from 'node:events';
 import { type Cache, NoopCache } from '~/cache/core/index.ts';
 import type { WithCacheConfig } from '~/cache/core/types.ts';
 import { entityKind } from '~/entity.ts';
@@ -34,11 +32,11 @@ import type { Assume } from '~/utils.ts';
 
 export type SingleStoreDriverClient = Pool | Connection;
 
-export type SingleStoreRawQueryResult = [ResultSetHeader, FieldPacket[]];
-export type SingleStoreQueryResultType = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader;
-export type SingleStoreQueryResult<
-	T = any,
-> = [T extends ResultSetHeader ? T : T[], FieldPacket[]];
+export type SingleStoreRawQueryResult = [ResultSetHeader, undefined];
+export type SingleStoreRawExecuteResult =
+	| SingleStoreRawQueryResult
+	| [RowDataPacket[], FieldPacket[]]
+	| [(ResultSetHeader | RowDataPacket[])[], (FieldPacket[] | undefined)[]];
 
 export interface SingleStoreDriverSessionOptions {
 	logger?: Logger;
@@ -113,30 +111,20 @@ export class SingleStoreDriverSession<
 			}, params);
 			const stream = driverQuery.stream();
 
-			function dataListener() {
-				stream.pause();
-			}
-
-			stream.on('data', dataListener);
-
 			try {
-				const onEnd = once(stream, 'end');
-				const onError = once(stream, 'error');
-
-				while (true) {
-					stream.resume();
-
-					const row = await Promise.race([onEnd, onError, new Promise((resolve) => stream.once('data', resolve))]);
-					if (row === undefined || (Array.isArray(row) && row.length === 0)) {
-						break;
-					}
-					if (row instanceof Error) { // oxlint-disable-line drizzle-internal/no-instanceof
-						throw row;
-					}
+				for await (const row of stream.iterator({ destroyOnReturn: false })) {
 					yield row;
 				}
 			} finally {
-				stream.off('data', dataListener);
+				if (!stream.readableEnded && !stream.destroyed) {
+					stream.resume();
+					await new Promise<void>((resolve) => {
+						stream.on('end', resolve);
+						stream.on('error', resolve);
+						stream.on('close', resolve);
+					});
+				}
+
 				if (isPool(client)) {
 					conn.end();
 				}
@@ -235,7 +223,9 @@ function isPool(client: SingleStoreDriverClient): client is Pool {
 }
 
 export interface SingleStoreDriverQueryResultHKT extends SingleStoreQueryResultHKT {
-	type: SingleStoreRawQueryResult;
+	type: [this['row']] extends [never] ? SingleStoreRawQueryResult
+		: [this['row']] extends ['unknown'] ? SingleStoreRawExecuteResult
+		: [this['row'][], FieldPacket[]];
 }
 
 export interface SingleStoreDriverPreparedQueryHKT extends SingleStorePreparedQueryHKT {

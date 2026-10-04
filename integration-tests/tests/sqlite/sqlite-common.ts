@@ -5,6 +5,7 @@ import {
 	avgDistinct,
 	count,
 	countDistinct,
+	desc,
 	DrizzleQueryError,
 	eq,
 	exists,
@@ -42,7 +43,6 @@ import {
 	intersect,
 	numeric,
 	primaryKey,
-	real,
 	type SQLiteAsyncDatabase,
 	SQLiteDialect,
 	sqliteTable,
@@ -1454,7 +1454,7 @@ export function tests(test: Test, exclude: string[] = []) {
 
 		// https://github.com/drizzle-team/drizzle-orm/issues/2872
 		test
-			.skipIf(Date.now() < +new Date('2026-08-26'))
+			.skipIf(Date.now() < +new Date('2026-10-03'))
 			.concurrent(
 				'prepared statement with placeholder in .inArray',
 				async ({ db, push }) => {
@@ -1732,10 +1732,16 @@ export function tests(test: Test, exclude: string[] = []) {
 				sql`insert into ${usersTable} (${new Name(usersTable.name.name)}) values (${'John'})`,
 			);
 
-			const result = await db.all<{ id: number; name: string }>(
-				sql`select id, name from "users"`,
-			);
+			const query = sql`select id, name from "users"`;
+
+			const result = await db.all<{ id: number; name: string }>(query);
 			expect(result).toEqual([{ id: 1, name: 'John' }]);
+
+			const objects = await db.all<{ id: number; name: string }>(query, 'objects');
+			expect(objects).toEqual([{ id: 1, name: 'John' }]);
+
+			const arrays = await db.all<[number, string]>(query, 'arrays');
+			expect(arrays).toEqual([[1, 'John']]);
 		});
 
 		test.concurrent('insert via db.get', async ({ db }) => {
@@ -1752,10 +1758,16 @@ export function tests(test: Test, exclude: string[] = []) {
 				sql`insert into ${usersTable} (${new Name(usersTable.name.name)}) values (${'John'})`,
 			);
 
-			const result = await db.get<{ id: number; name: string }>(
-				sql`select ${usersTable.id}, ${usersTable.name} from ${usersTable}`,
-			);
+			const query = sql`select ${usersTable.id}, ${usersTable.name} from ${usersTable}`;
+
+			const result = await db.get<{ id: number; name: string }>(query);
 			expect(result).toEqual({ id: 1, name: 'John' });
+
+			const object = await db.get<{ id: number; name: string }>(query, 'objects');
+			expect(object).toEqual({ id: 1, name: 'John' });
+
+			const array = await db.get<[number, string]>(query, 'arrays');
+			expect(array).toEqual([1, 'John']);
 		});
 
 		test.concurrent('insert via db.get w/ query builder', async ({ db }) => {
@@ -5562,7 +5574,7 @@ export function tests(test: Test, exclude: string[] = []) {
 			const queryRaw = await db.all<Record<string, unknown>>(
 				db.select(
 					Object.fromEntries(Object.entries(getTableColumns(allTypesTable)).map(([k, v]) => [k, v.as(v.name)])),
-				).from(allTypesTable).getSQL(),
+				).from(allTypesTable).getSQL(true),
 			);
 			const queryRes = normalizeDataWithDbCodecs({ db, columns, data: queryRaw, mode: 'query' })[0];
 
@@ -7794,17 +7806,36 @@ export function tests(test: Test, exclude: string[] = []) {
 			cus: codecBypass('cus').notNull(),
 		});
 
-		const db = createDB({ users }, (r) => ({
+		const usersView = sqliteView('users_823_v').as((qb) =>
+			qb.select({
+				...getColumns(users),
+				max: max(users.createdAt).as('max'),
+				maxNum: max(users.num).as('maxNum'),
+				sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+				sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+				sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+					.as('sq_tag'),
+			}).from(users).groupBy(users.id)
+		);
+
+		const db = createDB({ users, usersView }, (r) => ({
 			users: {
 				self: r.one.users({
 					from: r.users.id,
 					to: r.users.id,
 				}),
 			},
+			usersView: {
+				self: r.one.usersView({
+					from: r.usersView.id,
+					to: r.usersView.id,
+				}),
+			},
 		}));
 
+		await db.run(sql.raw('drop view if exists users_823_v'));
 		await db.run(sql.raw('drop table if exists users_823'));
-		await push({ users });
+		await push({ users, usersView });
 
 		const createdAt = new Date('2025-03-12T01:32:41.000Z');
 		const big = 5044565289845416380n;
@@ -7829,6 +7860,14 @@ export function tests(test: Test, exclude: string[] = []) {
 			},
 		});
 
+		const viewRes = await db.select().from(usersView);
+
+		const viewNested = await db.query.usersView.findFirst({
+			with: {
+				self: true,
+			},
+		});
+
 		const cols = {
 			id: 1,
 			name: 'First',
@@ -7837,12 +7876,30 @@ export function tests(test: Test, exclude: string[] = []) {
 			cus: big,
 		};
 
-		expect(res).toStrictEqual([{ ...cols, max: createdAt, maxNum: '475452353476' }]);
+		const aggregates = { max: createdAt, maxNum: '475452353476' };
+		const subqueries = { sq: createdAt, sqAliased: createdAt, sqTag: 'tag-1' };
+
+		expect(res).toStrictEqual([{ ...cols, ...aggregates }]);
+		expect(viewRes).toStrictEqual([{ ...cols, ...aggregates, ...subqueries }]);
 
 		expect(customCast).toBeTruthy();
 		expect(customMap).toBeTruthy();
 
 		expect(nested).toStrictEqual({ ...cols, self: cols });
+
+		type ViewRow = typeof usersView.$inferSelect;
+		type ViewNestedRow = {
+			[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+		};
+
+		expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
+		expect(viewNested).toStrictEqual({
+			...cols,
+			...aggregates,
+			...subqueries,
+			self: { ...cols, ...aggregates, ...subqueries },
+		});
 	});
 
 	test.concurrent('Column as decoder applies codecs - Jit mappers', async ({ createDB, push }) => {
@@ -7876,17 +7933,36 @@ export function tests(test: Test, exclude: string[] = []) {
 			cus: codecBypass('cus').notNull(),
 		});
 
-		const db = createDB({ users }, (r) => ({
+		const usersView = sqliteView('users_824_v').as((qb) =>
+			qb.select({
+				...getColumns(users),
+				max: max(users.createdAt).as('max'),
+				maxNum: max(users.num).as('maxNum'),
+				sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+				sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+				sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+					.as('sq_tag'),
+			}).from(users).groupBy(users.id)
+		);
+
+		const db = createDB({ users, usersView }, (r) => ({
 			users: {
 				self: r.one.users({
 					from: r.users.id,
 					to: r.users.id,
 				}),
 			},
+			usersView: {
+				self: r.one.usersView({
+					from: r.usersView.id,
+					to: r.usersView.id,
+				}),
+			},
 		}), true);
 
+		await db.run(sql.raw('drop view if exists users_824_v'));
 		await db.run(sql.raw('drop table if exists users_824'));
-		await push({ users });
+		await push({ users, usersView });
 
 		const createdAt = new Date('2025-03-12T01:32:41.000Z');
 		const big = 5044565289845416380n;
@@ -7911,6 +7987,14 @@ export function tests(test: Test, exclude: string[] = []) {
 			},
 		});
 
+		const viewRes = await db.select().from(usersView);
+
+		const viewNested = await db.query.usersView.findFirst({
+			with: {
+				self: true,
+			},
+		});
+
 		const cols = {
 			id: 1,
 			name: 'First',
@@ -7919,12 +8003,30 @@ export function tests(test: Test, exclude: string[] = []) {
 			cus: big,
 		};
 
-		expect(res).toStrictEqual([{ ...cols, max: createdAt, maxNum: '475452353476' }]);
+		const aggregates = { max: createdAt, maxNum: '475452353476' };
+		const subqueries = { sq: createdAt, sqAliased: createdAt, sqTag: 'tag-1' };
+
+		expect(res).toStrictEqual([{ ...cols, ...aggregates }]);
+		expect(viewRes).toStrictEqual([{ ...cols, ...aggregates, ...subqueries }]);
 
 		expect(customCast).toBeTruthy();
 		expect(customMap).toBeTruthy();
 
 		expect(nested).toStrictEqual({ ...cols, self: cols });
+
+		type ViewRow = typeof usersView.$inferSelect;
+		type ViewNestedRow = {
+			[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+		};
+
+		expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
+		expect(viewNested).toStrictEqual({
+			...cols,
+			...aggregates,
+			...subqueries,
+			self: { ...cols, ...aggregates, ...subqueries },
+		});
 	});
 
 	test('Query error wrapping', async ({ db }) => {
@@ -8461,5 +8563,37 @@ export function tests(test: Test, exclude: string[] = []) {
 				ticket_qm_jdn: { staffId: 3 },
 			},
 		]);
+	});
+
+	// https://github.com/drizzle-team/drizzle-orm/issues/2992
+	test.concurrent('Issue No2992', async ({ createDB }) => {
+		const log = sqliteTable('log', {
+			id: text('id').primaryKey(),
+			message: text('message'),
+			createdAt: integer('created_at')
+				.default(sql`(cast(unixepoch('subsec') * 1000 as integer))`)
+				.notNull(),
+		});
+
+		const db = createDB({ log });
+
+		const query1 = db
+			.select({ id: log.id })
+			.from(log)
+			.orderBy(desc(log.createdAt))
+			.limit(-1)
+			.offset(50);
+
+		const query2 = db.query.log.findMany({ limit: -1, offset: 50 });
+
+		expect(query1.toSQL()).toStrictEqual({
+			params: [-1, 50],
+			sql: 'select "id" from "log" order by "log"."created_at" desc limit ? offset ?',
+		});
+		expect(query2.toSQL()).toStrictEqual({
+			params: [-1, 50],
+			sql:
+				'select "d0"."id" as "id", "d0"."message" as "message", "d0"."created_at" as "createdAt" from "log" as "d0" limit ? offset ?',
+		});
 	});
 }

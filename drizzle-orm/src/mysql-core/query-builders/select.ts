@@ -17,12 +17,13 @@ import type {
 } from '~/query-builders/select.types.ts';
 import { SelectionProxyHandler } from '~/selection-proxy.ts';
 import type { ColumnsSelection, CommentInput, Placeholder, Query } from '~/sql/sql.ts';
-import { SQL, sql, View } from '~/sql/sql.ts';
+import { SQL, sql } from '~/sql/sql.ts';
 import { Subquery } from '~/subquery.ts';
 import { Table } from '~/table.ts';
 import type { ValueOrArray } from '~/utils.ts';
 import { getTableColumns, getTableLikeName, haveSameKeys, orderSelectedFields } from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import type { IndexBuilder } from '../indexes.ts';
 import type { UniqueConstraintBuilder } from '../unique-constraint.ts';
 import { convertIndexToString, extractUsedTable, toArray } from '../utils.ts';
@@ -1106,13 +1107,15 @@ export class MySqlSelectBase<
 		return this as any;
 	}
 
-	getSQL(): SQL {
+	getSQL(withCastCodecs = false): SQL {
 		this.config.fieldsFlat ??= orderSelectedFields<MySqlColumn>(this.config.fields, undefined, this.dialect.codecs);
-		return this.dialect.buildSelectQuery(this.config);
+		return this.dialect.buildSelectQuery(
+			withCastCodecs ? { ...this.config, useSelectionCastCodecs: true } : this.config,
+		);
 	}
 
-	toSQL(): Query {
-		return this.dialect.sqlToQuery(this.getSQL());
+	toSQL(withCastCodecs = true): Query {
+		return this.dialect.sqlToQuery(this.getSQL(withCastCodecs));
 	}
 
 	as<TAlias extends string>(
@@ -1123,7 +1126,7 @@ export class MySqlSelectBase<
 		if (this.config.joins) { for (const it of this.config.joins) usedTables.push(...extractUsedTable(it.table)); }
 
 		return new Proxy(
-			new Subquery(this.withoutSelectionCastCodecs().getSQL(), this.config.fields, alias, false, [
+			new Subquery(this.getSQL(), this.config.fields, alias, false, [
 				...new Set(usedTables),
 			]),
 			new SelectionProxyHandler({ alias, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
@@ -1136,12 +1139,6 @@ export class MySqlSelectBase<
 			this.config.fields,
 			new SelectionProxyHandler({ alias: this.tableName, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
 		) as this['_']['selectedFields'];
-	}
-
-	/** @internal */
-	override withoutSelectionCastCodecs(): this {
-		this.config.ignoreSelectionCastCodecs = true;
-		return this;
 	}
 
 	$dynamic(): MySqlSelectDynamic<this> {

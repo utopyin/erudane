@@ -129,7 +129,7 @@ export class SQLiteEffectDatabase<
 				qb = qb(new QueryBuilder(self.dialect));
 			}
 
-			const sql = ('withoutSelectionCastCodecs' in qb ? qb.withoutSelectionCastCodecs() : qb).getSQL();
+			const sql = qb.getSQL();
 			return new Proxy(
 				new WithSubquery(
 					sql,
@@ -613,24 +613,40 @@ export class SQLiteEffectDatabase<
 		return new SQLiteEffectRaw(prepared, sequel, builtQuery);
 	}
 
-	all<T = unknown>(query: SQLWrapper | string): SQLiteEffectRaw<T[], TEffectHKT> {
+	all<TRow extends unknown[] = unknown[]>(
+		query: SQLWrapper | string,
+		mode: 'arrays',
+	): SQLiteEffectRaw<TRow[], TEffectHKT>;
+	all<TRow extends Record<string, any> = Record<string, unknown>>(
+		query: SQLWrapper | string,
+		mode?: 'objects' | undefined,
+	): SQLiteEffectRaw<TRow[], TEffectHKT>;
+	all(query: SQLWrapper | string, mode?: 'arrays' | 'objects' | undefined): unknown {
 		const sequel = typeof query === 'string' ? sql.raw(query) : query.getSQL();
 		const builtQuery = this.dialect.sqlToQuery(sequel);
-		const prepared = this.session.prepareQuery<PreparedQueryConfig & { execute: T[] }>(
+		const prepared = this.session.prepareQuery<PreparedQueryConfig & { execute: unknown }>(
 			builtQuery,
-			'objects',
+			mode ?? 'objects',
 			false,
 			'all',
 		);
 		return new SQLiteEffectRaw(prepared, sequel, builtQuery);
 	}
 
-	get<T = unknown>(query: SQLWrapper | string): SQLiteEffectRaw<T, TEffectHKT> {
+	get<TRow extends unknown[] = unknown[]>(
+		query: SQLWrapper | string,
+		mode: 'arrays',
+	): SQLiteEffectRaw<TRow, TEffectHKT>;
+	get<TRow extends Record<string, any> = Record<string, unknown>>(
+		query: SQLWrapper | string,
+		mode?: 'objects' | undefined,
+	): SQLiteEffectRaw<TRow, TEffectHKT>;
+	get(query: SQLWrapper | string, mode?: 'arrays' | 'objects' | undefined): unknown {
 		const sequel = typeof query === 'string' ? sql.raw(query) : query.getSQL();
 		const builtQuery = this.dialect.sqlToQuery(sequel);
-		const prepared = this.session.prepareQuery<PreparedQueryConfig & { execute: T }>(
+		const prepared = this.session.prepareQuery<PreparedQueryConfig & { execute: unknown }>(
 			builtQuery,
-			'objects',
+			mode ?? 'objects',
 			false,
 			'get',
 		);
@@ -642,7 +658,7 @@ export class SQLiteEffectDatabase<
 		const builtQuery = this.dialect.sqlToQuery(sequel);
 		const prepared = this.session.prepareQuery<PreparedQueryConfig & { execute: T[] }>(
 			builtQuery,
-			'objects',
+			'arrays',
 			false,
 			'values',
 		);
@@ -658,7 +674,16 @@ export class SQLiteEffectDatabase<
 	}
 }
 
-export type SQLiteEffectWithReplicas<Q> = Q & { $primary: Q; $replicas: Q[] };
+export type SQLiteEffectWithReplicas<Q> = Q & {
+	$replica: Q;
+	/**
+	 * @deprecated `withReplicas` db now defaults to using primary
+	 *
+	 * Use `db.$replica` to redirect query to replica
+	 */
+	$primary: Q;
+	$replicas: Q[];
+};
 
 export const withReplicas = <
 	TEffectHKT extends QueryEffectHKTBase,
@@ -670,38 +695,9 @@ export const withReplicas = <
 	replicas: [Q, ...Q[]],
 	getReplica: (replicas: Q[]) => Q = () => replicas[Math.floor(Math.random() * replicas.length)]!,
 ): SQLiteEffectWithReplicas<Q> => {
-	const select: Q['select'] = (...args: []) => getReplica(replicas).select(...args);
-	const selectDistinct: Q['selectDistinct'] = (...args: []) => getReplica(replicas).selectDistinct(...args);
-	const $count: Q['$count'] = (...args: [any]) => getReplica(replicas).$count(...args);
-	const $with: Q['with'] = (...args: []) => getReplica(replicas).with(...args);
-
-	const update: Q['update'] = (...args: [any]) => primary.update(...args);
-	const insert: Q['insert'] = ((...args: [any]) => primary.insert(...args)) as Q['insert'];
-	const $delete: Q['delete'] = (...args: [any]) => primary.delete(...args);
-	const run: Q['run'] = (...args: [any]) => primary.run(...args);
-	const all: Q['all'] = (...args: [any]) => primary.all(...args);
-	const get: Q['get'] = (...args: [any]) => primary.get(...args);
-	const values: Q['values'] = (...args: [any]) => primary.values(...args);
-	const transaction: Q['transaction'] = (...args: [any]) => primary.transaction(...args);
-
-	return {
-		...primary,
-		update,
-		insert,
-		delete: $delete,
-		run,
-		all,
-		get,
-		values,
-		transaction,
-		$primary: primary,
-		$replicas: replicas,
-		select,
-		selectDistinct,
-		$count,
-		with: $with,
-		get query() {
-			return getReplica(replicas).query;
-		},
-	};
+	return Object.create(primary, {
+		$replica: { get: () => getReplica(replicas) },
+		$primary: { value: primary },
+		$replicas: { value: replicas },
+	});
 };

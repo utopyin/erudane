@@ -39,7 +39,7 @@ import {
 } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/bun-sql/migrator';
 import { drizzle } from 'drizzle-orm/bun-sql/mysql';
-import type { BunMySqlDatabase } from 'drizzle-orm/bun-sql/mysql';
+import type { BunMySqlDatabase, BunMySqlRawExecuteResult } from 'drizzle-orm/bun-sql/mysql';
 import type { MutationOption } from 'drizzle-orm/cache/core';
 import { Cache } from 'drizzle-orm/cache/core';
 import type { CacheConfig } from 'drizzle-orm/cache/core/types';
@@ -95,7 +95,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import Keyv from 'keyv';
 import { v4 as uuid } from 'uuid';
 import { normalizeDataWithDbCodecs } from '~/mysql/utils';
-import { type Equal, Expect, toLocalDate } from '~/utils';
+import { type Equal, Expect } from '~/utils';
 import { allTypesCodecsTable, assertAllTypesBounds, assertAllTypesUnions } from '../mysql/all-types';
 
 export const rqbUser = mysqlTable('user_rqb_test', {
@@ -169,7 +169,7 @@ const allTypesTable = mysqlTable('all_types', {
 	smallInt: smallint('small_int'),
 	real: real('real'),
 	text: text('text'),
-	time: time('time'),
+	time: time('time', { fsp: 3 }),
 	timestamp: timestamp('timestamp', {
 		mode: 'date',
 	}),
@@ -294,6 +294,10 @@ let dbGlobalCached: BunMySqlDatabase & { $client: SQL };
 let cachedDb: BunMySqlDatabase & { $client: SQL };
 let client: SQL;
 
+const CONNECT_RETRY_INTERVAL = 250;
+const CONNECT_RETRIES = 240;
+const CONNECT_TIMEOUT = CONNECT_RETRIES * CONNECT_RETRY_INTERVAL;
+
 beforeAll(async () => {
 	const connectionString = process.env['MYSQL_CONNECTION_STRING'];
 	if (!connectionString) {
@@ -305,14 +309,16 @@ beforeAll(async () => {
 		client = await new SQL({
 			url: connectionString,
 			adapter: 'mysql',
+			// mysql8 defaults to caching_sha2_password; bun >=1.4 refuses the RSA key exchange without this
+			allowPublicKeyRetrieval: true,
 			bigint: true,
 		}).connect();
 		return client;
 	}, {
-		retries: 20,
+		retries: CONNECT_RETRIES,
 		factor: 1,
-		minTimeout: 250,
-		maxTimeout: 250,
+		minTimeout: CONNECT_RETRY_INTERVAL,
+		maxTimeout: CONNECT_RETRY_INTERVAL,
 		randomize: false,
 		onRetry() {
 			client?.end();
@@ -321,7 +327,7 @@ beforeAll(async () => {
 	db = drizzle({ client, logger: ENABLE_LOGGING, relations });
 	cachedDb = drizzle({ client, logger: ENABLE_LOGGING, cache: new TestCache() });
 	dbGlobalCached = drizzle({ client, logger: ENABLE_LOGGING, cache: new TestGlobalCache() });
-});
+}, CONNECT_TIMEOUT + 10_000);
 
 afterAll(async () => {
 	await client?.end();
@@ -1498,7 +1504,8 @@ describe('common', () => {
 		const res1 = await db.select().from(users);
 
 		// second migration was not applied yet
-		expect((async () => await db.insert(users2).values({ name: 'John', email: '', age: 30 }))()).rejects.toThrowError();
+		await expect((async () => await db.insert(users2).values({ name: 'John', email: '', age: 30 }))()).rejects
+			.toThrowError();
 
 		// insert migration with earlier timestamp
 		mkdirSync(`${migrationDir}/20240202020202_second`, { recursive: true });
@@ -1560,6 +1567,7 @@ describe('common', () => {
 		const client1 = await new SQL({
 			url: process.env['MYSQL_CONNECTION_STRING'],
 			adapter: 'mysql',
+			allowPublicKeyRetrieval: true,
 			bigint: true,
 			database: 'drizzle1',
 		}).connect();
@@ -1567,6 +1575,7 @@ describe('common', () => {
 		const client2 = await new SQL({
 			url: process.env['MYSQL_CONNECTION_STRING'],
 			adapter: 'mysql',
+			allowPublicKeyRetrieval: true,
 			bigint: true,
 			database: 'drizzle2',
 		}).connect();
@@ -1646,7 +1655,7 @@ describe('common', () => {
 	});
 
 	test('insert via db.execute w/ query builder', async () => {
-		const inserted = await db.execute(
+		const inserted = await db.execute<never>(
 			db.insert(usersTable).values({ name: 'John' }),
 		);
 		expect(inserted['affectedRows']).toStrictEqual(1);
@@ -1691,7 +1700,7 @@ describe('common', () => {
 		expect(typeof res[0]?.datetimeAsString).toStrictEqual('string');
 
 		expect(res).toStrictEqual([{
-			date: toLocalDate(new Date('2022-11-11')),
+			date: new Date('2022-11-11'),
 			dateAsString: '2022-11-11',
 			time: '12:12:12',
 			datetime: new Date('2022-11-11'),
@@ -1702,6 +1711,112 @@ describe('common', () => {
 		}]);
 
 		await db.execute(sql`drop table if exists \`datestable\``);
+	});
+
+	// https://github.com/drizzle-team/drizzle-orm/issues/1442
+	test('date and time columns keep UTC values regardless of process timezone', async () => {
+		const datesTable = mysqlTable('dates_tz', {
+			id: int('id').primaryKey(),
+			date: date('date').notNull(),
+			dateStr: date('date_str', { mode: 'string' }).notNull(),
+			datetime: datetime('datetime', { fsp: 3 }).notNull(),
+			datetimeStr: datetime('datetime_str', { fsp: 3, mode: 'string' }).notNull(),
+			timestamp: timestamp('timestamp', { fsp: 3 }).notNull(),
+			timestampStr: timestamp('timestamp_str', { fsp: 3, mode: 'string' }).notNull(),
+			time: time('time', { fsp: 3 }).notNull(),
+			year: year('year').notNull(),
+		});
+		const db = drizzle({
+			client,
+			logger: ENABLE_LOGGING,
+			relations: defineRelations({ datesTable }, (r) => ({
+				datesTable: { self: r.many.datesTable({ from: r.datesTable.id, to: r.datesTable.id }) },
+			})),
+		});
+
+		await db.execute(sql`drop table if exists ${datesTable}`);
+		await db.execute(sql`
+			create table ${datesTable} (
+				\`id\` int primary key,
+				\`date\` date not null,
+				\`date_str\` date not null,
+				\`datetime\` datetime(3) not null,
+				\`datetime_str\` datetime(3) not null,
+				\`timestamp\` timestamp(3) not null,
+				\`timestamp_str\` timestamp(3) not null,
+				\`time\` time(3) not null,
+				\`year\` year not null
+			)
+		`);
+
+		const startOfDay = new Date('2022-11-11T00:00:00.000Z');
+		const endOfDay = new Date('2022-11-11T23:59:59.999Z');
+		const rows = [{
+			id: 1,
+			date: new Date('2022-11-11'),
+			dateStr: '2022-11-11',
+			datetime: startOfDay,
+			datetimeStr: '2022-11-11 00:00:00.000',
+			timestamp: startOfDay,
+			timestampStr: '2022-11-11 00:00:00.000',
+			time: '00:00:00.000',
+			year: 2022,
+		}, {
+			id: 2,
+			date: new Date('2022-11-11'),
+			dateStr: '2022-11-11',
+			datetime: endOfDay,
+			datetimeStr: '2022-11-11 23:59:59.999',
+			timestamp: endOfDay,
+			timestampStr: '2022-11-11 23:59:59.999',
+			time: '23:59:59.999',
+			year: 2022,
+		}];
+
+		const originalTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+		try {
+			for (const tz of ['America/Los_Angeles', 'Pacific/Kiritimati']) {
+				process.env['TZ'] = tz;
+
+				await db.delete(datesTable);
+				await db.insert(datesTable).values(rows.map((row) => ({ ...row, date: row.datetime })));
+
+				const stored = await db.select({
+					id: datesTable.id,
+					date: sql<string>`cast(${datesTable.date} as char)`,
+					datetime: sql<string>`cast(${datesTable.datetime} as char)`,
+					timestamp: sql<string>`cast(${datesTable.timestamp} as char)`,
+				}).from(datesTable).orderBy(datesTable.id);
+				expect({ tz, stored }).toStrictEqual({
+					tz,
+					stored: rows.map((row) => ({
+						id: row.id,
+						date: row.dateStr,
+						datetime: row.datetimeStr,
+						timestamp: row.timestampStr,
+					})),
+				});
+
+				expect({ tz, res: await db.select().from(datesTable).orderBy(datesTable.id) }).toStrictEqual({
+					tz,
+					res: rows,
+				});
+				expect({
+					tz,
+					res: await db.select().from(datesTable).where(eq(datesTable.date, endOfDay)).orderBy(datesTable.id),
+				}).toStrictEqual({ tz, res: rows });
+				expect({ tz, res: await db.select().from(datesTable).where(eq(datesTable.datetime, endOfDay)) })
+					.toStrictEqual({ tz, res: [rows[1]!] });
+				expect({ tz, res: await db.select().from(datesTable).where(eq(datesTable.timestamp, startOfDay)) })
+					.toStrictEqual({ tz, res: [rows[0]!] });
+
+				expect({ tz, res: await db.query.datesTable.findMany({ orderBy: { id: 'asc' }, with: { self: true } }) })
+					.toStrictEqual({ tz, res: rows.map((row) => ({ ...row, self: [row] })) });
+			}
+		} finally {
+			process.env['TZ'] = originalTz;
+			await db.execute(sql`drop table if exists ${datesTable}`);
+		}
 	});
 
 	const tableWithEnums = mysqlTable('enums_test_case', {
@@ -2512,6 +2627,7 @@ describe('common', () => {
 			const peer = await new SQL({
 				url: process.env['MYSQL_CONNECTION_STRING']!,
 				adapter: 'mysql',
+				allowPublicKeyRetrieval: true,
 				bigint: true,
 			}).connect();
 
@@ -2865,7 +2981,7 @@ describe('common', () => {
 			sql`create table ${users} (id serial not null primary key, name text)`,
 		);
 
-		expect((async () => {
+		await expect((async () => {
 			await db.insert(users).values({ name: undefined });
 		})()).resolves.toStrictEqual(undefined);
 
@@ -5070,7 +5186,7 @@ describe('common', () => {
 					\`small_int\` smallint,
 					\`real\` real,
 					\`text\` text,
-					\`time\` time,
+					\`time\` time(3),
 					\`timestamp\` timestamp,
 					\`timestamp_str\` timestamp,
 					\`tiny_int\` tinyint,
@@ -5107,7 +5223,7 @@ describe('common', () => {
 			},
 			medInt: 560,
 			smallInt: 14,
-			time: '04:13:22',
+			time: '04:13:22.120',
 			timestamp: new Date(1741743161623),
 			timestampStr: new Date(1741743161623).toISOString().slice(0, 19).replace('T', ' '),
 			tinyInt: 7,
@@ -5173,7 +5289,7 @@ describe('common', () => {
 				smallInt: 14,
 				real: 1.048596,
 				text: 'C4-',
-				time: '04:13:22',
+				time: '04:13:22.120',
 				timestamp: new Date('2025-03-12T01:32:42.000Z'),
 				timestampStr: '2025-03-12 01:32:41',
 				tinyInt: 7,
@@ -6174,7 +6290,7 @@ test('all types ~codecs~', async () => {
 		json4: '5',
 		medint: 560,
 		smallint: 14,
-		time: '04:13:22',
+		time: '04:13:22.120',
 		timestamp: new Date(1741743161623),
 		timestampstr: new Date(1741743161623).toISOString().slice(0, 23).replace('T', ' '),
 		tinyint: 7,
@@ -6198,7 +6314,7 @@ test('all types ~codecs~', async () => {
 	const queryRes = await session.objects<ExpectedType>(
 		db.select(
 			Object.fromEntries(Object.entries(getTableColumns(allTypesCodecsTable)).map(([k, v]) => [k, v.as(v.name)])),
-		).from(allTypesCodecsTable).getSQL(),
+		).from(allTypesCodecsTable).getSQL(true),
 	).then((e) =>
 		normalizeDataWithDbCodecs({
 			db,
@@ -7549,6 +7665,9 @@ test('Column as decoder applies codecs', async () => {
 			max: max(users.createdAt).as('max'),
 			maxStr: max(users.createdAtStr).as('max_str'),
 			sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+			sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+			sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+				.as('sq_tag'),
 		}).from(users).groupBy(users.id)
 	);
 
@@ -7588,6 +7707,9 @@ test('Column as decoder applies codecs', async () => {
 		max: max(users.createdAt).as('max'),
 		maxStr: max(users.createdAtStr).as('max_str'),
 		sq: db.select({ createdAt: users.createdAt }).from(users).as('sq'),
+		sqAliased: db.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+		sqTag: db.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+			.as('sq_tag'),
 	}).from(users).groupBy(users.id);
 
 	const viewRes = await db.select().from(usersView);
@@ -7608,15 +7730,8 @@ test('Column as decoder applies codecs', async () => {
 	});
 
 	const viewNested = await db.query.usersView.findFirst({
-		columns: {
-			sq: false, // TODO: re-enable when supported in RQBv2
-		},
 		with: {
-			self: {
-				columns: {
-					sq: false, // TODO: re-enable when supported in RQBv2
-				},
-			},
+			self: true,
 		},
 	});
 
@@ -7629,6 +7744,8 @@ test('Column as decoder applies codecs', async () => {
 			max: exDate,
 			maxStr: exDateStr,
 			sq: exDate,
+			sqAliased: exDate,
+			sqTag: 'tag-1',
 			cus: exDate,
 		},
 	]);
@@ -7641,6 +7758,8 @@ test('Column as decoder applies codecs', async () => {
 			max: exDate,
 			maxStr: exDateStr,
 			sq: exDate,
+			sqAliased: exDate,
+			sqTag: 'tag-1',
 			cus: exDate,
 		},
 	]);
@@ -7668,6 +7787,14 @@ test('Column as decoder applies codecs', async () => {
 			},
 		},
 	);
+
+	type ViewRow = typeof usersView.$inferSelect;
+	type ViewNestedRow = {
+		[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+	};
+
+	expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
 	expect(viewNested).toStrictEqual(
 		{
 			id: 1,
@@ -7677,6 +7804,9 @@ test('Column as decoder applies codecs', async () => {
 			max: exDate,
 			maxStr: exDateStr,
 			cus: exDate,
+			sq: exDate,
+			sqAliased: exDate,
+			sqTag: 'tag-1',
 			self: {
 				id: 1,
 				name: 'First',
@@ -7685,6 +7815,9 @@ test('Column as decoder applies codecs', async () => {
 				max: exDate,
 				maxStr: exDateStr,
 				cus: exDate,
+				sq: exDate,
+				sqAliased: exDate,
+				sqTag: 'tag-1',
 			},
 		},
 	);
@@ -7726,6 +7859,9 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 			max: max(users.createdAt).as('max'),
 			maxStr: max(users.createdAtStr).as('max_str'),
 			sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+			sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+			sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+				.as('sq_tag'),
 		}).from(users).groupBy(users.id)
 	);
 
@@ -7766,6 +7902,9 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 		max: max(users.createdAt).as('max'),
 		maxStr: max(users.createdAtStr).as('max_str'),
 		sq: db.select({ createdAt: users.createdAt }).from(users).as('sq'),
+		sqAliased: db.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+		sqTag: db.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+			.as('sq_tag'),
 	}).from(users).groupBy(users.id);
 
 	const viewRes = await db.select().from(usersView);
@@ -7786,15 +7925,8 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 	});
 
 	const viewNested = await db.query.usersView.findFirst({
-		columns: {
-			sq: false, // TODO: re-enable when supported in RQBv2
-		},
 		with: {
-			self: {
-				columns: {
-					sq: false, // TODO: re-enable when supported in RQBv2
-				},
-			},
+			self: true,
 		},
 	});
 
@@ -7807,6 +7939,8 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 			max: exDate,
 			maxStr: exDateStr,
 			sq: exDate,
+			sqAliased: exDate,
+			sqTag: 'tag-1',
 			cus: exDate,
 		},
 	]);
@@ -7819,6 +7953,8 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 			max: exDate,
 			maxStr: exDateStr,
 			sq: exDate,
+			sqAliased: exDate,
+			sqTag: 'tag-1',
 			cus: exDate,
 		},
 	]);
@@ -7846,6 +7982,14 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 			},
 		},
 	);
+
+	type ViewRow = typeof usersView.$inferSelect;
+	type ViewNestedRow = {
+		[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+	};
+
+	expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
 	expect(viewNested).toStrictEqual(
 		{
 			id: 1,
@@ -7855,6 +7999,9 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 			max: exDate,
 			maxStr: exDateStr,
 			cus: exDate,
+			sq: exDate,
+			sqAliased: exDate,
+			sqTag: 'tag-1',
 			self: {
 				id: 1,
 				name: 'First',
@@ -7863,6 +8010,9 @@ test('Column as decoder applies codecs - Jit mappers', async () => {
 				max: exDate,
 				maxStr: exDateStr,
 				cus: exDate,
+				sq: exDate,
+				sqAliased: exDate,
+				sqTag: 'tag-1',
 			},
 		},
 	);
@@ -8807,4 +8957,42 @@ test('Default value priority', async () => {
 	}]);
 
 	await db.execute(sql`DROP TABLE no_default_override`);
+});
+
+describe('raw execute', () => {
+	test('raw db.execute type matches returned data', async () => {
+		const table = sql.identifier('raw_execute_types');
+
+		await db.execute<never>(sql`drop table if exists ${table}`);
+
+		// DDL
+		const created = await db.execute<never>(
+			sql`create table ${table} (\`id\` int primary key, \`name\` text not null)`,
+		);
+		expectTypeOf(created).toEqualTypeOf<[] & Record<string, unknown>>();
+		expect([...created]).toStrictEqual([]);
+		expect(created).toMatchObject({ affectedRows: 0 });
+
+		// `insert` without returning
+		const inserted = await db.execute<never>(sql`insert into ${table} values (1, 'John')`);
+		expectTypeOf(inserted).toEqualTypeOf<[] & Record<string, unknown>>();
+		expect([...inserted]).toStrictEqual([]);
+		expect(inserted).toMatchObject({ affectedRows: 1 });
+
+		// Simple select
+		const selected = await db.execute<{ id: number; name: string }>(sql`select \`id\`, \`name\` from ${table}`);
+		expectTypeOf(selected).toEqualTypeOf<{ id: number; name: string }[] & Record<string, unknown>>();
+		expect([...selected]).toStrictEqual([{ id: 1, name: 'John' }]);
+
+		// Multi-statement
+		const multi = await db.execute(sql`insert into ${table} values (2, 'Jane'); select \`id\`, \`name\` from ${table}`);
+		expectTypeOf(multi).toEqualTypeOf<BunMySqlRawExecuteResult>();
+		expect(multi).toHaveLength(2);
+		const [multiInserted, multiSelected] = multi as (Record<string, unknown>[] & Record<string, unknown>)[];
+		expect([...multiInserted!]).toStrictEqual([]);
+		expect(multiInserted).toMatchObject({ affectedRows: 1 });
+		expect([...multiSelected!]).toStrictEqual([{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]);
+
+		await db.execute<never>(sql`drop table ${table}`);
+	});
 });

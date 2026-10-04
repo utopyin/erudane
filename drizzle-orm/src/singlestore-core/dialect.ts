@@ -16,21 +16,25 @@ import type {
 	WithContainer,
 } from '~/relations.ts';
 import {
+	collectRelationalSubquery,
 	getTableAsAliasSQL,
 	makeDefaultRqbMapper,
 	makeJitRqbMapper,
+	type RelationalWithSubqueries,
 	relationExtrasToSQL,
 	relationsFilterToSQL,
 	relationsOrderToSQL,
 	relationToSQL,
+	type SchemaEntry,
 } from '~/relations.ts';
 import { and } from '~/sql/expressions/index.ts';
-import type { Name, Placeholder, Query, SQLChunk, SQLWrapper } from '~/sql/sql.ts';
-import { isSQLWrapper, Param, SQL, sql, StringChunk, View } from '~/sql/sql.ts';
+import type { DriverValueDecoder, Name, Placeholder, Query, SQLChunk, SQLWrapper } from '~/sql/sql.ts';
+import { isSQLWrapper, Param, SQL, sql, StringChunk } from '~/sql/sql.ts';
 import { Subquery } from '~/subquery.ts';
 import { getTableName, Table, TableColumns } from '~/table.ts';
 import { upgradeIfNeeded } from '~/up-migrations/singlestore.ts';
 import {
+	getColumnFromDecoder,
 	make$ReturningResponseMapper,
 	makeDefaultQueryMapper,
 	makeJitQueryMapper,
@@ -38,6 +42,7 @@ import {
 	type UpdateSet,
 } from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import { resolveSingleStoreTypeAlias, type SingleStoreCodecs, type SingleStoreType } from './codecs.ts';
 import { SingleStoreColumn } from './columns/common.ts';
 import type { SingleStoreCustomColumn } from './columns/custom.ts';
@@ -47,7 +52,6 @@ import type { SelectedFieldsOrdered, SingleStoreSelectConfig } from './query-bui
 import type { SingleStoreUpdateConfig } from './query-builders/update.ts';
 import type { SingleStoreSession } from './session.ts';
 import { SingleStoreTable } from './table.ts';
-import type { SingleStoreView } from './view.ts';
 
 export interface SingleStoreDialectConfig {
 	useJitMappers?: boolean;
@@ -200,13 +204,13 @@ export class SingleStoreDialect {
 		withList,
 		limit,
 		orderBy,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SingleStoreDeleteConfig): SQL {
 		const withSql = this.buildWithCTE(withList);
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -259,7 +263,7 @@ export class SingleStoreDialect {
 		withList,
 		limit,
 		orderBy,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SingleStoreUpdateConfig): SQL {
 		const withSql = this.buildWithCTE(withList);
 
@@ -267,7 +271,7 @@ export class SingleStoreDialect {
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -471,7 +475,7 @@ export class SingleStoreDialect {
 		lockingClause,
 		distinct,
 		setOperators,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SingleStoreSelectConfig): SQL {
 		if (!fieldsFlat) {
 			throw new Error('Select query builder must be provided with `fieldsFlat` on `buildSelectQuery` invocation');
@@ -517,7 +521,7 @@ export class SingleStoreDialect {
 		const selection = this.buildSelection(fieldsList, {
 			isSingleTable,
 			table,
-			ignoreCastCodecs: ignoreSelectionCastCodecs || setOperators.length > 0,
+			ignoreCastCodecs: !useSelectionCastCodecs || setOperators.length > 0,
 		});
 
 		const tableSql = (() => {
@@ -613,7 +617,7 @@ export class SingleStoreDialect {
 			sql`${withSql}select${distinctSql} ${selection} from ${tableSql}${joinsSql}${whereSql}${groupBySql}${havingSql}${orderBySql}${limitSql}${offsetSql}${lockingClausesSql}`;
 
 		if (setOperators.length > 0) {
-			return this.buildSetOperations(finalQuery, fieldsList, ignoreSelectionCastCodecs, setOperators);
+			return this.buildSetOperations(finalQuery, fieldsList, useSelectionCastCodecs, setOperators);
 		}
 
 		return finalQuery;
@@ -622,7 +626,7 @@ export class SingleStoreDialect {
 	buildSetOperations(
 		leftSelect: SQL,
 		outputSelection: SelectedFieldsOrdered,
-		ignoreSelectionCastCodecs: boolean | undefined,
+		useSelectionCastCodecs: boolean | undefined,
 		setOperators: SingleStoreSelectConfig['setOperators'],
 	): SQL {
 		for (let i = 0; i < setOperators.length; ++i) {
@@ -630,7 +634,7 @@ export class SingleStoreDialect {
 			leftSelect = this.buildSetOperationQuery({ leftSelect, setOperator });
 		}
 
-		return ignoreSelectionCastCodecs ? leftSelect : sql`select ${
+		return !useSelectionCastCodecs ? leftSelect : sql`select ${
 			this.buildSelection(
 				outputSelection.map((field) => {
 					if (field.fieldType === 'SQL.Aliased') {
@@ -652,7 +656,7 @@ export class SingleStoreDialect {
 				}),
 				{
 					isSingleTable: true,
-					ignoreCastCodecs: ignoreSelectionCastCodecs,
+					ignoreCastCodecs: !useSelectionCastCodecs,
 				},
 			)
 		} from (${leftSelect}) ${sql.identifier('drizzle_union')}`;
@@ -666,7 +670,7 @@ export class SingleStoreDialect {
 		setOperator: SingleStoreSelectConfig['setOperators'][number];
 	}): SQL {
 		const leftChunk = sql`(${leftSelect.getSQL()}) `;
-		const rightChunk = sql`(${rightSelect.withoutSelectionCastCodecs().getSQL()})`;
+		const rightChunk = sql`(${rightSelect.getSQL()})`;
 
 		let orderBySql;
 		if (orderBy && orderBy.length > 0) {
@@ -817,7 +821,7 @@ export class SingleStoreDialect {
 	}
 
 	private buildRqbColumn(
-		table: Table | View,
+		table: SchemaEntry,
 		field: unknown,
 		key: string,
 		inJson: boolean,
@@ -825,6 +829,7 @@ export class SingleStoreDialect {
 		tableTsName: string,
 	) {
 		let decoderColumn: Column | undefined;
+		let subqueryDecoder: DriverValueDecoder<any, any> | undefined;
 		let fieldType: BuildRelationalQueryResult['selection'][number]['fieldType'];
 		let output: SQL;
 
@@ -854,6 +859,25 @@ export class SingleStoreDialect {
 			output = sql`${decoderColumn ? this.codecs.apply(decoderColumn, inJson ? 'castInJson' : 'cast', q) : q} as ${
 				sql.identifier(key)
 			}`;
+		} else if (is(field, Subquery)) {
+			const innerField = Object.values(field._.selectedFields)[0];
+
+			if (is(innerField, Column)) {
+				decoderColumn = innerField;
+				subqueryDecoder = innerField;
+			} else if (is(innerField, SQL.Aliased)) {
+				decoderColumn = getColumnFromDecoder(innerField);
+				subqueryDecoder = innerField.sql.decoder;
+			} else if (is(innerField, SQL)) {
+				decoderColumn = getColumnFromDecoder(innerField);
+				subqueryDecoder = innerField.decoder;
+			}
+			fieldType = 'Subquery';
+
+			const q = sql`${table}.${sql.identifier(field._.alias)}`;
+			output = sql`${decoderColumn ? this.codecs.apply(decoderColumn, inJson ? 'castInJson' : 'cast', q) : q} as ${
+				sql.identifier(key)
+			}`;
 		} else if (isSQLWrapper(field)) {
 			const query = (field as SQLWrapper).getSQL();
 			decoderColumn = is(query.decoder, Column) ? query.decoder : undefined;
@@ -867,7 +891,7 @@ export class SingleStoreDialect {
 			throw new DrizzleError({
 				message: field === undefined
 					? `Unknown column: "${tableTsName}"."${key}"`
-					: `Views with nested selections are not supported by the relational query builder`,
+					: `Views and subqueries with nested selections are not supported by the relational query builder`,
 			});
 		}
 
@@ -877,6 +901,7 @@ export class SingleStoreDialect {
 					key,
 					field,
 					fieldType,
+					subqueryDecoder,
 					codec: !inJson || !(<SingleStoreCustomColumn<any>> decoderColumn).mapFromJsonValue
 						? this.codecs.get(decoderColumn, inJson ? 'normalizeInJson' : 'normalize')
 						: undefined,
@@ -885,6 +910,7 @@ export class SingleStoreDialect {
 					key,
 					field,
 					fieldType,
+					subqueryDecoder,
 				}) as BuildRelationalQueryResult['selection'][number],
 		);
 
@@ -892,7 +918,7 @@ export class SingleStoreDialect {
 	}
 
 	private getSelectedTableColumns = (
-		table: Table | View,
+		table: SchemaEntry,
 		columns: Record<string, boolean | undefined>,
 	) => {
 		const selectedColumns: ColumnWithTSName[] = [];
@@ -929,7 +955,7 @@ export class SingleStoreDialect {
 	};
 
 	private buildColumns = (
-		table: SingleStoreTable | SingleStoreView,
+		table: SchemaEntry,
 		selection: BuildRelationalQueryResult['selection'],
 		inJson: boolean,
 		tableTsName: string,
@@ -971,9 +997,10 @@ export class SingleStoreDialect {
 		isNestedMany,
 		throughJoin,
 		nested,
+		withSubqueries,
 	}: {
 		schema: TablesRelationalConfig;
-		table: SingleStoreTable | SingleStoreView;
+		table: SchemaEntry;
 		tableConfig: TableRelationalConfig;
 		queryConfig?: DBQueryConfig<'many'> | true;
 		relationWhere?: SQL;
@@ -983,13 +1010,18 @@ export class SingleStoreDialect {
 		isNestedMany?: boolean;
 		throughJoin?: SQL;
 		nested?: boolean;
+		withSubqueries?: RelationalWithSubqueries;
 	}): BuildRelationalQueryResultWithOrder {
 		const selection: BuildRelationalQueryResult['selection'] = [];
 		const isSingle = mode === 'first';
 		const params = config === true ? undefined : config;
 		const currentPath = errorPath ?? '';
 		const currentDepth = depth ?? 0;
-		if (!currentDepth) table = aliasedTable(table, `d${currentDepth}`);
+		const subqueries: RelationalWithSubqueries = withSubqueries ?? new Map();
+		if (!currentDepth) {
+			collectRelationalSubquery(subqueries, table);
+			table = aliasedTable(table, `d${currentDepth}`);
+		}
 
 		const limit = isSingle ? 1 : params?.limit;
 		const offset = params?.offset;
@@ -1003,6 +1035,7 @@ export class SingleStoreDialect {
 					params.where,
 					tableConfig.relations,
 					schema,
+					subqueries,
 				),
 				relationWhere,
 			)
@@ -1012,6 +1045,7 @@ export class SingleStoreDialect {
 				params.where,
 				tableConfig.relations,
 				schema,
+				subqueries,
 			)
 			: relationWhere;
 		const order = params?.orderBy
@@ -1054,6 +1088,9 @@ export class SingleStoreDialect {
 								)
 							}`,
 					);
+					collectRelationalSubquery(subqueries, relation.targetTable);
+					collectRelationalSubquery(subqueries, relation.throughTable);
+
 					const targetTable = aliasedTable(
 						relation.targetTable,
 						`d${currentDepth + 1}`,
@@ -1061,6 +1098,7 @@ export class SingleStoreDialect {
 					const throughTable = relation.throughTable
 						? aliasedTable(relation.throughTable, `tr${currentDepth}`)
 						: undefined;
+
 					const { filter, joinCondition } = relationToSQL(
 						relation,
 						table,
@@ -1073,7 +1111,7 @@ export class SingleStoreDialect {
 						: undefined;
 
 					const innerQuery = this.buildRelationalQuery({
-						table: targetTable as SingleStoreTable,
+						table: targetTable,
 						mode: isSingle ? 'first' : 'many',
 						schema,
 						queryConfig: join as DBQueryConfig,
@@ -1081,6 +1119,7 @@ export class SingleStoreDialect {
 						relationWhere: filter,
 						errorPath: `${currentPath.length ? `${currentPath}.` : ''}${k}`,
 						depth: currentDepth + 1,
+						withSubqueries: subqueries,
 						isNestedMany: !isSingle,
 						throughJoin,
 						nested: true,
@@ -1142,7 +1181,8 @@ export class SingleStoreDialect {
 		}
 		const selectionSet = sql.join(selectionArr, new StringChunk(', '));
 
-		const query = sql`select ${selectionSet} from ${getTableAsAliasSQL(table)}${throughJoin}${joins}${
+		const withSql = currentDepth ? undefined : this.buildWithCTE([...subqueries.values()]);
+		const query = sql`${withSql}select ${selectionSet} from ${getTableAsAliasSQL(table)}${throughJoin}${joins}${
 			sql` where ${where}`.if(
 				where,
 			)

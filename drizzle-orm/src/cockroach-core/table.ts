@@ -94,7 +94,7 @@ export function cockroachTableWithSchema<
 	extraConfig:
 		| ((
 			self: CockroachBuildExtraConfigColumns<TColumnsMap>,
-		) => CockroachTableExtraConfig | CockroachTableExtraConfigValue[])
+		) => CockroachTableExtraConfig | (CockroachTableExtraConfigValue | CockroachTableExtraConfigValue[])[])
 		| undefined,
 	schema: TSchemaName,
 	casing: Casing | undefined,
@@ -104,6 +104,7 @@ export function cockroachTableWithSchema<
 	schema: TSchemaName;
 	columns: CockroachBuildColumns<TTableName, TColumnsMap>;
 	dialect: 'cockroach';
+	isAlias: false;
 }> {
 	const casingFn = getCasingFn(casing);
 	const rawTable = new CockroachTable<{
@@ -111,6 +112,7 @@ export function cockroachTableWithSchema<
 		schema: TSchemaName;
 		columns: CockroachBuildColumns<TTableName, TColumnsMap>;
 		dialect: 'cockroach';
+		isAlias: false;
 	}>(name, schema, baseName);
 
 	const parsedColumns: TColumnsMap = typeof columns === 'function' ? columns(getCockroachColumnBuilders()) : columns;
@@ -151,6 +153,7 @@ export function cockroachTableWithSchema<
 				schema: TSchemaName;
 				columns: CockroachBuildColumns<TTableName, TColumnsMap>;
 				dialect: 'cockroach';
+				isAlias: false;
 			}>;
 		},
 	}) as any;
@@ -165,12 +168,13 @@ export interface CockroachTableFnInternal<TSchema extends string | undefined = u
 		columns: TColumnsMap,
 		extraConfig?: (
 			self: CockroachBuildExtraConfigColumns<TColumnsMap>,
-		) => CockroachTableExtraConfigValue[],
+		) => (CockroachTableExtraConfigValue | CockroachTableExtraConfigValue[])[],
 	): CockroachTableWithColumns<{
 		name: TTableName;
 		schema: TSchema;
 		columns: CockroachBuildColumns<TTableName, TColumnsMap>;
 		dialect: 'cockroach';
+		isAlias: false;
 	}>;
 
 	<
@@ -181,12 +185,13 @@ export interface CockroachTableFnInternal<TSchema extends string | undefined = u
 		columns: (columnTypes: CockroachColumnsBuilders) => TColumnsMap,
 		extraConfig?: (
 			self: CockroachBuildExtraConfigColumns<TColumnsMap>,
-		) => CockroachTableExtraConfigValue[],
+		) => (CockroachTableExtraConfigValue | CockroachTableExtraConfigValue[])[],
 	): CockroachTableWithColumns<{
 		name: TTableName;
 		schema: TSchema;
 		columns: CockroachBuildColumns<TTableName, TColumnsMap>;
 		dialect: 'cockroach';
+		isAlias: false;
 	}>;
 }
 

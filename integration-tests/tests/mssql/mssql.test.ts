@@ -57,6 +57,7 @@ import {
 import { drizzle, type NodeMsSqlDatabase } from 'drizzle-orm/node-mssql';
 import { migrate } from 'drizzle-orm/node-mssql/migrator';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import type { IResult } from 'mssql';
 import { expect, expectTypeOf } from 'vitest';
 import { type Equal, Expect } from '~/utils';
 import {
@@ -351,6 +352,46 @@ test('table configs: unique in column', async () => {
 	expect(columnField?.isUnique).toBeTruthy();
 });
 
+test('raw db.execute type matches returned data', async ({ db }) => {
+	const table = sql.identifier('raw_execute_types');
+
+	await db.execute<never>(sql`drop table if exists ${table}`);
+
+	// DDL
+	const created = await db.execute<never>(
+		sql`create table ${table} ([id] int primary key, [name] nvarchar(max) not null)`,
+	);
+	expectTypeOf(created).toEqualTypeOf<IResult<never>>();
+	expect(created).toEqual(expect.objectContaining({ recordsets: [], rowsAffected: [] }));
+
+	// `insert` without returning
+	const inserted = await db.execute<never>(sql`insert into ${table} values (1, 'John')`);
+	expectTypeOf(inserted).toEqualTypeOf<IResult<never>>();
+	expect(inserted).toEqual(expect.objectContaining({ recordsets: [], rowsAffected: [1] }));
+
+	// Simple select
+	const selected = await db.execute<{ id: number; name: string }>(sql`select [id], [name] from ${table} order by [id]`);
+	expectTypeOf(selected).toEqualTypeOf<IResult<{ id: number; name: string }>>();
+	expect(selected).toEqual(expect.objectContaining({
+		recordset: [{ id: 1, name: 'John' }],
+		recordsets: [[{ id: 1, name: 'John' }]],
+		rowsAffected: [1],
+	}));
+
+	// Multi-statement
+	const multi = await db.execute(
+		sql`insert into ${table} values (2, 'Jane'); select [id], [name] from ${table} order by [id]`,
+	);
+	expectTypeOf(multi).toEqualTypeOf<IResult<Record<string, unknown>>>();
+	expect(multi).toEqual(expect.objectContaining({
+		recordset: [{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }],
+		recordsets: [[{ id: 1, name: 'John' }, { id: 2, name: 'Jane' }]],
+		rowsAffected: [1, 2],
+	}));
+
+	await db.execute<never>(sql`drop table ${table}`);
+});
+
 test('select all fields', async ({ db }) => {
 	await db.insert(usersTable).values({ name: 'John' });
 	const result = await db.select().from(usersTable);
@@ -556,6 +597,10 @@ test('Column as decoder applies codecs', async ({ createDB, push }) => {
 			...getColumns(users),
 			max: max(users.createdAt).as('max'),
 			maxStr: max(users.createdAtStr).as('max_str'),
+			sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+			sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+			sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+				.as('sq_tag'),
 		}).from(users).groupBy(users.id, users.name, users.createdAt, users.createdAtStr, users.cus)
 	);
 
@@ -591,6 +636,10 @@ test('Column as decoder applies codecs', async ({ createDB, push }) => {
 		...getColumns(users),
 		max: max(users.createdAt).as('max'),
 		maxStr: max(users.createdAtStr).as('max_str'),
+		sq: db.select({ createdAt: users.createdAt }).from(users).as('sq'),
+		sqAliased: db.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+		sqTag: db.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+			.as('sq_tag'),
 	}).from(users).groupBy(users.id, users.name, users.createdAt, users.createdAtStr, users.cus);
 
 	const viewRes = await db.select().from(usersView);
@@ -624,15 +673,24 @@ test('Column as decoder applies codecs', async ({ createDB, push }) => {
 		cus: exDate,
 	};
 	const expectedRow = { ...expectedCols, max: exDate, maxStr: exDateStr };
+	const expectedViewRow = { ...expectedRow, sq: exDate, sqAliased: exDate, sqTag: 'tag-1' };
 
-	expect(res).toStrictEqual([expectedRow]);
-	expect(viewRes).toStrictEqual([expectedRow]);
+	expect(res).toStrictEqual([expectedViewRow]);
+	expect(viewRes).toStrictEqual([expectedViewRow]);
 
 	expect(customCast).toBeTruthy();
 	expect(customMap).toBeTruthy();
 
 	expect(nested).toStrictEqual({ ...expectedRow, self: expectedRow });
-	expect(viewNested).toStrictEqual({ ...expectedRow, self: expectedRow });
+
+	type ViewRow = typeof usersView.$inferSelect;
+	type ViewNestedRow = {
+		[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+	};
+
+	expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
+	expect(viewNested).toStrictEqual({ ...expectedViewRow, self: expectedViewRow });
 });
 
 test('Column as decoder applies codecs - Jit mappers', async ({ createDB, push }) => {
@@ -670,6 +728,10 @@ test('Column as decoder applies codecs - Jit mappers', async ({ createDB, push }
 			...getColumns(users),
 			max: max(users.createdAt).as('max'),
 			maxStr: max(users.createdAtStr).as('max_str'),
+			sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+			sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+			sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+				.as('sq_tag'),
 		}).from(users).groupBy(users.id, users.name, users.createdAt, users.createdAtStr, users.cus)
 	);
 
@@ -705,6 +767,10 @@ test('Column as decoder applies codecs - Jit mappers', async ({ createDB, push }
 		...getColumns(users),
 		max: max(users.createdAt).as('max'),
 		maxStr: max(users.createdAtStr).as('max_str'),
+		sq: db.select({ createdAt: users.createdAt }).from(users).as('sq'),
+		sqAliased: db.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+		sqTag: db.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+			.as('sq_tag'),
 	}).from(users).groupBy(users.id, users.name, users.createdAt, users.createdAtStr, users.cus);
 
 	const viewRes = await db.select().from(usersView);
@@ -738,15 +804,24 @@ test('Column as decoder applies codecs - Jit mappers', async ({ createDB, push }
 		cus: exDate,
 	};
 	const expectedRow = { ...expectedCols, max: exDate, maxStr: exDateStr };
+	const expectedViewRow = { ...expectedRow, sq: exDate, sqAliased: exDate, sqTag: 'tag-1' };
 
-	expect(res).toStrictEqual([expectedRow]);
-	expect(viewRes).toStrictEqual([expectedRow]);
+	expect(res).toStrictEqual([expectedViewRow]);
+	expect(viewRes).toStrictEqual([expectedViewRow]);
 
 	expect(customCast).toBeTruthy();
 	expect(customMap).toBeTruthy();
 
 	expect(nested).toStrictEqual({ ...expectedRow, self: expectedRow });
-	expect(viewNested).toStrictEqual({ ...expectedRow, self: expectedRow });
+
+	type ViewRow = typeof usersView.$inferSelect;
+	type ViewNestedRow = {
+		[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+	};
+
+	expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
+	expect(viewNested).toStrictEqual({ ...expectedViewRow, self: expectedViewRow });
 });
 
 test('Mappers: correct mappers enabled', async ({ db, createDB }) => {

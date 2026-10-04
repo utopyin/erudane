@@ -121,12 +121,11 @@ export class PgAsyncPreparedQuery<T extends PreparedQueryConfig> extends PgBaseP
 
 		const cache = this.cache!;
 
-		// For mutate queries, we should query the database, wait for a response, and then perform invalidation
 		if (cacheStrat.type === 'invalidate') {
-			return Promise.all([
-				query(),
-				cache.onMutate({ tables: cacheStrat.tables }),
-			]).then((res) => res[0]).catch((e) => {
+			return query().then(async (res) => {
+				await cache.onMutate({ tables: cacheStrat.tables });
+				return res;
+			}).catch((e) => {
 				throw new DrizzleQueryError(queryString, params, e as Error);
 			});
 		}
@@ -164,11 +163,8 @@ export class PgAsyncPreparedQuery<T extends PreparedQueryConfig> extends PgBaseP
 	}
 }
 
-export abstract class PgAsyncSession<
-	TQueryResult extends PgQueryResultHKT = PgQueryResultHKT,
-	TRelations extends AnyRelations = EmptyRelations,
-> extends PgSession {
-	static override readonly [entityKind]: string = 'PgAsyncSession';
+export abstract class BasePgAsyncSession extends PgSession {
+	static override readonly [entityKind]: string = 'BasePgAsyncSession';
 
 	abstract override prepareQuery<T extends PreparedQueryConfig = PreparedQueryConfig>(
 		query: Query,
@@ -224,6 +220,13 @@ export abstract class PgAsyncSession<
 			return prepared.execute();
 		});
 	}
+}
+
+export abstract class PgAsyncSession<
+	TQueryResult extends PgQueryResultHKT = PgQueryResultHKT,
+	TRelations extends AnyRelations = EmptyRelations,
+> extends BasePgAsyncSession {
+	static override readonly [entityKind]: string = 'PgAsyncSession';
 
 	abstract transaction<T>(
 		transaction: (tx: PgAsyncTransaction<TQueryResult, TRelations>) => Promise<T>,

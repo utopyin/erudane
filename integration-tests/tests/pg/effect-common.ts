@@ -1,4 +1,4 @@
-import { assert, expect, expectTypeOf, it, Vitest } from '@effect/vitest';
+import { assert, expect, expectTypeOf, it, vi, Vitest } from '@effect/vitest';
 import {
 	and,
 	asc,
@@ -63,6 +63,7 @@ import {
 	assertAllTypesUnions,
 	makeAllTypes,
 } from './all-types';
+import { TestCache } from './instrumentation';
 import { relations } from './relations';
 import { rqbPost, rqbUser } from './schema';
 import { normalizeDataWithDbCodecs } from './utils';
@@ -230,10 +231,10 @@ const failureMessage = (failure: unknown): string => {
 export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): void => {
 	const { testLayer, usedSchema, PgDrizzle, createDB, addTests, skipTests = [] } = opts;
 
-	it.layer(testLayer)('common', (it) => {
+	it.layer(testLayer)('common', (layerIt) => {
 		// Run setup before each test.
-		const _effect = it.effect;
-		const effect: typeof it.effect = Object.assign(
+		const _effect = layerIt.effect;
+		const effect: typeof layerIt.effect = Object.assign(
 			(testName: string, fn: () => Effect.Effect<any, any, any>, timeout?: number) =>
 				_effect(testName, () =>
 					Effect.andThen(
@@ -250,9 +251,11 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						}),
 						fn(),
 					), timeout),
-			it.effect,
+			layerIt.effect,
 		);
-		Object.assign(it, { effect });
+		const it = new Proxy(layerIt, {
+			get: (target, property, receiver) => property === 'effect' ? effect : Reflect.get(target, property, receiver),
+		});
 
 		it.beforeEach(({ task, skip }) => {
 			if (skipTests.includes(task.name)) skip();
@@ -2478,6 +2481,61 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 				expect(ops.some((o) => o.op === 'get')).toBe(true);
 			}));
 
+		it.effect('Cache: onMutate runs after the write is committed', () =>
+			Effect.gen(function*() {
+				const baseCache = new TestCache('explicit');
+
+				const db = yield* PgDrizzle.make({ relations }).pipe(
+					Effect.provide(EffectCache.layerFromDrizzle(baseCache)),
+					Effect.provide(PgDrizzle.DefaultServices),
+				);
+
+				const users = pgTable('users_cache_mutate_order', {
+					id: integer('id').primaryKey(),
+					name: text('name').notNull(),
+				});
+
+				yield* push(db, { users });
+
+				const context = yield* Effect.context<never>();
+				const run = (query: any) => Effect.runPromiseWith(context)(query);
+				const seen: string[][] = [];
+				using spyInvalidate = vi.spyOn(baseCache, 'onMutate').mockImplementation(async () => {
+					const rows = await run(db.select({ name: users.name }).from(users)) as { name: string }[];
+					seen.push(rows.map((r) => r.name));
+				});
+
+				yield* db.insert(users).values({ id: 1, name: 'John' });
+
+				expect(spyInvalidate).toHaveBeenCalledTimes(1);
+				expect(seen).toStrictEqual([['John']]);
+			}));
+
+		it.effect('Cache: no onMutate on failed write', () =>
+			Effect.gen(function*() {
+				const baseCache = new TestCache('explicit');
+
+				const db = yield* PgDrizzle.make({ relations }).pipe(
+					Effect.provide(EffectCache.layerFromDrizzle(baseCache)),
+					Effect.provide(PgDrizzle.DefaultServices),
+				);
+
+				const users = pgTable('users_cache_failed_write', {
+					id: integer('id').primaryKey(),
+					name: text('name').notNull(),
+				});
+
+				yield* push(db, { users });
+				yield* db.insert(users).values({ id: 1, name: 'John' });
+
+				using spyInvalidate = vi.spyOn(baseCache, 'onMutate');
+
+				const res = yield* db.insert(users).values({ id: 1, name: 'Jane' }).pipe(Effect.result);
+
+				assert(Result.isFailure(res));
+				expect(spyInvalidate).toHaveBeenCalledTimes(0);
+			}));
+
 		it.effect('makeWithDefaults - convenience function that includes DefaultServices', () =>
 			Effect.gen(function*() {
 				const db = yield* PgDrizzle.makeWithDefaults({ relations });
@@ -2509,16 +2567,17 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 					yield* db.insert(allTypesTable).values(allTypesData);
 					const session = (<any> db).session as PgEffectSession;
 
-					const queryRes = yield* session.objects<AllTypes>(db.select().from(allTypesTable).getSQL()).pipe(
-						Effect.map((e) =>
-							normalizeDataWithDbCodecs({
-								db,
-								columns: getColumns(allTypesTable),
-								data: e,
-								mode: 'query',
-							})[0]
-						),
-					);
+					const queryRes = yield* session.objects<AllTypes>(db.select().from(allTypesTable).getSQL(true))
+						.pipe(
+							Effect.map((e) =>
+								normalizeDataWithDbCodecs({
+									db,
+									columns: getColumns(allTypesTable),
+									data: e,
+									mode: 'query',
+								})[0]
+							),
+						);
 
 					const relDb = yield* createDB({ allTypesTable }, allTypesRelations);
 
@@ -4357,6 +4416,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: max(users.arrCreatedAt).as('arr_max'),
 						arrMaxStr: max(users.arrCreatedAtStr).as('arr_max_str'),
 						sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+						sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+						sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+							.as('sq_tag'),
 					}).from(users).groupBy(users.id)
 				);
 
@@ -4397,6 +4459,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 					arrMax: max(users.arrCreatedAt).as('arr_max'),
 					arrMaxStr: max(users.arrCreatedAtStr).as('arr_max_str'),
 					sq: db.select({ createdAt: users.createdAt }).from(users).as('sq'),
+					sqAliased: db.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+					sqTag: db.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+						.as('sq_tag'),
 				}).from(users).groupBy(users.id);
 
 				const viewRes = yield* db.select().from(usersView);
@@ -4421,15 +4486,8 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 				});
 
 				const viewNested = yield* db.query.usersView.findFirst({
-					columns: {
-						sq: false, // TODO: re-enable when supported in RQBv2
-					},
 					with: {
-						self: {
-							columns: {
-								sq: false, // TODO: re-enable when supported in RQBv2
-							},
-						},
+						self: true,
 					},
 				});
 
@@ -4446,6 +4504,8 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: [exDate],
 						arrMaxStr: [exDateStr],
 						sq: exDate,
+						sqAliased: exDate,
+						sqTag: 'tag-1',
 						cus: exDate,
 						arrCus: [exDate],
 					},
@@ -4463,6 +4523,8 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: [exDate],
 						arrMaxStr: [exDateStr],
 						sq: exDate,
+						sqAliased: exDate,
+						sqTag: 'tag-1',
 						cus: exDate,
 						arrCus: [exDate],
 					},
@@ -4501,6 +4563,14 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						},
 					},
 				);
+
+				type ViewRow = typeof usersView.$inferSelect;
+				type ViewNestedRow = {
+					[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+				};
+
+				expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
 				expect(viewNested).toStrictEqual(
 					{
 						id: 1,
@@ -4514,6 +4584,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: [exDate],
 						arrMaxStr: [exDateStr],
 						cus: exDate,
+						sq: exDate,
+						sqAliased: exDate,
+						sqTag: 'tag-1',
 						arrCus: [exDate],
 						self: {
 							id: 1,
@@ -4527,6 +4600,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 							arrMax: [exDate],
 							arrMaxStr: [exDateStr],
 							cus: exDate,
+							sq: exDate,
+							sqAliased: exDate,
+							sqTag: 'tag-1',
 							arrCus: [exDate],
 						},
 					},
@@ -4575,6 +4651,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: max(users.arrCreatedAt).as('arr_max'),
 						arrMaxStr: max(users.arrCreatedAtStr).as('arr_max_str'),
 						sq: qb.select({ createdAt: users.createdAt }).from(users).as('sq'),
+						sqAliased: qb.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+						sqTag: qb.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+							.as('sq_tag'),
 					}).from(users).groupBy(users.id)
 				);
 
@@ -4615,6 +4694,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 					arrMax: max(users.arrCreatedAt).as('arr_max'),
 					arrMaxStr: max(users.arrCreatedAtStr).as('arr_max_str'),
 					sq: db.select({ createdAt: users.createdAt }).from(users).as('sq'),
+					sqAliased: db.select({ createdAt: users.createdAt }).from(users).as('sq_aliased'),
+					sqTag: db.select({ tag: sql`${users.id}`.mapWith((v): string => `tag-${v}`).as('tag') }).from(users)
+						.as('sq_tag'),
 				}).from(users).groupBy(users.id);
 
 				const viewRes = yield* db.select().from(usersView);
@@ -4639,15 +4721,8 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 				});
 
 				const viewNested = yield* db.query.usersView.findFirst({
-					columns: {
-						sq: false, // TODO: re-enable when supported in RQBv2
-					},
 					with: {
-						self: {
-							columns: {
-								sq: false, // TODO: re-enable when supported in RQBv2
-							},
-						},
+						self: true,
 					},
 				});
 
@@ -4664,6 +4739,8 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: [exDate],
 						arrMaxStr: [exDateStr],
 						sq: exDate,
+						sqAliased: exDate,
+						sqTag: 'tag-1',
 						cus: exDate,
 						arrCus: [exDate],
 					},
@@ -4681,6 +4758,8 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: [exDate],
 						arrMaxStr: [exDateStr],
 						sq: exDate,
+						sqAliased: exDate,
+						sqTag: 'tag-1',
 						cus: exDate,
 						arrCus: [exDate],
 					},
@@ -4719,6 +4798,14 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						},
 					},
 				);
+
+				type ViewRow = typeof usersView.$inferSelect;
+				type ViewNestedRow = {
+					[K in keyof (ViewRow & { self: ViewRow | null })]: (ViewRow & { self: ViewRow | null })[K];
+				};
+
+				expectTypeOf(viewNested).toEqualTypeOf<ViewNestedRow | undefined>();
+
 				expect(viewNested).toStrictEqual(
 					{
 						id: 1,
@@ -4732,6 +4819,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 						arrMax: [exDate],
 						arrMaxStr: [exDateStr],
 						cus: exDate,
+						sq: exDate,
+						sqAliased: exDate,
+						sqTag: 'tag-1',
 						arrCus: [exDate],
 						self: {
 							id: 1,
@@ -4745,6 +4835,9 @@ export const runCommonEffectPgTests = (opts: RunCommonEffectPgTestsOptions): voi
 							arrMax: [exDate],
 							arrMaxStr: [exDateStr],
 							cus: exDate,
+							sq: exDate,
+							sqAliased: exDate,
+							sqTag: 'tag-1',
 							arrCus: [exDate],
 						},
 					},

@@ -8,23 +8,26 @@ import {
 	type AnyOne,
 	// AggregatedField,
 	type BuildRelationalQueryResult,
+	collectRelationalSubquery,
 	type ColumnWithTSName,
 	type DBQueryConfig,
 	getTableAsAliasSQL,
 	makeDefaultRqbMapper,
 	makeJitRqbMapper,
 	type RelationalRowsMapperGenerator,
+	type RelationalWithSubqueries,
 	relationExtrasToSQL,
 	relationsFilterToSQL,
 	relationsOrderToSQL,
 	relationToSQL,
+	type SchemaEntry,
 	type TableRelationalConfig,
 	type TablesRelationalConfig,
 	type WithContainer,
 } from '~/relations.ts';
 import type { Name, Placeholder, SQLWrapper } from '~/sql/index.ts';
 import { and, isSQLWrapper } from '~/sql/index.ts';
-import { Param, type Query, SQL, sql, type SQLChunk, StringChunk, View } from '~/sql/sql.ts';
+import { type DriverValueDecoder, Param, type Query, SQL, sql, type SQLChunk, StringChunk } from '~/sql/sql.ts';
 import { resolveSQLiteTypeAlias, resolveUnionType, type SQLiteCodecs, type SQLiteType } from '~/sqlite-core/codecs.ts';
 import { SQLiteColumn, type SQLiteCustomColumn } from '~/sqlite-core/columns/index.ts';
 import type {
@@ -37,6 +40,7 @@ import { SQLiteTable } from '~/sqlite-core/table.ts';
 import { Subquery } from '~/subquery.ts';
 import { getTableName, Table, TableColumns } from '~/table.ts';
 import {
+	getColumnFromDecoder,
 	makeDefaultQueryMapper,
 	makeJitQueryMapper,
 	orderSelectedFields,
@@ -44,13 +48,13 @@ import {
 	type UpdateSet,
 } from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import type {
 	SelectedFieldsOrdered,
 	SQLiteSelectConfig,
 	SQLiteSelectJoinConfig,
 } from './query-builders/select.types.ts';
 import { SQLiteViewBase } from './view-base.ts';
-import type { SQLiteView } from './view.ts';
 
 export interface SQLiteDialectConfig {
 	codecs?: SQLiteCodecs;
@@ -116,13 +120,13 @@ export class SQLiteDialect {
 		withList,
 		limit,
 		orderBy,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SQLiteDeleteConfig): SQL {
 		const withSql = this.buildWithCTE(withList);
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -177,7 +181,7 @@ export class SQLiteDialect {
 		from,
 		limit,
 		orderBy,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SQLiteUpdateConfig): SQL {
 		const withSql = this.buildWithCTE(withList);
 
@@ -189,7 +193,7 @@ export class SQLiteDialect {
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -411,7 +415,7 @@ export class SQLiteDialect {
 
 	private buildLimit(limit: number | Placeholder | undefined): SQL | undefined {
 		return typeof limit === 'object'
-				|| (typeof limit === 'number' && limit >= 0)
+				|| (typeof limit === 'number')
 			? sql` limit ${limit}`
 			: undefined;
 	}
@@ -472,7 +476,7 @@ export class SQLiteDialect {
 		offset,
 		distinct,
 		setOperators,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SQLiteSelectConfig): SQL {
 		const fieldsList = fieldsFlat ?? orderSelectedFields<SQLiteColumn>(fields, undefined, this.codecs);
 		for (const f of fieldsList) {
@@ -515,7 +519,7 @@ export class SQLiteDialect {
 		const selection = this.buildSelection(fieldsList, {
 			isSingleTable,
 			table,
-			ignoreCastCodecs: ignoreSelectionCastCodecs || setOperators.length > 0,
+			ignoreCastCodecs: !useSelectionCastCodecs || setOperators.length > 0,
 		});
 
 		const tableSql = this.buildFromTable(table);
@@ -551,7 +555,7 @@ export class SQLiteDialect {
 			sql`${withSql}select${distinctSql} ${selection} from ${tableSql}${joinsSql}${whereSql}${groupBySql}${havingSql}${orderBySql}${limitSql}${offsetSql}`;
 
 		if (setOperators.length > 0) {
-			return this.buildSetOperations(finalQuery, fieldsList, ignoreSelectionCastCodecs, setOperators);
+			return this.buildSetOperations(finalQuery, fieldsList, useSelectionCastCodecs, setOperators);
 		}
 
 		return finalQuery;
@@ -560,7 +564,7 @@ export class SQLiteDialect {
 	buildSetOperations(
 		leftSelect: SQL,
 		outputSelection: SelectedFieldsOrdered,
-		ignoreSelectionCastCodecs: boolean | undefined,
+		useSelectionCastCodecs: boolean | undefined,
 		setOperators: SQLiteSelectConfig['setOperators'],
 	): SQL {
 		for (let i = 0; i < setOperators.length; ++i) {
@@ -588,7 +592,7 @@ export class SQLiteDialect {
 				: out.codec;
 		}
 
-		return ignoreSelectionCastCodecs ? leftSelect : sql`select ${
+		return !useSelectionCastCodecs ? leftSelect : sql`select ${
 			this.buildSelection(
 				outputSelection.map((field) => {
 					if (field.fieldType === 'SQL.Aliased') {
@@ -610,7 +614,7 @@ export class SQLiteDialect {
 				}),
 				{
 					isSingleTable: true,
-					ignoreCastCodecs: ignoreSelectionCastCodecs,
+					ignoreCastCodecs: !useSelectionCastCodecs,
 				},
 			)
 		} from (${leftSelect}) ${sql.identifier('drizzle_union')}`;
@@ -625,7 +629,7 @@ export class SQLiteDialect {
 	}): SQL {
 		// SQLite doesn't support parenthesis in set operations
 		const leftChunk = sql`${leftSelect.getSQL()} `;
-		const rightChunk = sql`${rightSelect.withoutSelectionCastCodecs().getSQL()}`;
+		const rightChunk = sql`${rightSelect.getSQL()}`;
 
 		let orderBySql;
 		if (orderBy && orderBy.length > 0) {
@@ -673,7 +677,7 @@ export class SQLiteDialect {
 		withList,
 		select,
 		columnList,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: SQLiteInsertConfig): SQL {
 		// const isSingleValue = values.length === 1;
 		const columns: Record<string, SQLiteColumn> = table[Table.Symbol.Columns];
@@ -766,7 +770,7 @@ export class SQLiteDialect {
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -790,7 +794,7 @@ export class SQLiteDialect {
 	}
 
 	private buildRqbColumn(
-		table: Table | View,
+		table: SchemaEntry,
 		field: unknown,
 		key: string,
 		inJson: boolean,
@@ -798,6 +802,7 @@ export class SQLiteDialect {
 		tableTsName: string,
 	) {
 		let decoderColumn: Column | undefined;
+		let subqueryDecoder: DriverValueDecoder<any, any> | undefined;
 		let fieldType: BuildRelationalQueryResult['selection'][number]['fieldType'];
 		let output: SQL;
 
@@ -827,6 +832,25 @@ export class SQLiteDialect {
 			output = sql`${decoderColumn ? this.codecs.apply(decoderColumn, inJson ? 'castInJson' : 'cast', q) : q} as ${
 				sql.identifier(key)
 			}`;
+		} else if (is(field, Subquery)) {
+			const innerField = Object.values(field._.selectedFields)[0];
+
+			if (is(innerField, Column)) {
+				decoderColumn = innerField;
+				subqueryDecoder = innerField;
+			} else if (is(innerField, SQL.Aliased)) {
+				decoderColumn = getColumnFromDecoder(innerField);
+				subqueryDecoder = innerField.sql.decoder;
+			} else if (is(innerField, SQL)) {
+				decoderColumn = getColumnFromDecoder(innerField);
+				subqueryDecoder = innerField.decoder;
+			}
+			fieldType = 'Subquery';
+
+			const q = sql`${table}.${sql.identifier(field._.alias)}`;
+			output = sql`${decoderColumn ? this.codecs.apply(decoderColumn, inJson ? 'castInJson' : 'cast', q) : q} as ${
+				sql.identifier(key)
+			}`;
 		} else if (isSQLWrapper(field)) {
 			const query = (field as SQLWrapper).getSQL();
 			decoderColumn = is(query.decoder, Column) ? query.decoder : undefined;
@@ -840,7 +864,7 @@ export class SQLiteDialect {
 			throw new DrizzleError({
 				message: field === undefined
 					? `Unknown column: "${tableTsName}"."${key}"`
-					: `Views with nested selections are not supported by the relational query builder`,
+					: `Views and subqueries with nested selections are not supported by the relational query builder`,
 			});
 		}
 
@@ -850,6 +874,7 @@ export class SQLiteDialect {
 					key,
 					field,
 					fieldType,
+					subqueryDecoder,
 					codec: !inJson || !(<SQLiteCustomColumn<any>> decoderColumn).mapFromJsonValue
 						? this.codecs.get(decoderColumn, inJson ? 'normalizeInJson' : 'normalize')
 						: undefined,
@@ -858,6 +883,7 @@ export class SQLiteDialect {
 					key,
 					field,
 					fieldType,
+					subqueryDecoder,
 				}) as BuildRelationalQueryResult['selection'][number],
 		);
 
@@ -865,7 +891,7 @@ export class SQLiteDialect {
 	}
 
 	private getSelectedTableColumns = (
-		table: Table | View,
+		table: SchemaEntry,
 		columns: Record<string, boolean | undefined>,
 	) => {
 		const selectedColumns: ColumnWithTSName[] = [];
@@ -902,7 +928,7 @@ export class SQLiteDialect {
 	};
 
 	private buildColumns = (
-		table: SQLiteTable | SQLiteView,
+		table: SchemaEntry,
 		selection: BuildRelationalQueryResult['selection'],
 		inJson: boolean,
 		tableTsName: string,
@@ -945,9 +971,10 @@ export class SQLiteDialect {
 		depth,
 		throughJoin,
 		jsonb,
+		withSubqueries,
 	}: {
 		schema: TablesRelationalConfig;
-		table: SQLiteTable | SQLiteView;
+		table: SchemaEntry;
 		tableConfig: TableRelationalConfig;
 		queryConfig?: DBQueryConfig<'many'> | true;
 		relationWhere?: SQL;
@@ -957,13 +984,18 @@ export class SQLiteDialect {
 		depth?: number;
 		throughJoin?: SQL;
 		jsonb: SQL;
+		withSubqueries?: RelationalWithSubqueries;
 	}): BuildRelationalQueryResult {
 		const selection: BuildRelationalQueryResult['selection'] = [];
 		const isSingle = mode === 'first';
 		const params = config === true ? undefined : config;
 		const currentPath = errorPath ?? '';
 		const currentDepth = depth ?? 0;
-		if (!currentDepth) table = aliasedTable(table, `d${currentDepth}`);
+		const subqueries: RelationalWithSubqueries = withSubqueries ?? new Map();
+		if (!currentDepth) {
+			collectRelationalSubquery(subqueries, table);
+			table = aliasedTable(table, `d${currentDepth}`);
+		}
 
 		const limit = isSingle ? 1 : params?.limit;
 		const offset = params?.offset;
@@ -977,6 +1009,7 @@ export class SQLiteDialect {
 					params.where,
 					tableConfig.relations,
 					schema,
+					subqueries,
 				),
 				relationWhere,
 			)
@@ -986,6 +1019,7 @@ export class SQLiteDialect {
 				params.where,
 				tableConfig.relations,
 				schema,
+				subqueries,
 			)
 			: relationWhere;
 		const order = params?.orderBy
@@ -1014,6 +1048,9 @@ export class SQLiteDialect {
 					const relation = tableConfig.relations[k];
 					if (!relation) throw new DrizzleError({ message: `Unknown relation "${tableConfig.name}" -> "${k}"` });
 					const isSingle = relation.relationType === 'one';
+					collectRelationalSubquery(subqueries, relation.targetTable);
+					collectRelationalSubquery(subqueries, relation.throughTable);
+
 					const targetTable = aliasedTable(
 						relation.targetTable,
 						`d${currentDepth + 1}`,
@@ -1021,6 +1058,7 @@ export class SQLiteDialect {
 					const throughTable = relation.throughTable
 						? aliasedTable(relation.throughTable, `tr${currentDepth}`)
 						: undefined;
+
 					const { filter, joinCondition } = relationToSQL(
 						relation,
 						table,
@@ -1033,7 +1071,7 @@ export class SQLiteDialect {
 						: undefined;
 
 					const innerQuery = this.buildRelationalQuery({
-						table: targetTable as SQLiteTable | SQLiteView,
+						table: targetTable,
 						mode: isSingle ? 'first' : 'many',
 						schema,
 						queryConfig: join as DBQueryConfig,
@@ -1042,6 +1080,7 @@ export class SQLiteDialect {
 						isNested: true,
 						errorPath: `${currentPath.length ? `${currentPath}.` : ''}${k}`,
 						depth: currentDepth + 1,
+						withSubqueries: subqueries,
 						throughJoin,
 						jsonb,
 					});
@@ -1103,7 +1142,8 @@ export class SQLiteDialect {
 		}
 		const selectionSet = sql.join(selectionArr, new StringChunk(', '));
 
-		const query = sql`select ${selectionSet} from ${getTableAsAliasSQL(table)}${throughJoin}${
+		const withSql = currentDepth ? undefined : this.buildWithCTE([...subqueries.values()]);
+		const query = sql`${withSql}select ${selectionSet} from ${getTableAsAliasSQL(table)}${throughJoin}${
 			sql` where ${where}`.if(
 				where,
 			)

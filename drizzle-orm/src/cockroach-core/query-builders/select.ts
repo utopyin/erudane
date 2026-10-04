@@ -20,14 +20,13 @@ import type {
 import { QueryPromise } from '~/query-promise.ts';
 import type { RunnableQuery } from '~/runnable-query.ts';
 import { SelectionProxyHandler } from '~/selection-proxy.ts';
-import { SQL, View } from '~/sql/sql.ts';
+import { SQL } from '~/sql/sql.ts';
 import type { ColumnsSelection, Placeholder, Query, SQLWrapper } from '~/sql/sql.ts';
 import { Subquery } from '~/subquery.ts';
 import { Table } from '~/table.ts';
 import { tracer } from '~/tracing.ts';
 import {
 	applyMixins,
-	type DrizzleTypeError,
 	getTableColumns,
 	getTableLikeName,
 	haveSameKeys,
@@ -36,8 +35,10 @@ import {
 	type ValueOrArray,
 } from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import type {
 	AnyCockroachSelect,
+	CheckTableLikeSelection,
 	CockroachCreateSetOperatorFn,
 	CockroachSelectConfig,
 	CockroachSelectCrossJoinFn,
@@ -56,7 +57,6 @@ import type {
 	SelectedFields,
 	SelectedFieldsOrdered,
 	SetOperatorRightSelect,
-	TableLikeHasEmptySelection,
 } from './select.types.ts';
 
 export class CockroachSelectBuilder<
@@ -100,10 +100,7 @@ export class CockroachSelectBuilder<
 	 * {@link https://www.postgresql.org/docs/current/sql-select.html#SQL-FROM | Postgres from documentation}
 	 */
 	from<TFrom extends CockroachTable | Subquery | CockroachViewBase | SQL>(
-		source: TableLikeHasEmptySelection<TFrom> extends true ? DrizzleTypeError<
-				"Cannot reference a data-modifying statement subquery if it doesn't contain a `returning` clause"
-			>
-			: TFrom,
+		source: CheckTableLikeSelection<TFrom>,
 	): CreateCockroachSelectFromBuilderMode<
 		TBuilderMode,
 		GetSelectTableName<TFrom>,
@@ -1044,20 +1041,22 @@ export abstract class CockroachSelectQueryBuilderBase<
 		return config.setFieldsFlat ?? fieldsFlat;
 	}
 
-	getSQL(): SQL {
+	getSQL(withCastCodecs = false): SQL {
 		this._resolveSelection();
-		return this.dialect.buildSelectQuery(this.config);
+		return this.dialect.buildSelectQuery(
+			withCastCodecs ? { ...this.config, useSelectionCastCodecs: true } : this.config,
+		);
 	}
 
-	toSQL(): Query {
-		return this.dialect.sqlToQuery(this.getSQL());
+	toSQL(withCastCodecs = true): Query {
+		return this.dialect.sqlToQuery(this.getSQL(withCastCodecs));
 	}
 
 	as<TAlias extends string>(
 		alias: TAlias,
 	): SubqueryWithSelection<this['_']['selectedFields'], TAlias> {
 		return new Proxy(
-			new Subquery(this.withoutSelectionCastCodecs().getSQL(), this.config.fields, alias),
+			new Subquery(this.getSQL(), this.config.fields, alias),
 			new SelectionProxyHandler({ alias, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
 		) as SubqueryWithSelection<this['_']['selectedFields'], TAlias>;
 	}
@@ -1068,12 +1067,6 @@ export abstract class CockroachSelectQueryBuilderBase<
 			this.config.fields,
 			new SelectionProxyHandler({ alias: this.tableName, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
 		) as this['_']['selectedFields'];
-	}
-
-	/** @internal */
-	override withoutSelectionCastCodecs(): this {
-		this.config.ignoreSelectionCastCodecs = true;
-		return this;
 	}
 
 	$dynamic(): CockroachSelectDynamic<this> {
@@ -1103,8 +1096,7 @@ export interface CockroachSelectBase<
 		TResult,
 		TSelectedFields
 	>,
-	QueryPromise<TResult>,
-	SQLWrapper
+	QueryPromise<TResult>
 {}
 
 export class CockroachSelectBase<
@@ -1138,7 +1130,7 @@ export class CockroachSelectBase<
 		}
 		return tracer.startActiveSpan('drizzle.prepareQuery', () => {
 			// Build query before accessing `fieldsFlat` - build mutates it
-			const query = dialect.sqlToQuery(this.getSQL());
+			const query = dialect.sqlToQuery(this.getSQL(true));
 			const fieldsList = this.config.fieldsFlat!;
 			const nullableObjectPaths = resolveNullableObjectPaths(fieldsList, joinsNotNullableMap);
 
