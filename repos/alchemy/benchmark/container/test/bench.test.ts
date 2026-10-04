@@ -8,8 +8,8 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as Schedule from "effect/Schedule";
-import * as HttpClient from "effect/unstable/http/HttpClient";
-import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
+import * as HttpClient from "effect/http/HttpClient";
+import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import Stack, { benchMicrovm } from "../alchemy.run.ts";
 
 /**
@@ -120,10 +120,7 @@ const waitForHost = (url: string) =>
       ),
       Effect.timeout("30 seconds"),
       Effect.retry({
-        schedule: Schedule.min([
-          Schedule.exponential("500 millis"),
-          Schedule.spaced("3 seconds"),
-        ]),
+        schedule: Schedule.min([Schedule.exponential("500 millis"), Schedule.spaced("3 seconds")]),
         times: 30,
       }),
     );

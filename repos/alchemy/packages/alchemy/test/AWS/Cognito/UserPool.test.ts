@@ -115,7 +115,7 @@ test.provider(
       yield* stack.destroy();
       yield* assertPoolDeleted(pool.userPoolId);
     }),
-  { timeout: 120_000 },
+  { tags: ["provider:aws", "provider:aws:cognito", "live"], timeout: 120_000 },
 );
 
 test.provider(
@@ -182,7 +182,7 @@ test.provider(
       yield* stack.destroy();
       yield* assertPoolDeleted(replaced.userPoolId);
     }),
-  { timeout: 120_000 },
+  { tags: ["provider:aws", "provider:aws:cognito", "live"], timeout: 120_000 },
 );
 
 // Regression: https://github.com/alchemy-run/alchemy/issues/1311 — email OTP
@@ -275,7 +275,92 @@ test.provider(
       yield* stack.destroy();
       yield* assertPoolDeleted(created.pool.userPoolId);
     }),
-  { timeout: 180_000 },
+  {
+    tags: [
+      "provider:aws",
+      "provider:aws:cognito",
+      "provider:aws:kms",
+      "provider:aws:lambda",
+      "live",
+    ],
+    timeout: 180_000,
+  },
+);
+
+// UpdateUserPool resets any field omitted from its body to the service
+// default — an unrelated update must echo the observed EmailConfiguration
+// back rather than clear it.
+test.provider(
+  "email configuration is set, survives unrelated updates, and converges",
+  (stack) =>
+    Effect.gen(function* () {
+      yield* stack.destroy();
+
+      const pool = yield* stack.deploy(
+        Effect.gen(function* () {
+          return yield* UserPool("EmailPool", {
+            autoVerifiedAttributes: ["email"],
+            emailConfiguration: {
+              replyToEmailAddress: "support@example.com",
+            },
+          });
+        }),
+      );
+
+      const describe = () =>
+        cip
+          .describeUserPool({ UserPoolId: pool.userPoolId })
+          .pipe(Effect.map((r) => r.UserPool!));
+
+      const created = yield* describe();
+      expect(created.EmailConfiguration?.EmailSendingAccount).toBe(
+        "COGNITO_DEFAULT",
+      );
+      expect(created.EmailConfiguration?.ReplyToEmailAddress).toBe(
+        "support@example.com",
+      );
+
+      // an unrelated update that OMITS emailConfiguration must preserve the
+      // observed configuration (updateUserPool would otherwise reset it)
+      const updated = yield* stack.deploy(
+        Effect.gen(function* () {
+          return yield* UserPool("EmailPool", {
+            autoVerifiedAttributes: ["email"],
+            passwordPolicy: { minimumLength: 12 },
+          });
+        }),
+      );
+      expect(updated.userPoolId).toBe(pool.userPoolId);
+      const afterUnrelated = yield* describe();
+      expect(afterUnrelated.Policies?.PasswordPolicy?.MinimumLength).toBe(12);
+      expect(afterUnrelated.EmailConfiguration?.ReplyToEmailAddress).toBe(
+        "support@example.com",
+      );
+
+      // changing the declared configuration converges
+      yield* stack.deploy(
+        Effect.gen(function* () {
+          return yield* UserPool("EmailPool", {
+            autoVerifiedAttributes: ["email"],
+            passwordPolicy: { minimumLength: 12 },
+            emailConfiguration: {
+              replyToEmailAddress: "help@example.com",
+            },
+          });
+        }),
+      );
+      const afterChange = yield* describe();
+      expect(afterChange.EmailConfiguration?.ReplyToEmailAddress).toBe(
+        "help@example.com",
+      );
+      expect(afterChange.EmailConfiguration?.EmailSendingAccount).toBe(
+        "COGNITO_DEFAULT",
+      );
+
+      yield* stack.destroy();
+      yield* assertPoolDeleted(pool.userPoolId);
+    }),
+  { tags: ["provider:aws", "provider:aws:cognito", "live"], timeout: 120_000 },
 );
 
 test.provider(
@@ -315,8 +400,19 @@ test.provider(
         .pipe(Effect.exit);
       expect(failureTag(liteOtp)).toBe("InvalidUserPoolConfiguration");
 
+      const developerWithoutSource = yield* stack
+        .deploy(
+          UserPool("InvalidPool", {
+            emailConfiguration: { emailSendingAccount: "DEVELOPER" },
+          }),
+        )
+        .pipe(Effect.exit);
+      expect(failureTag(developerWithoutSource)).toBe(
+        "InvalidUserPoolConfiguration",
+      );
+
       // nothing was created — the validation runs before any API call
       yield* stack.destroy();
     }),
-  { timeout: 60_000 },
+  { tags: ["provider:aws", "provider:aws:cognito", "live"], timeout: 60_000 },
 );

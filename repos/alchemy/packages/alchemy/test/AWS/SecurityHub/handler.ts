@@ -3,8 +3,8 @@ import * as SecurityHub from "@/AWS/SecurityHub";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
-import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
+import { HttpServerRequest } from "effect/http/HttpServerRequest";
+import * as HttpServerResponse from "effect/http/HttpServerResponse";
 import path from "pathe";
 
 const main = path.resolve(import.meta.dirname, "handler.ts");
@@ -172,11 +172,11 @@ export default SecurityHubTestFunction.make(
 
         if (request.method === "GET" && pathname === "/findings") {
           const id = url.searchParams.get("id");
-          const { Findings } = yield* getFindings(
-            id
+          const { Findings } = yield* getFindings({
+            ...(id
               ? { Filters: { Id: [{ Value: id, Comparison: "EQUALS" }] } }
-              : { MaxResults: 10 },
-          );
+              : { MaxResults: 10 }),
+          });
           return yield* HttpServerResponse.json({
             count: (Findings ?? []).length,
             workflow: Findings?.[0]?.Workflow?.Status,

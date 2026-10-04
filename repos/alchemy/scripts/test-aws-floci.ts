@@ -10,6 +10,7 @@
  * Extra alchemy-test args are forwarded (`-t`, `--retry`, paths, …).
  */
 import { Glob } from "bun";
+import { preferLocalFlociImage } from "./floci-image.ts";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
@@ -93,7 +94,8 @@ for (const root of requestedRoots) {
 }
 
 process.env.ALCHEMY_TEST_DEV = "1";
-process.env.ALCHEMY_FLOCI_IMAGE ??= "floci:dev";
+
+preferLocalFlociImage("test:aws:floci");
 
 if (!flags.includes("--profile")) {
   flags.unshift("--profile", "testing");

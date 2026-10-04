@@ -4,11 +4,11 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import type * as Redacted from "effect/Redacted";
 import * as Schedule from "effect/Schedule";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import * as HttpBody from "effect/unstable/http/HttpBody";
-import * as HttpClient from "effect/unstable/http/HttpClient";
-import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
-import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import * as HttpBody from "effect/http/HttpBody";
+import * as HttpClient from "effect/http/HttpClient";
+import { HttpServerRequest } from "effect/http/HttpServerRequest";
+import * as HttpServerResponse from "effect/http/HttpServerResponse";
 import { BunMicrovm } from "./bun-image.ts";
 import { ExternalMicrovm } from "./external-image.ts";
 import { EffectfulBun } from "./effectful-bun.ts";
@@ -56,7 +56,10 @@ export default Cloudflare.Worker(
   Effect.gen(function* () {
     const rawReachable = (
       endpoint: string,
-      authToken: Record<string, string | Redacted.Redacted<string> | undefined>,
+      authToken: Record<
+        string,
+        string | Redacted.Redacted<string> | undefined
+      >,
     ) =>
       Effect.gen(function* () {
         const client = yield* HttpClient.HttpClient;
@@ -169,8 +172,7 @@ export default Cloudflare.Worker(
       external,
       opencode,
     };
-    const pick = (v: string | null): Variant =>
-      variants[v ?? ""] ?? effectfulBun;
+    const pick = (v: string | null): Variant => variants[v ?? ""] ?? effectfulBun;
 
     const boot = (v: Variant) =>
       Effect.gen(function* () {

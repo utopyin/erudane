@@ -1,7 +1,7 @@
 import * as Hetzner from "@/Hetzner";
 import * as Provider from "@/Provider";
 import * as Test from "@/Test/Alchemy";
-import { Services } from "@distilled.cloud/hetzner";
+import * as servers from "@distilled.cloud/hetzner/servers";
 import { expect } from "alchemy-test";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
@@ -18,7 +18,7 @@ const logLevel = Effect.provideService(
 const hasHetznerCreds = !!process.env.HCLOUD_TOKEN;
 
 const waitUntilGone = (id: number) =>
-  Services.servers.getServer({ id }).pipe(
+  servers.getServer({ id }).pipe(
     Effect.as("found" as const),
     Effect.catchTag("NotFound", () => Effect.succeed("gone" as const)),
     Effect.repeat({
@@ -34,7 +34,7 @@ test(
     // No user data: the bootstrap script is sent as-is.
     const bootstrap = Hetzner.composeUserData(undefined);
     expect(bootstrap.startsWith("#!/bin/bash")).toBe(true);
-    expect(bootstrap).toContain("/root/.bun/bin/bun");
+    expect(bootstrap).toContain("setup_26.x");
 
     // A cloud-config document becomes the second part of a multipart
     // cloud-init document, behind the bootstrap script.
@@ -47,7 +47,7 @@ test(
     expect(composed).toContain("Content-Type: text/x-shellscript");
     expect(composed).toContain("Content-Type: text/cloud-config");
     expect(composed).toContain("  - nginx");
-    expect(composed.indexOf("/root/.bun/bin/bun")).toBeLessThan(
+    expect(composed.indexOf("setup_26.x")).toBeLessThan(
       composed.indexOf("#cloud-config"),
     );
 
@@ -61,6 +61,7 @@ test(
     const raw = 'Content-Type: multipart/mixed; boundary="x"\n\n--x--\n';
     expect(Hetzner.composeUserData(raw)).toEqual(raw);
   }),
+  { tags: ["provider:hetzner", "provider:hetzner:server", "live"] },
 );
 
 test.provider.skipIf(!hasHetznerCreds)(
@@ -92,7 +93,7 @@ test.provider.skipIf(!hasHetznerCreds)(
       expect(created.deleteProtection).toEqual(false);
       expect(created.labels).toMatchObject({ env: "test" });
 
-      const fetched = yield* Services.servers.getServer({
+      const fetched = yield* servers.getServer({
         id: created.id,
       });
       expect(fetched.server?.id).toEqual(created.id);
@@ -120,7 +121,7 @@ test.provider.skipIf(!hasHetznerCreds)(
       expect(updated.ipv6).toEqual(created.ipv6);
       expect(updated.labels).toMatchObject({ env: "prod", role: "web" });
 
-      const refetched = yield* Services.servers.getServer({
+      const refetched = yield* servers.getServer({
         id: updated.id,
       });
       expect(refetched.server?.id).toEqual(created.id);
@@ -133,7 +134,16 @@ test.provider.skipIf(!hasHetznerCreds)(
       const gone = yield* waitUntilGone(created.id);
       expect(gone).toEqual("gone");
     }).pipe(logLevel),
-  { timeout: 180_000 },
+  {
+    tags: [
+      "provider:hetzner",
+      "provider:hetzner:server",
+      "provider:hetzner:service",
+      "live",
+    ],
+    timeout: 180_000,
+    exclusive: true,
+  },
 );
 
 test.provider.skipIf(!hasHetznerCreds)(
@@ -169,7 +179,7 @@ test.provider.skipIf(!hasHetznerCreds)(
       expect(replaced.location).toEqual("nbg1");
       expect(replaced.serverType).toEqual("cpx12");
 
-      const fetched = yield* Services.servers.getServer({
+      const fetched = yield* servers.getServer({
         id: replaced.id,
       });
       expect(fetched.server?.image?.name).toEqual("debian-12");
@@ -182,7 +192,16 @@ test.provider.skipIf(!hasHetznerCreds)(
       const gone = yield* waitUntilGone(replaced.id);
       expect(gone).toEqual("gone");
     }).pipe(logLevel),
-  { timeout: 180_000 },
+  {
+    tags: [
+      "provider:hetzner",
+      "provider:hetzner:server",
+      "provider:hetzner:service",
+      "live",
+    ],
+    timeout: 180_000,
+    exclusive: true,
+  },
 );
 
 test.provider.skipIf(!hasHetznerCreds)(
@@ -216,7 +235,16 @@ test.provider.skipIf(!hasHetznerCreds)(
       const gone = yield* waitUntilGone(deployed.id);
       expect(gone).toEqual("gone");
     }).pipe(logLevel),
-  { timeout: 180_000 },
+  {
+    tags: [
+      "provider:hetzner",
+      "provider:hetzner:server",
+      "provider:hetzner:service",
+      "live",
+    ],
+    timeout: 180_000,
+    exclusive: true,
+  },
 );
 
 test.provider.skipIf(!hasHetznerCreds)(
@@ -248,12 +276,12 @@ test.provider.skipIf(!hasHetznerCreds)(
           : Redacted.value(server.privateKey);
 
       // Both cloud-init parts must have run: the user script (marker file)
-      // and Alchemy's bootstrap (bun). Probed as one command — the box is
+      // and Alchemy's bootstrap (Node 26). Probed as one command — the box is
       // still booting when the create action completes.
       const probe = yield* Effect.gen(function* () {
         const ssh = yield* Hetzner.openSshClient({ host, privateKey });
         const { stdout } = yield* ssh.exec(
-          "cat /etc/alchemy-init-marker && test -x /root/.bun/bin/bun && echo bun-ok",
+          "cat /etc/alchemy-init-marker && command -v node && echo node-ok",
         );
         return stdout;
       }).pipe(
@@ -262,7 +290,7 @@ test.provider.skipIf(!hasHetznerCreds)(
       );
 
       expect(probe).toContain("alchemy-init-ok");
-      expect(probe).toContain("bun-ok");
+      expect(probe).toContain("node-ok");
 
       // Cloud-init only runs on first boot, so a changed script replaces.
       const replaced = yield* stack.deploy(
@@ -289,5 +317,14 @@ test.provider.skipIf(!hasHetznerCreds)(
       const gone = yield* waitUntilGone(replaced.id);
       expect(gone).toEqual("gone");
     }).pipe(logLevel),
-  { timeout: 300_000 },
+  {
+    tags: [
+      "provider:hetzner",
+      "provider:hetzner:server",
+      "provider:hetzner:service",
+      "live",
+    ],
+    timeout: 300_000,
+    exclusive: true,
+  },
 );

@@ -1,10 +1,10 @@
 import * as AWS from "alchemy/AWS";
 import * as Effect from "effect/Effect";
 import * as Stream from "effect/Stream";
-import { HttpServerRequest } from "effect/unstable/http/HttpServerRequest";
-import * as HttpServerResponse from "effect/unstable/http/HttpServerResponse";
-import * as ChildProcess from "effect/unstable/process/ChildProcess";
-import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
+import { HttpServerRequest } from "effect/http/HttpServerRequest";
+import * as HttpServerResponse from "effect/http/HttpServerResponse";
+import * as ChildProcess from "effect/process/ChildProcess";
+import { ChildProcessSpawner } from "effect/process/ChildProcessSpawner";
 
 /**
  * The trailer the in-VM server appends after a command's output so the
@@ -61,7 +61,8 @@ export default ShellMicrovm.make(
           const body = (yield* request.json.pipe(
             Effect.orElseSucceed(() => undefined),
           )) as { command?: unknown } | undefined;
-          const command = typeof body?.command === "string" ? body.command : "";
+          const command =
+            typeof body?.command === "string" ? body.command : "";
           if (!command.trim()) {
             return HttpServerResponse.text("empty command", { status: 400 });
           }

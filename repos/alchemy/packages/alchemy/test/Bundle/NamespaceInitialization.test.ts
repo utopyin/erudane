@@ -1,5 +1,5 @@
 import * as Bundle from "@/Bundle/Bundle";
-import type { FunctionProps } from "@/AWS/Lambda/Function";
+import type { FunctionZipProps } from "@/AWS/Lambda/Function";
 import { makeFunctionBundler } from "@/AWS/Lambda/FunctionBundle";
 import { exec } from "@/Util/exec.ts";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -7,7 +7,7 @@ import { expect, layer } from "alchemy-test";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
-import { ChildProcess } from "effect/unstable/process";
+import { ChildProcess } from "effect/process";
 
 /**
  * The side-effect-free Cloudflare barrel exposes Flagship through a nested
@@ -68,7 +68,7 @@ layer(NodeServices.layer)("Bundle namespace initialization", (it) => {
             main: entry,
             isExternal: true,
             build: { external: ["cloudflare:workers"] },
-          } as FunctionProps);
+          } as FunctionZipProps);
           const bundle = yield* Bundle.build(
             plan.inputOptions,
             plan.outputOptions,
@@ -99,5 +99,6 @@ layer(NodeServices.layer)("Bundle namespace initialization", (it) => {
           yield* fs.remove(root, { recursive: true }).pipe(Effect.ignore);
         }
       }),
+    { tags: ["unit", "provider:aws", "provider:aws:lambda", "local"] },
   );
 });

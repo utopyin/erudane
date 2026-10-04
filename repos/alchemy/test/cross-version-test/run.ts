@@ -378,24 +378,20 @@ async function deployAndVerify(
 ): Promise<void> {
   await ensureInstalled(stage);
 
+  const cloudflareCommand =
+    stage.kind === "workspace"
+      ? ["provider", "cloudflare"]
+      : ["cloudflare"];
   await alcRetry(
     stage,
-    ["cloudflare", "bootstrap", "--profile", PROFILE!],
+    [...cloudflareCommand, "bootstrap", "--profile", PROFILE!],
     "bootstrap",
   );
 
   const dep = await alcRetry(
     stage,
     // --adopt: take over a pre-existing fixed-name worker instead of failing.
-    [
-      "deploy",
-      "--yes",
-      "--adopt",
-      "--stage",
-      alchemyStage,
-      "--profile",
-      PROFILE!,
-    ],
+    ["deploy", "--yes", "--adopt", "--stage", alchemyStage, "--profile", PROFILE!],
     "deploy",
   );
 
@@ -427,13 +423,14 @@ async function destroyApp(stage: Stage, alchemyStage: string) {
 
 /**
  * Delete the account-wide Cloudflare state store (worker + secrets store) via
- * the current-branch CLI's `cloudflare teardown` (idempotent). Run between
- * units so each one deploys a FRESH state store rather than inheriting the
- * previous unit's (possibly downgraded) one.
+ * the current-branch CLI's `provider cloudflare teardown` (idempotent). Run
+ * between units so each one deploys a FRESH state store rather than inheriting
+ * the previous unit's (possibly downgraded) one.
  */
 async function teardownStore(reason: string) {
   console.log(`${YELLOW}↺ tearing down state store (${reason})${RESET}`);
   const r = await alc(LATEST, [
+    "provider",
     "cloudflare",
     "teardown",
     "--profile",
@@ -508,10 +505,7 @@ interface EdgeResult {
   failed: boolean;
 }
 
-async function tryStep(
-  name: string,
-  fn: () => Promise<void>,
-): Promise<StepResult> {
+async function tryStep(name: string, fn: () => Promise<void>): Promise<StepResult> {
   try {
     await fn();
     console.log(`${GREEN}✓ ${name}${RESET}`);
@@ -544,9 +538,7 @@ async function runEdge(edge: Edge): Promise<EdgeResult> {
 
   if (deployStep.status === "ok") {
     steps.push(
-      await tryStep(`upgrade → ${to.dir}`, () =>
-        deployAndVerify(to, EDGE_STAGE),
-      ),
+      await tryStep(`upgrade → ${to.dir}`, () => deployAndVerify(to, EDGE_STAGE)),
     );
   } else {
     steps.push({
@@ -597,11 +589,7 @@ async function main() {
     console.log(`${mark}  [${r.group}] ${r.label}${tag}`);
     for (const s of r.steps) {
       const sym =
-        s.status === "ok"
-          ? `${GREEN}✓${RESET}`
-          : s.status === "skip"
-            ? `${YELLOW}∅${RESET}`
-            : `${RED}✗${RESET}`;
+        s.status === "ok" ? `${GREEN}✓${RESET}` : s.status === "skip" ? `${YELLOW}∅${RESET}` : `${RED}✗${RESET}`;
       console.log(`        ${sym} ${s.name}${s.error ? ` — ${s.error}` : ""}`);
     }
   }
