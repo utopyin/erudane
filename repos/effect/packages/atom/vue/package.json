@@ -1,21 +1,36 @@
 {
   "name": "@effect/atom-vue",
-  "version": "4.0.0-rc.111",
-  "description": "Vue bindings for the Effect Atom modules",
-  "keywords": [
-    "database",
-    "typescript",
-    "vue"
-  ],
-  "homepage": "https://effect.website",
-  "bugs": {
-    "url": "https://github.com/Effect-TS/effect/issues"
-  },
+  "version": "4.0.0",
+  "type": "module",
   "license": "MIT",
+  "description": "Vue bindings for the Effect Atom modules",
+  "homepage": "https://effect.website",
   "repository": {
     "type": "git",
     "url": "https://github.com/Effect-TS/effect.git",
     "directory": "packages/atom/vue"
+  },
+  "bugs": {
+    "url": "https://github.com/Effect-TS/effect/issues"
+  },
+  "tags": [
+    "typescript",
+    "vue",
+    "database"
+  ],
+  "keywords": [
+    "typescript",
+    "vue",
+    "database"
+  ],
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./internal/*": null,
+    "./index": null,
+    "./*/index": null
   },
   "files": [
     "src/**/*.ts",
@@ -27,17 +42,9 @@
     "CLAUDE.md",
     "ai-docs/**/*"
   ],
-  "type": "module",
-  "sideEffects": [],
-  "exports": {
-    "./package.json": "./package.json",
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts",
-    "./internal/*": null,
-    "./index": null,
-    "./*/index": null
-  },
   "publishConfig": {
+    "access": "public",
+    "provenance": true,
     "exports": {
       "./package.json": "./package.json",
       ".": "./dist/index.js",
@@ -45,9 +52,7 @@
       "./internal/*": null,
       "./index": null,
       "./*/index": null
-    },
-    "access": "public",
-    "provenance": true
+    }
   },
   "scripts": {
     "build": "tsc -b tsconfig.json && pnpm babel",
@@ -56,15 +61,10 @@
   },
   "devDependencies": {
     "effect": "workspace:^",
-    "vue": "^3.5.41"
+    "vue": "^3.5.43"
   },
   "peerDependencies": {
     "effect": "workspace:^",
     "vue": ">=3.5.39 <4.0.0"
-  },
-  "tags": [
-    "typescript",
-    "vue",
-    "database"
-  ]
+  }
 }

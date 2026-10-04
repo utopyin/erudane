@@ -1,23 +1,40 @@
 {
   "name": "@effect/sql-d1",
-  "version": "4.0.0-rc.111",
-  "description": "A Cloudflare D1 integration for Effect",
-  "keywords": [
-    "D1",
-    "cloudflare",
-    "database",
-    "sql",
-    "typescript"
-  ],
-  "homepage": "https://effect.website",
-  "bugs": {
-    "url": "https://github.com/Effect-TS/effect/issues"
-  },
+  "version": "4.0.0",
+  "type": "module",
   "license": "MIT",
+  "description": "A Cloudflare D1 integration for Effect",
+  "homepage": "https://effect.website",
   "repository": {
     "type": "git",
     "url": "https://github.com/Effect-TS/effect.git",
     "directory": "packages/sql/d1"
+  },
+  "bugs": {
+    "url": "https://github.com/Effect-TS/effect/issues"
+  },
+  "tags": [
+    "typescript",
+    "sql",
+    "database",
+    "cloudflare",
+    "D1"
+  ],
+  "keywords": [
+    "typescript",
+    "sql",
+    "database",
+    "cloudflare",
+    "D1"
+  ],
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./internal/*": null,
+    "./index": null,
+    "./*/index": null
   },
   "files": [
     "src/**/*.ts",
@@ -29,17 +46,9 @@
     "CLAUDE.md",
     "ai-docs/**/*"
   ],
-  "type": "module",
-  "sideEffects": [],
-  "exports": {
-    "./package.json": "./package.json",
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts",
-    "./internal/*": null,
-    "./index": null,
-    "./*/index": null
-  },
   "publishConfig": {
+    "access": "public",
+    "provenance": true,
     "exports": {
       "./package.json": "./package.json",
       ".": "./dist/index.js",
@@ -47,9 +56,7 @@
       "./internal/*": null,
       "./index": null,
       "./*/index": null
-    },
-    "access": "public",
-    "provenance": true
+    }
   },
   "scripts": {
     "codegen": "effect-utils codegen",
@@ -57,21 +64,14 @@
     "babel": "babel dist --plugins annotate-pure-calls --out-dir dist --source-maps",
     "check": "tsc -b tsconfig.json"
   },
-  "dependencies": {
-    "@cloudflare/workers-types": "^5.20260816.1"
-  },
   "devDependencies": {
     "effect": "workspace:^",
-    "miniflare": "^4.20260730.0"
+    "miniflare": "5.20260925.0-alpha"
   },
   "peerDependencies": {
     "effect": "workspace:^"
   },
-  "tags": [
-    "typescript",
-    "sql",
-    "database",
-    "cloudflare",
-    "D1"
-  ]
+  "dependencies": {
+    "@cloudflare/workers-types": "^5.20260926.1"
+  }
 }

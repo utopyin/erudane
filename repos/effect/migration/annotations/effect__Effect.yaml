@@ -9,17 +9,18 @@ effect/Effect#All:
   note: "Still exported in v4; update call sites for the revised signature, options, and channel inference."
 effect/Effect#All.ExtractMode:
   replacement: "Effect.All.Return"
-  note: 'The `either` extraction helper was removed; use `mode: "result"` and the v4 return helper. Adapt arguments and imports to the v4 API.'
+  note: "The `either` extraction helper was removed; use `mode: \"result\"` and the v4 return helper. Adapt arguments and imports to the v4 API."
 effect/Effect#allowInterrupt:
   replacement: "Effect.yieldNow"
   note: "Yield to the scheduler to create an interruptible checkpoint. Adapt arguments and imports to the v4 API."
 effect/Effect#allSuccesses:
   replacement: "Effect.all"
-  note: 'Run with `{ mode: "result" }`, then retain `Result.Success` values. Adapt arguments and imports to the v4 API.'
+  note: "Run with `{ mode: \"result\" }`, then retain `Result.Success` values. Adapt arguments and imports to the v4 API."
 effect/Effect#allWith:
   replacement: "Effect.all"
   note: "Wrap `Effect.all(values, options)` in a lambda when a data-last combinator is needed. Adapt arguments and imports to the v4 API."
 effect/Effect#annotateLogs:
+  include: true
   replacement: "Effect.annotateLogs"
   note: "Still exported in v4; update call sites for the revised signature, options, and channel inference."
 effect/Effect#ap:
@@ -342,10 +343,14 @@ effect/Effect#orElseFail:
   note: "Replace every typed error with the lazily produced failure value. Adapt arguments and imports to the v4 API."
 effect/Effect#parallelErrors:
   replacement: "Effect.all"
-  note: 'Use `{ mode: "result", concurrency: "unbounded" }` and collect failures explicitly. Adapt arguments and imports to the v4 API.'
+  note: "Use `{ mode: \"result\", concurrency: \"unbounded\" }` and collect failures explicitly. Adapt arguments and imports to the v4 API."
 effect/Effect#parallelFinalizers:
   replacement: "none"
   note: "Parallel finalizer strategy mutation was removed; fork independent cleanup explicitly when ordering is irrelevant. No direct public replacement exists in v4; rewrite the call site around the stated v4 primitive."
+effect/Effect#partition:
+  include: true
+  replacement: "Effect.partition"
+  note: "The tuple is now [passes, fails], the reverse of v3 [failures, successes]. Every effect still runs, and the outer effect does not fail."
 effect/Effect#patchFiberRefs:
   replacement: "none"
   note: "Bulk FiberRefs patching was removed; update individual context references with `Effect.updateService`. No direct public replacement exists in v4; rewrite the call site around the stated v4 primitive."
@@ -528,7 +533,7 @@ effect/Effect#transposeMapOption:
   note: "Return `Effect.succeedNone` for None and map the Effect result to Some. Adapt arguments and imports to the v4 API."
 effect/Effect#try:
   replacement: "Effect.try"
-  note: "Still exported in v4; update call sites for the revised signature, options, and channel inference."
+  note: "Use the callback overload for Cause.UnknownError, or the object overload with try and catch to map failures to a custom error. The callback-only overload does not accept a custom error type parameter."
 effect/Effect#tryMap:
   replacement: "Effect.flatMap + Effect.try"
   note: "FlatMap the source value into the v4 synchronous try constructor. Adapt arguments and imports to the v4 API."
@@ -564,7 +569,7 @@ effect/Effect#validateFirst:
   note: "Map inputs to validation effects and select the first success; handle accumulated diagnostics explicitly if required. Adapt arguments and imports to the v4 API."
 effect/Effect#validateWith:
   replacement: "Effect.zipWith"
-  note: 'Zip and combine the Effects; use `mode: "result"` when both failures must be retained. Adapt arguments and imports to the v4 API.'
+  note: "Zip and combine the Effects; use `mode: \"result\"` when both failures must be retained. Adapt arguments and imports to the v4 API."
 effect/Effect#whenEffect:
   replacement: "Effect.when"
   note: "The v4 `when` combinator accepts an effectful boolean condition directly. Adapt arguments and imports to the v4 API."
@@ -605,6 +610,7 @@ effect/Effect#withFiberRuntime:
   replacement: "none"
   note: "Direct FiberRuntime access was removed; use public Effect, Fiber, and Context operations. No direct public replacement exists in v4; rewrite the call site around the stated v4 primitive."
 effect/Effect#withLogSpan:
+  include: true
   replacement: "Effect.withLogSpan"
   note: "Still exported in v4; update call sites for the revised signature, options, and channel inference."
 effect/Effect#withMaxOpsBeforeYield:
@@ -655,3 +661,9 @@ effect/Effect#zipLeft:
 effect/Effect#zipRight:
   replacement: "Effect.andThen"
   note: "Sequence the Effects and retain the second result. Adapt arguments and imports to the v4 API."
+"effect/Effect#repeatOrElse":
+  replacement: "Effect.repeatOrElse"
+  note: "The fallback receives Option<Schedule.Metadata<B, A>> instead of Option<B>. Read metadata.output for the previous schedule output and metadata.attempt for the attempt count. The error also includes schedule failures."
+"effect/Effect#tryPromise":
+  replacement: "Effect.tryPromise"
+  note: "Use the callback overload for Cause.UnknownError, or the object overload with try and catch to map failures to a custom error. The callback-only overload does not accept a custom error type parameter."

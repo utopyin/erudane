@@ -1,22 +1,41 @@
 {
   "name": "@effect/platform-deno",
-  "version": "4.0.0-rc.111",
-  "description": "Platform specific implementations for the Deno runtime",
-  "keywords": [
-    "algebraic-data-types",
-    "deno",
-    "functional-programming",
-    "typescript"
-  ],
-  "homepage": "https://effect.website",
-  "bugs": {
-    "url": "https://github.com/Effect-TS/effect/issues"
-  },
+  "type": "module",
+  "version": "4.0.0",
   "license": "MIT",
+  "description": "Platform specific implementations for the Deno runtime",
+  "homepage": "https://effect.website",
   "repository": {
     "type": "git",
     "url": "https://github.com/Effect-TS/effect.git",
     "directory": "packages/platform/deno"
+  },
+  "bugs": {
+    "url": "https://github.com/Effect-TS/effect/issues"
+  },
+  "tags": [
+    "deno",
+    "typescript",
+    "algebraic-data-types",
+    "functional-programming"
+  ],
+  "keywords": [
+    "deno",
+    "typescript",
+    "algebraic-data-types",
+    "functional-programming"
+  ],
+  "engines": {
+    "deno": ">=2.8.3"
+  },
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./internal/*": null,
+    "./index": null,
+    "./*/index": null
   },
   "files": [
     "src/**/*.ts",
@@ -28,17 +47,9 @@
     "CLAUDE.md",
     "ai-docs/**/*"
   ],
-  "type": "module",
-  "sideEffects": [],
-  "exports": {
-    "./package.json": "./package.json",
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts",
-    "./internal/*": null,
-    "./index": null,
-    "./*/index": null
-  },
   "publishConfig": {
+    "access": "public",
+    "provenance": true,
     "exports": {
       "./package.json": "./package.json",
       ".": "./dist/index.js",
@@ -46,38 +57,27 @@
       "./internal/*": null,
       "./index": null,
       "./*/index": null
-    },
-    "access": "public",
-    "provenance": true
+    }
   },
   "scripts": {
     "codegen": "effect-utils codegen",
     "check": "deno check"
   },
   "dependencies": {
-    "@db/redis": "jsr:^0.41.2",
+    "@db/redis": "jsr:^0.42.0",
     "@effect/platform-node-shared": "workspace:^",
     "@std/fs": "jsr:^1.0.24",
     "@std/media-types": "jsr:^1.1.0",
     "@std/path": "jsr:^1.1.6",
-    "@std/streams": "jsr:^1.1.2"
-  },
-  "devDependencies": {
-    "@std/assert": "jsr:^1.0.16",
-    "@testcontainers/redis": "^12.1.0",
-    "@types/deno": "^2.7.0",
-    "effect": "workspace:^"
+    "@std/streams": "jsr:^1.2.0"
   },
   "peerDependencies": {
     "effect": "workspace:^"
   },
-  "engines": {
-    "deno": ">=2.5.0"
-  },
-  "tags": [
-    "deno",
-    "typescript",
-    "algebraic-data-types",
-    "functional-programming"
-  ]
+  "devDependencies": {
+    "@std/assert": "jsr:^1.0.19",
+    "@testcontainers/redis": "^12.1.0",
+    "@types/deno": "^2.7.0",
+    "effect": "workspace:^"
+  }
 }

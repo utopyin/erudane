@@ -8,8 +8,8 @@
  *
  * @since 2.0.0
  */
-import type { TypeLambda } from "./HKT.ts";
-import { pipeArguments } from "./Pipeable.ts";
+import type { TypeLambda } from "./HKT.ts"
+import { pipeArguments } from "./Pipeable.ts"
 
 /**
  * Type lambda for function types, used for higher-kinded type operations.
@@ -33,7 +33,7 @@ import { pipeArguments } from "./Pipeable.ts";
  * @since 2.0.0
  */
 export interface FunctionTypeLambda extends TypeLambda {
-  readonly type: (a: this["In"]) => this["Target"];
+  readonly type: (a: this["In"]) => this["Target"]
 }
 
 /**
@@ -102,59 +102,59 @@ export interface FunctionTypeLambda extends TypeLambda {
 export const dual: {
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     arity: Parameters<DataFirst>["length"],
-    body: DataFirst,
-  ): DataLast & DataFirst;
+    body: DataFirst
+  ): DataLast & DataFirst
   <DataLast extends (...args: Array<any>) => any, DataFirst extends (...args: Array<any>) => any>(
     isDataFirst: (args: IArguments) => boolean,
-    body: DataFirst,
-  ): DataLast & DataFirst;
-} = function (arity, body) {
+    body: DataFirst
+  ): DataLast & DataFirst
+} = function(arity, body) {
   if (typeof arity === "function") {
-    return function (this: any) {
+    return function(this: any) {
       return arity(arguments)
         ? body.apply(this, arguments as any)
-        : (((self: any) => body(self, ...arguments)) as any);
-    };
+        : ((self: any) => body(self, ...arguments)) as any
+    }
   }
 
   switch (arity) {
     case 0:
     case 1:
-      throw new RangeError(`Invalid arity ${arity}`);
+      throw new RangeError(`Invalid arity ${arity}`)
 
     case 2:
-      return function (a, b) {
+      return function(a, b) {
         if (arguments.length >= 2) {
-          return body(a, b);
+          return body(a, b)
         }
-        return function (self: any) {
-          return body(self, a);
-        };
-      };
+        return function(self: any) {
+          return body(self, a)
+        }
+      }
 
     case 3:
-      return function (a, b, c) {
+      return function(a, b, c) {
         if (arguments.length >= 3) {
-          return body(a, b, c);
+          return body(a, b, c)
         }
-        return function (self: any) {
-          return body(self, a, b);
-        };
-      };
+        return function(self: any) {
+          return body(self, a, b)
+        }
+      }
 
     default:
-      return function () {
+      return function() {
         if (arguments.length >= arity) {
           // @ts-expect-error
-          return body.apply(this, arguments);
+          return body.apply(this, arguments)
         }
-        const args = arguments;
-        return function (self: any) {
-          return body(self, ...args);
-        };
-      };
+        const args = arguments
+        return function(self: any) {
+          return body(self, ...args)
+        }
+      }
   }
-};
+}
 /**
  * Applies a function to a given value.
  *
@@ -180,10 +180,7 @@ export const dual: {
  * @category combinators
  * @since 2.0.0
  */
-export const apply =
-  <A>(a: A) =>
-  <B>(self: (a: A) => B): B =>
-    self(a);
+export const apply = <A>(a: A) => <B>(self: (a: A) => B): B => self(a)
 
 /**
  * A zero-argument function that produces a value when invoked.
@@ -204,7 +201,7 @@ export const apply =
  * @category models
  * @since 2.0.0
  */
-export type LazyArg<A> = () => A;
+export type LazyArg<A> = () => A
 
 /**
  * Represents a function with multiple arguments.
@@ -226,7 +223,7 @@ export type LazyArg<A> = () => A;
  * @category models
  * @since 2.0.0
  */
-export type FunctionN<A extends ReadonlyArray<unknown>, B> = (...args: A) => B;
+export type FunctionN<A extends ReadonlyArray<unknown>, B> = (...args: A) => B
 
 /**
  * Returns its input argument unchanged.
@@ -246,7 +243,7 @@ export type FunctionN<A extends ReadonlyArray<unknown>, B> = (...args: A) => B;
  * @category combinators
  * @since 2.0.0
  */
-export const identity = <A>(a: A): A => a;
+export const identity = <A>(a: A): A => a
 
 /**
  * Ensures that the type of an expression matches some type,
@@ -274,10 +271,7 @@ export const identity = <A>(a: A): A => a;
  * @category utility types
  * @since 2.0.0
  */
-export const satisfies =
-  <A>() =>
-  <B extends A>(b: B) =>
-    b;
+export const satisfies = <A>() => <B extends A>(b: B) => b
 
 /**
  * Returns the input value with a different static type.
@@ -297,7 +291,7 @@ export const satisfies =
  * @category utility types
  * @since 4.0.0
  */
-export const cast: <A, B>(a: A) => B = identity as any;
+export const cast: <A, B>(a: A) => B = identity as any
 
 /**
  * Creates a zero-argument function that always returns the provided value.
@@ -321,10 +315,7 @@ export const cast: <A, B>(a: A) => B = identity as any;
  * @category constructors
  * @since 2.0.0
  */
-export const constant =
-  <A>(value: A): LazyArg<A> =>
-  () =>
-    value;
+export const constant = <A>(value: A): LazyArg<A> => () => value
 
 /**
  * Returns `true` when called.
@@ -344,7 +335,7 @@ export const constant =
  * @category constants
  * @since 2.0.0
  */
-export const constTrue: LazyArg<boolean> = constant(true);
+export const constTrue: LazyArg<boolean> = constant(true)
 
 /**
  * Returns `false` when called.
@@ -364,7 +355,7 @@ export const constTrue: LazyArg<boolean> = constant(true);
  * @category constants
  * @since 2.0.0
  */
-export const constFalse: LazyArg<boolean> = constant(false);
+export const constFalse: LazyArg<boolean> = constant(false)
 
 /**
  * Returns `null` when called.
@@ -384,7 +375,7 @@ export const constFalse: LazyArg<boolean> = constant(false);
  * @category constants
  * @since 2.0.0
  */
-export const constNull: LazyArg<null> = constant(null);
+export const constNull: LazyArg<null> = constant(null)
 
 /**
  * Returns `undefined` when called.
@@ -404,7 +395,7 @@ export const constNull: LazyArg<null> = constant(null);
  * @category constants
  * @since 2.0.0
  */
-export const constUndefined: LazyArg<undefined> = constant(undefined);
+export const constUndefined: LazyArg<undefined> = constant(undefined)
 
 /**
  * Returns no meaningful value when called.
@@ -425,7 +416,7 @@ export const constUndefined: LazyArg<undefined> = constant(undefined);
  * @category constants
  * @since 2.0.0
  */
-export const constVoid: LazyArg<void> = constUndefined;
+export const constVoid: LazyArg<void> = constUndefined
 
 /**
  * Reverses the order of arguments for a curried function.
@@ -448,13 +439,11 @@ export const constVoid: LazyArg<void> = constUndefined;
  * @category combinators
  * @since 2.0.0
  */
-export const flip =
-  <A extends Array<unknown>, B extends Array<unknown>, C>(
-    f: (...a: A) => (...b: B) => C,
-  ): ((...b: B) => (...a: A) => C) =>
-  (...b) =>
-  (...a) =>
-    f(...a)(...b);
+export const flip = <A extends Array<unknown>, B extends Array<unknown>, C>(
+  f: (...a: A) => (...b: B) => C
+): (...b: B) => (...a: A) => C =>
+(...b) =>
+(...a) => f(...a)(...b)
 
 /**
  * Composes two functions, `ab` and `bc` into a single function that takes in an argument `a` of type `A` and returns a result of type `C`.
@@ -482,14 +471,9 @@ export const flip =
  * @since 2.0.0
  */
 export const compose: {
-  <B, C>(bc: (b: B) => C): <A>(self: (a: A) => B) => (a: A) => C;
-  <A, B, C>(self: (a: A) => B, bc: (b: B) => C): (a: A) => C;
-} = dual(
-  2,
-  <A, B, C>(ab: (a: A) => B, bc: (b: B) => C): ((a: A) => C) =>
-    (a) =>
-      bc(ab(a)),
-);
+  <B, C>(bc: (b: B) => C): <A>(self: (a: A) => B) => (a: A) => C
+  <A, B, C>(self: (a: A) => B, bc: (b: B) => C): (a: A) => C
+} = dual(2, <A, B, C>(ab: (a: A) => B, bc: (b: B) => C): (a: A) => C => (a) => bc(ab(a)))
 
 /**
  * Marks an impossible branch by accepting a `never` value and returning any
@@ -519,8 +503,8 @@ export const compose: {
  * @since 2.0.0
  */
 export const absurd = <A>(_: never): A => {
-  throw new Error("Called `absurd` function which should be uncallable");
-};
+  throw new Error("Called `absurd` function which should be uncallable")
+}
 
 /**
  * Creates a tupled version of this function: instead of `n` arguments, it accepts a single tuple argument.
@@ -544,10 +528,7 @@ export const absurd = <A>(_: never): A => {
  * @category combinators
  * @since 2.0.0
  */
-export const tupled =
-  <A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): ((a: A) => B) =>
-  (a) =>
-    f(...a);
+export const tupled = <A extends ReadonlyArray<unknown>, B>(f: (...a: A) => B): (a: A) => B => (a) => f(...a)
 
 /**
  * Converts a tupled function back to an uncurried function.
@@ -571,10 +552,7 @@ export const tupled =
  * @category combinators
  * @since 2.0.0
  */
-export const untupled =
-  <A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): ((...a: A) => B) =>
-  (...a) =>
-    f(a);
+export const untupled = <A extends ReadonlyArray<unknown>, B>(f: (a: A) => B): (...a: A) => B => (...a) => f(a)
 
 /**
  * Pipes the value of an expression through a left-to-right sequence of
@@ -632,31 +610,61 @@ export const untupled =
  * @category combinators
  * @since 2.0.0
  */
-export function pipe<A>(a: A): A;
-export function pipe<A, B = never>(a: A, ab: (a: A) => B): B;
-export function pipe<A, B = never, C = never>(a: A, ab: (a: A) => B, bc: (b: B) => C): C;
+export function pipe<A>(a: A): A
+export function pipe<A, B = never>(a: A, ab: (a: A) => B): B
+export function pipe<A, B = never, C = never>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C
+): C
 export function pipe<A, B = never, C = never, D = never>(
   a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
-  cd: (c: C) => D,
-): D;
+  cd: (c: C) => D
+): D
 export function pipe<A, B = never, C = never, D = never, E = never>(
   a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
-  de: (d: D) => E,
-): E;
+  de: (d: D) => E
+): E
 export function pipe<A, B = never, C = never, D = never, E = never, F = never>(
   a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
+  ef: (e: E) => F
+): F
+export function pipe<
+  A,
+  B = never,
+  C = never,
+  D = never,
+  E = never,
+  F = never,
+  G = never
+>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
   ef: (e: E) => F,
-): F;
-export function pipe<A, B = never, C = never, D = never, E = never, F = never, G = never>(
+  fg: (f: F) => G
+): G
+export function pipe<
+  A,
+  B = never,
+  C = never,
+  D = never,
+  E = never,
+  F = never,
+  G = never,
+  H = never
+>(
   a: A,
   ab: (a: A) => B,
   bc: (b: B) => C,
@@ -664,7 +672,8 @@ export function pipe<A, B = never, C = never, D = never, E = never, F = never, G
   de: (d: D) => E,
   ef: (e: E) => F,
   fg: (f: F) => G,
-): G;
+  gh: (g: G) => H
+): H
 export function pipe<
   A,
   B = never,
@@ -674,6 +683,7 @@ export function pipe<
   F = never,
   G = never,
   H = never,
+  I = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -683,7 +693,8 @@ export function pipe<
   ef: (e: E) => F,
   fg: (f: F) => G,
   gh: (g: G) => H,
-): H;
+  hi: (h: H) => I
+): I
 export function pipe<
   A,
   B = never,
@@ -694,6 +705,7 @@ export function pipe<
   G = never,
   H = never,
   I = never,
+  J = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -704,7 +716,8 @@ export function pipe<
   fg: (f: F) => G,
   gh: (g: G) => H,
   hi: (h: H) => I,
-): I;
+  ij: (i: I) => J
+): J
 export function pipe<
   A,
   B = never,
@@ -716,6 +729,7 @@ export function pipe<
   H = never,
   I = never,
   J = never,
+  K = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -727,7 +741,8 @@ export function pipe<
   gh: (g: G) => H,
   hi: (h: H) => I,
   ij: (i: I) => J,
-): J;
+  jk: (j: J) => K
+): K
 export function pipe<
   A,
   B = never,
@@ -740,6 +755,7 @@ export function pipe<
   I = never,
   J = never,
   K = never,
+  L = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -752,7 +768,8 @@ export function pipe<
   hi: (h: H) => I,
   ij: (i: I) => J,
   jk: (j: J) => K,
-): K;
+  kl: (k: K) => L
+): L
 export function pipe<
   A,
   B = never,
@@ -766,6 +783,7 @@ export function pipe<
   J = never,
   K = never,
   L = never,
+  M = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -779,7 +797,8 @@ export function pipe<
   ij: (i: I) => J,
   jk: (j: J) => K,
   kl: (k: K) => L,
-): L;
+  lm: (l: L) => M
+): M
 export function pipe<
   A,
   B = never,
@@ -794,6 +813,7 @@ export function pipe<
   K = never,
   L = never,
   M = never,
+  N = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -808,7 +828,8 @@ export function pipe<
   jk: (j: J) => K,
   kl: (k: K) => L,
   lm: (l: L) => M,
-): M;
+  mn: (m: M) => N
+): N
 export function pipe<
   A,
   B = never,
@@ -824,6 +845,7 @@ export function pipe<
   L = never,
   M = never,
   N = never,
+  O = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -839,7 +861,8 @@ export function pipe<
   kl: (k: K) => L,
   lm: (l: L) => M,
   mn: (m: M) => N,
-): N;
+  no: (n: N) => O
+): O
 export function pipe<
   A,
   B = never,
@@ -856,6 +879,7 @@ export function pipe<
   M = never,
   N = never,
   O = never,
+  P = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -872,7 +896,8 @@ export function pipe<
   lm: (l: L) => M,
   mn: (m: M) => N,
   no: (n: N) => O,
-): O;
+  op: (o: O) => P
+): P
 export function pipe<
   A,
   B = never,
@@ -890,6 +915,7 @@ export function pipe<
   N = never,
   O = never,
   P = never,
+  Q = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -907,7 +933,8 @@ export function pipe<
   mn: (m: M) => N,
   no: (n: N) => O,
   op: (o: O) => P,
-): P;
+  pq: (p: P) => Q
+): Q
 export function pipe<
   A,
   B = never,
@@ -926,6 +953,7 @@ export function pipe<
   O = never,
   P = never,
   Q = never,
+  R = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -944,7 +972,8 @@ export function pipe<
   no: (n: N) => O,
   op: (o: O) => P,
   pq: (p: P) => Q,
-): Q;
+  qr: (q: Q) => R
+): R
 export function pipe<
   A,
   B = never,
@@ -964,6 +993,7 @@ export function pipe<
   P = never,
   Q = never,
   R = never,
+  S = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -983,7 +1013,8 @@ export function pipe<
   op: (o: O) => P,
   pq: (p: P) => Q,
   qr: (q: Q) => R,
-): R;
+  rs: (r: R) => S
+): S
 export function pipe<
   A,
   B = never,
@@ -1004,6 +1035,7 @@ export function pipe<
   Q = never,
   R = never,
   S = never,
+  T = never
 >(
   a: A,
   ab: (a: A) => B,
@@ -1024,52 +1056,10 @@ export function pipe<
   pq: (p: P) => Q,
   qr: (q: Q) => R,
   rs: (r: R) => S,
-): S;
-export function pipe<
-  A,
-  B = never,
-  C = never,
-  D = never,
-  E = never,
-  F = never,
-  G = never,
-  H = never,
-  I = never,
-  J = never,
-  K = never,
-  L = never,
-  M = never,
-  N = never,
-  O = never,
-  P = never,
-  Q = never,
-  R = never,
-  S = never,
-  T = never,
->(
-  a: A,
-  ab: (a: A) => B,
-  bc: (b: B) => C,
-  cd: (c: C) => D,
-  de: (d: D) => E,
-  ef: (e: E) => F,
-  fg: (f: F) => G,
-  gh: (g: G) => H,
-  hi: (h: H) => I,
-  ij: (i: I) => J,
-  jk: (j: J) => K,
-  kl: (k: K) => L,
-  lm: (l: L) => M,
-  mn: (m: M) => N,
-  no: (n: N) => O,
-  op: (o: O) => P,
-  pq: (p: P) => Q,
-  qr: (q: Q) => R,
-  rs: (r: R) => S,
-  st: (s: S) => T,
-): T;
+  st: (s: S) => T
+): T
 export function pipe(a: unknown, ...args: Array<any>): unknown {
-  return pipeArguments(a, args as any);
+  return pipeArguments(a, args as any)
 }
 
 /**
@@ -1105,23 +1095,44 @@ export function pipe(a: unknown, ...args: Array<any>): unknown {
  * @since 2.0.0
  */
 export function flow<A extends ReadonlyArray<unknown>, B = never>(
-  ab: (...a: A) => B,
-): (...a: A) => B;
+  ab: (...a: A) => B
+): (...a: A) => B
 export function flow<A extends ReadonlyArray<unknown>, B = never, C = never>(
   ab: (...a: A) => B,
-  bc: (b: B) => C,
-): (...a: A) => C;
-export function flow<A extends ReadonlyArray<unknown>, B = never, C = never, D = never>(
+  bc: (b: B) => C
+): (...a: A) => C
+export function flow<
+  A extends ReadonlyArray<unknown>,
+  B = never,
+  C = never,
+  D = never
+>(ab: (...a: A) => B, bc: (b: B) => C, cd: (c: C) => D): (...a: A) => D
+export function flow<
+  A extends ReadonlyArray<unknown>,
+  B = never,
+  C = never,
+  D = never,
+  E = never
+>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
-): (...a: A) => D;
-export function flow<A extends ReadonlyArray<unknown>, B = never, C = never, D = never, E = never>(
+  de: (d: D) => E
+): (...a: A) => E
+export function flow<
+  A extends ReadonlyArray<unknown>,
+  B = never,
+  C = never,
+  D = never,
+  E = never,
+  F = never
+>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
-): (...a: A) => E;
+  ef: (e: E) => F
+): (...a: A) => F
 export function flow<
   A extends ReadonlyArray<unknown>,
   B = never,
@@ -1129,13 +1140,15 @@ export function flow<
   D = never,
   E = never,
   F = never,
+  G = never
 >(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
   ef: (e: E) => F,
-): (...a: A) => F;
+  fg: (f: F) => G
+): (...a: A) => G
 export function flow<
   A extends ReadonlyArray<unknown>,
   B = never,
@@ -1144,6 +1157,7 @@ export function flow<
   E = never,
   F = never,
   G = never,
+  H = never
 >(
   ab: (...a: A) => B,
   bc: (b: B) => C,
@@ -1151,7 +1165,8 @@ export function flow<
   de: (d: D) => E,
   ef: (e: E) => F,
   fg: (f: F) => G,
-): (...a: A) => G;
+  gh: (g: G) => H
+): (...a: A) => H
 export function flow<
   A extends ReadonlyArray<unknown>,
   B = never,
@@ -1161,6 +1176,7 @@ export function flow<
   F = never,
   G = never,
   H = never,
+  I = never
 >(
   ab: (...a: A) => B,
   bc: (b: B) => C,
@@ -1169,7 +1185,8 @@ export function flow<
   ef: (e: E) => F,
   fg: (f: F) => G,
   gh: (g: G) => H,
-): (...a: A) => H;
+  hi: (h: H) => I
+): (...a: A) => I
 export function flow<
   A extends ReadonlyArray<unknown>,
   B = never,
@@ -1180,6 +1197,7 @@ export function flow<
   G = never,
   H = never,
   I = never,
+  J = never
 >(
   ab: (...a: A) => B,
   bc: (b: B) => C,
@@ -1189,29 +1207,8 @@ export function flow<
   fg: (f: F) => G,
   gh: (g: G) => H,
   hi: (h: H) => I,
-): (...a: A) => I;
-export function flow<
-  A extends ReadonlyArray<unknown>,
-  B = never,
-  C = never,
-  D = never,
-  E = never,
-  F = never,
-  G = never,
-  H = never,
-  I = never,
-  J = never,
->(
-  ab: (...a: A) => B,
-  bc: (b: B) => C,
-  cd: (c: C) => D,
-  de: (d: D) => E,
-  ef: (e: E) => F,
-  fg: (f: F) => G,
-  gh: (g: G) => H,
-  hi: (h: H) => I,
-  ij: (i: I) => J,
-): (...a: A) => J;
+  ij: (i: I) => J
+): (...a: A) => J
 export function flow(
   ab: Function,
   bc?: Function,
@@ -1221,45 +1218,45 @@ export function flow(
   fg?: Function,
   gh?: Function,
   hi?: Function,
-  ij?: Function,
+  ij?: Function
 ): unknown {
   switch (arguments.length) {
     case 1:
-      return ab;
+      return ab
     case 2:
-      return function (this: unknown) {
-        return bc!(ab.apply(this, arguments));
-      };
+      return function(this: unknown) {
+        return bc!(ab.apply(this, arguments))
+      }
     case 3:
-      return function (this: unknown) {
-        return cd!(bc!(ab.apply(this, arguments)));
-      };
+      return function(this: unknown) {
+        return cd!(bc!(ab.apply(this, arguments)))
+      }
     case 4:
-      return function (this: unknown) {
-        return de!(cd!(bc!(ab.apply(this, arguments))));
-      };
+      return function(this: unknown) {
+        return de!(cd!(bc!(ab.apply(this, arguments))))
+      }
     case 5:
-      return function (this: unknown) {
-        return ef!(de!(cd!(bc!(ab.apply(this, arguments)))));
-      };
+      return function(this: unknown) {
+        return ef!(de!(cd!(bc!(ab.apply(this, arguments)))))
+      }
     case 6:
-      return function (this: unknown) {
-        return fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))));
-      };
+      return function(this: unknown) {
+        return fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))
+      }
     case 7:
-      return function (this: unknown) {
-        return gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))));
-      };
+      return function(this: unknown) {
+        return gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))
+      }
     case 8:
-      return function (this: unknown) {
-        return hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))));
-      };
+      return function(this: unknown) {
+        return hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments))))))))
+      }
     case 9:
-      return function (this: unknown) {
-        return ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))));
-      };
+      return function(this: unknown) {
+        return ij!(hi!(gh!(fg!(ef!(de!(cd!(bc!(ab.apply(this, arguments)))))))))
+      }
   }
-  return;
+  return
 }
 
 /**
@@ -1290,7 +1287,7 @@ export function flow(
  * @category utility types
  * @since 2.0.0
  */
-export const hole: <T>() => T = cast(absurd);
+export const hole: <T>() => T = cast(absurd)
 
 /**
  * Returns the second argument and discards the first. The SK combinator is
@@ -1312,7 +1309,7 @@ export const hole: <T>() => T = cast(absurd);
  * @category combinators
  * @since 2.0.0
  */
-export const SK = <A, B>(_: A, b: B): B => b;
+export const SK = <A, B>(_: A, b: B): B => b
 
 /**
  * Creates a memoized function whose input is an object, caching results by
@@ -1340,14 +1337,14 @@ export const SK = <A, B>(_: A, b: B): B => b;
  * @since 4.0.0
  */
 export function memoize<A extends object, O extends {} | null>(f: (a: A) => O): (ast: A) => O {
-  const cache = new WeakMap<object, O>();
+  const cache = new WeakMap<object, O>()
   return (a) => {
-    const cached = cache.get(a);
-    if (cached !== undefined) return cached;
-    const result = f(a);
-    cache.set(a, result);
-    return result;
-  };
+    const cached = cache.get(a)
+    if (cached !== undefined) return cached
+    const result = f(a)
+    cache.set(a, result)
+    return result
+  }
 }
 
 /**
@@ -1376,13 +1373,15 @@ export function memoize<A extends object, O extends {} | null>(f: (a: A) => O): 
  * @since 4.0.0
  */
 export function memoizeIdempotent<A extends object>(f: (a: A) => A): (a: A) => A {
-  const cache = new WeakMap<A, A>();
+  const cache = new WeakMap<A, A>()
   return (a) => {
-    const cached = cache.get(a);
-    if (cached !== undefined) return cached;
-    const result = f(a);
-    cache.set(a, result);
-    cache.set(result, result);
-    return result;
-  };
+    const cached = cache.get(a)
+    if (cached !== undefined) return cached
+    const result = f(a)
+    cache.set(a, result)
+    if (result !== a) {
+      cache.set(result, result)
+    }
+    return result
+  }
 }

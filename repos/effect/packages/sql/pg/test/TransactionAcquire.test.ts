@@ -1,48 +1,45 @@
-import { PgClient } from "@effect/sql-pg";
-import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
-import * as Reactivity from "effect/unstable/reactivity/Reactivity";
+import { PgClient } from "@effect/sql-pg"
+import { assert, it } from "@effect/vitest"
+import { Effect } from "effect"
+import * as Reactivity from "effect/reactivity/Reactivity"
+import { Duplex } from "node:stream"
 
-type ConnectCb = (cause: unknown, client?: unknown, release?: (cause?: Error) => void) => void;
+it.effect("withTransaction surfaces stream factory failures instead of defecting", () =>
+  Effect.gen(function*() {
+    const sql = yield* PgClient.make({
+      username: "test",
+      stream: () => {
+        throw new Error("stream factory failed")
+      }
+    })
 
-const makeFailingPool = (cause: unknown) => ({
-  options: {},
-  ending: false,
-  connect: (cb: ConnectCb) => cb(cause, undefined, () => undefined),
-  query: () => undefined,
-});
+    const error = yield* Effect.flip(sql.withTransaction(sql`SELECT 1`))
 
-const makeMissingClientPool = () => ({
-  options: {},
-  ending: false,
-  connect: (cb: ConnectCb) => cb(null, undefined, () => undefined),
-  query: () => undefined,
-});
+    assert.strictEqual(error.reason._tag, "ConnectionError")
+    assert.strictEqual(error.reason.operation, "connect")
+  }).pipe(
+    Effect.scoped,
+    Effect.provide(Reactivity.layer)
+  ))
 
-it.effect("withTransaction surfaces acquire failures instead of defecting", () =>
-  Effect.gen(function* () {
-    const sql = yield* PgClient.fromPool({
-      acquire: Effect.succeed(makeFailingPool({ code: "08006" }) as any),
-    });
+it.effect("withTransaction surfaces startup transport failures instead of defecting", () =>
+  Effect.gen(function*() {
+    const sql = yield* PgClient.make({
+      username: "test",
+      stream: () =>
+        new Duplex({
+          read() {},
+          write(_chunk, _encoding, callback) {
+            callback(new Error("startup write failed"))
+          }
+        })
+    })
 
-    const error = yield* Effect.flip(sql.withTransaction(sql`SELECT 1`));
+    const error = yield* Effect.flip(sql.withTransaction(sql`SELECT 1`))
 
-    assert.strictEqual(error.reason._tag, "ConnectionError");
-    assert.strictEqual(error.reason.message, "Failed to acquire connection for transaction");
-    assert.strictEqual(error.reason.operation, "acquireConnection");
-  }).pipe(Effect.scoped, Effect.provide(Reactivity.layer)),
-);
-
-it.effect("withTransaction surfaces missing-client acquire as ConnectionError", () =>
-  Effect.gen(function* () {
-    const sql = yield* PgClient.fromPool({
-      acquire: Effect.succeed(makeMissingClientPool() as any),
-    });
-
-    const error = yield* Effect.flip(sql.withTransaction(sql`SELECT 1`));
-
-    assert.strictEqual(error.reason._tag, "ConnectionError");
-    assert.strictEqual(error.reason.message, "Failed to acquire connection for transaction");
-    assert.strictEqual(error.reason.operation, "acquireConnection");
-  }).pipe(Effect.scoped, Effect.provide(Reactivity.layer)),
-);
+    assert.strictEqual(error.reason._tag, "ConnectionError")
+    assert.strictEqual(error.reason.operation, "connect")
+  }).pipe(
+    Effect.scoped,
+    Effect.provide(Reactivity.layer)
+  ))

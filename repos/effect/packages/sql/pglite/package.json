@@ -1,23 +1,40 @@
 {
   "name": "@effect/sql-pglite",
-  "version": "4.0.0-rc.111",
-  "description": "A PGlite toolkit for Effect",
-  "keywords": [
-    "database",
-    "pglite",
-    "postgres",
-    "sql",
-    "typescript"
-  ],
-  "homepage": "https://effect.website",
-  "bugs": {
-    "url": "https://github.com/Effect-TS/effect/issues"
-  },
+  "version": "4.0.0",
+  "type": "module",
   "license": "MIT",
+  "description": "A PGlite toolkit for Effect",
+  "homepage": "https://effect.website",
   "repository": {
     "type": "git",
     "url": "https://github.com/Effect-TS/effect.git",
     "directory": "packages/sql/pglite"
+  },
+  "bugs": {
+    "url": "https://github.com/Effect-TS/effect/issues"
+  },
+  "tags": [
+    "typescript",
+    "sql",
+    "pglite",
+    "postgres",
+    "database"
+  ],
+  "keywords": [
+    "typescript",
+    "sql",
+    "pglite",
+    "postgres",
+    "database"
+  ],
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./internal/*": null,
+    "./index": null,
+    "./*/index": null
   },
   "files": [
     "src/**/*.ts",
@@ -29,17 +46,9 @@
     "CLAUDE.md",
     "ai-docs/**/*"
   ],
-  "type": "module",
-  "sideEffects": [],
-  "exports": {
-    "./package.json": "./package.json",
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts",
-    "./internal/*": null,
-    "./index": null,
-    "./*/index": null
-  },
   "publishConfig": {
+    "access": "public",
+    "provenance": true,
     "exports": {
       "./package.json": "./package.json",
       ".": "./dist/index.js",
@@ -47,9 +56,7 @@
       "./internal/*": null,
       "./index": null,
       "./*/index": null
-    },
-    "access": "public",
-    "provenance": true
+    }
   },
   "scripts": {
     "codegen": "effect-utils codegen",
@@ -57,20 +64,13 @@
     "babel": "babel dist --plugins annotate-pure-calls --out-dir dist --source-maps",
     "check": "tsc -b tsconfig.json"
   },
-  "dependencies": {
-    "@electric-sql/pglite": "^0.5.5"
-  },
   "devDependencies": {
     "effect": "workspace:^"
   },
   "peerDependencies": {
     "effect": "workspace:^"
   },
-  "tags": [
-    "typescript",
-    "sql",
-    "pglite",
-    "postgres",
-    "database"
-  ]
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
 }

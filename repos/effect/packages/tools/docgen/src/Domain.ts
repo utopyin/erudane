@@ -4,15 +4,15 @@
  * @since 0.6.0
  */
 
-import type * as Array from "effect/Array";
-import * as Context from "effect/Context";
-import * as Data from "effect/Data";
-import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
-import * as Order from "effect/Order";
-import * as Rec from "effect/Record";
-import * as String from "effect/String";
-import type * as Parser from "./Parser.ts";
+import type * as Array from "effect/Array"
+import * as Context from "effect/Context"
+import * as Data from "effect/Data"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as Order from "effect/Order"
+import * as Rec from "effect/Record"
+import * as String from "effect/String"
+import type * as Parser from "./Parser.ts"
 
 /**
  * Base model for a named, documented declaration.
@@ -21,15 +21,20 @@ import type * as Parser from "./Parser.ts";
  * @since 0.6.0
  */
 export class DocEntry {
-  readonly name: string;
-  readonly doc: Doc;
-  readonly signature: string;
-  readonly position: Position;
-  constructor(name: string, doc: Doc, signature: string, position: Position) {
-    this.name = name;
-    this.doc = doc;
-    this.signature = signature;
-    this.position = position;
+  readonly name: string
+  readonly doc: Doc
+  readonly signature: string
+  readonly position: Position
+  constructor(
+    name: string,
+    doc: Doc,
+    signature: string,
+    position: Position
+  ) {
+    this.name = name
+    this.doc = doc
+    this.signature = signature
+    this.position = position
   }
 }
 
@@ -40,14 +45,14 @@ export class DocEntry {
  * @since 0.6.0
  */
 export class Doc {
-  readonly description: string | undefined;
-  readonly since: ReadonlyArray<string>;
-  readonly deprecated: ReadonlyArray<string>;
-  readonly examples: ReadonlyArray<string>;
-  readonly category: ReadonlyArray<string>;
-  readonly throws: ReadonlyArray<string>;
-  readonly sees: ReadonlyArray<string>;
-  readonly tags: Record<string, ReadonlyArray<string> | undefined>;
+  readonly description: string | undefined
+  readonly since: ReadonlyArray<string>
+  readonly deprecated: ReadonlyArray<string>
+  readonly examples: ReadonlyArray<string>
+  readonly category: ReadonlyArray<string>
+  readonly throws: ReadonlyArray<string>
+  readonly sees: ReadonlyArray<string>
+  readonly tags: Record<string, ReadonlyArray<string> | undefined>
   constructor(
     description: string | undefined,
     since: ReadonlyArray<string>,
@@ -56,16 +61,16 @@ export class Doc {
     category: ReadonlyArray<string>,
     throws: ReadonlyArray<string>,
     sees: ReadonlyArray<string>,
-    tags: Record<string, ReadonlyArray<string> | undefined>,
+    tags: Record<string, ReadonlyArray<string> | undefined>
   ) {
-    this.description = description;
-    this.since = since;
-    this.deprecated = deprecated;
-    this.examples = examples;
-    this.category = category;
-    this.throws = throws;
-    this.sees = sees;
-    this.tags = tags;
+    this.description = description
+    this.since = since
+    this.deprecated = deprecated
+    this.examples = examples
+    this.category = category
+    this.throws = throws
+    this.sees = sees
+    this.tags = tags
   }
 
   modifyDescription(description: string | undefined): Doc {
@@ -77,8 +82,8 @@ export class Doc {
       this.category,
       this.throws,
       this.sees,
-      this.tags,
-    );
+      this.tags
+    )
   }
 }
 
@@ -89,17 +94,17 @@ export class Doc {
  * @since 0.6.0
  */
 export class Module {
-  readonly source: Parser.SourceShape;
-  readonly name: string;
-  readonly doc: Doc;
-  readonly path: Array.NonEmptyReadonlyArray<string>;
-  readonly classes: ReadonlyArray<Class>;
-  readonly interfaces: ReadonlyArray<Interface>;
-  readonly functions: ReadonlyArray<Function>;
-  readonly typeAliases: ReadonlyArray<TypeAlias>;
-  readonly constants: ReadonlyArray<Constant>;
-  readonly exports: ReadonlyArray<Export>;
-  readonly namespaces: ReadonlyArray<Namespace>;
+  readonly source: Parser.SourceShape
+  readonly name: string
+  readonly doc: Doc
+  readonly path: Array.NonEmptyReadonlyArray<string>
+  readonly classes: ReadonlyArray<Class>
+  readonly interfaces: ReadonlyArray<Interface>
+  readonly functions: ReadonlyArray<Function>
+  readonly typeAliases: ReadonlyArray<TypeAlias>
+  readonly constants: ReadonlyArray<Constant>
+  readonly exports: ReadonlyArray<Export>
+  readonly namespaces: ReadonlyArray<Namespace>
   constructor(
     source: Parser.SourceShape,
     name: string,
@@ -111,19 +116,19 @@ export class Module {
     typeAliases: ReadonlyArray<TypeAlias>,
     constants: ReadonlyArray<Constant>,
     exports: ReadonlyArray<Export>,
-    namespaces: ReadonlyArray<Namespace>,
+    namespaces: ReadonlyArray<Namespace>
   ) {
-    this.source = source;
-    this.name = name;
-    this.doc = doc;
-    this.path = path;
-    this.classes = classes;
-    this.interfaces = interfaces;
-    this.functions = functions;
-    this.typeAliases = typeAliases;
-    this.constants = constants;
-    this.exports = exports;
-    this.namespaces = namespaces;
+    this.source = source
+    this.name = name
+    this.doc = doc
+    this.path = path
+    this.classes = classes
+    this.interfaces = interfaces
+    this.functions = functions
+    this.typeAliases = typeAliases
+    this.constants = constants
+    this.exports = exports
+    this.namespaces = namespaces
   }
 }
 
@@ -134,10 +139,10 @@ export class Module {
  * @since 0.6.0
  */
 export class Class extends DocEntry {
-  readonly _tag = "Class";
-  readonly methods: ReadonlyArray<DocEntry>;
-  readonly staticMethods: ReadonlyArray<DocEntry>;
-  readonly properties: ReadonlyArray<DocEntry>;
+  readonly _tag = "Class"
+  readonly methods: ReadonlyArray<DocEntry>
+  readonly staticMethods: ReadonlyArray<DocEntry>
+  readonly properties: ReadonlyArray<DocEntry>
   constructor(
     name: string,
     doc: Doc,
@@ -145,12 +150,12 @@ export class Class extends DocEntry {
     position: Position,
     methods: ReadonlyArray<DocEntry>,
     staticMethods: ReadonlyArray<DocEntry>,
-    properties: ReadonlyArray<DocEntry>,
+    properties: ReadonlyArray<DocEntry>
   ) {
-    super(name, doc, signature, position);
-    this.methods = methods;
-    this.staticMethods = staticMethods;
-    this.properties = properties;
+    super(name, doc, signature, position)
+    this.methods = methods
+    this.staticMethods = staticMethods
+    this.properties = properties
   }
 }
 
@@ -161,7 +166,7 @@ export class Class extends DocEntry {
  * @since 0.6.0
  */
 export class Interface extends DocEntry {
-  readonly _tag = "Interface";
+  readonly _tag = "Interface"
 }
 
 /**
@@ -171,8 +176,8 @@ export class Interface extends DocEntry {
  * @since 0.6.0
  */
 export interface Position {
-  readonly line: number;
-  readonly column: number;
+  readonly line: number
+  readonly column: number
 }
 
 /**
@@ -182,7 +187,7 @@ export interface Position {
  * @since 0.6.0
  */
 export class Function extends DocEntry {
-  readonly _tag = "Function";
+  readonly _tag = "Function"
 }
 
 /**
@@ -192,7 +197,7 @@ export class Function extends DocEntry {
  * @since 0.6.0
  */
 export class TypeAlias extends DocEntry {
-  readonly _tag = "TypeAlias";
+  readonly _tag = "TypeAlias"
 }
 
 /**
@@ -202,7 +207,7 @@ export class TypeAlias extends DocEntry {
  * @since 0.6.0
  */
 export class Constant extends DocEntry {
-  readonly _tag = "Constant";
+  readonly _tag = "Constant"
 }
 
 /**
@@ -212,17 +217,17 @@ export class Constant extends DocEntry {
  * @since 0.6.0
  */
 export class Export extends DocEntry {
-  readonly _tag = "Export";
-  readonly isNamespaceExport: boolean;
+  readonly _tag = "Export"
+  readonly isNamespaceExport: boolean
   constructor(
     name: string,
     doc: Doc,
     signature: string,
     position: Position,
-    isNamespaceExport: boolean,
+    isNamespaceExport: boolean
   ) {
-    super(name, doc, signature, position);
-    this.isNamespaceExport = isNamespaceExport;
+    super(name, doc, signature, position)
+    this.isNamespaceExport = isNamespaceExport
   }
 }
 
@@ -233,27 +238,27 @@ export class Export extends DocEntry {
  * @since 0.6.0
  */
 export class Namespace {
-  readonly _tag = "Namespace";
-  readonly name: string;
-  readonly doc: Doc;
-  readonly position: Position;
-  readonly interfaces: ReadonlyArray<Interface>;
-  readonly typeAliases: ReadonlyArray<TypeAlias>;
-  readonly namespaces: ReadonlyArray<Namespace>;
+  readonly _tag = "Namespace"
+  readonly name: string
+  readonly doc: Doc
+  readonly position: Position
+  readonly interfaces: ReadonlyArray<Interface>
+  readonly typeAliases: ReadonlyArray<TypeAlias>
+  readonly namespaces: ReadonlyArray<Namespace>
   constructor(
     name: string,
     doc: Doc,
     position: Position,
     interfaces: ReadonlyArray<Interface>,
     typeAliases: ReadonlyArray<TypeAlias>,
-    namespaces: ReadonlyArray<Namespace>,
+    namespaces: ReadonlyArray<Namespace>
   ) {
-    this.name = name;
-    this.doc = doc;
-    this.position = position;
-    this.interfaces = interfaces;
-    this.typeAliases = typeAliases;
-    this.namespaces = namespaces;
+    this.name = name
+    this.doc = doc
+    this.position = position
+    this.interfaces = interfaces
+    this.typeAliases = typeAliases
+    this.namespaces = namespaces
   }
 }
 
@@ -264,9 +269,10 @@ export class Namespace {
  * @category sorting
  * @since 0.6.0
  */
-export const ByPath: Order.Order<Module> = Order.mapInput(String.Order, (module: Module) =>
-  module.path.join("/").toLowerCase(),
-);
+export const ByPath: Order.Order<Module> = Order.mapInput(
+  String.Order,
+  (module: Module) => module.path.join("/").toLowerCase()
+)
 
 /**
  * Represents a file which can be optionally overwriteable.
@@ -275,13 +281,17 @@ export const ByPath: Order.Order<Module> = Order.mapInput(String.Order, (module:
  * @since 0.6.0
  */
 export class File {
-  readonly path: string;
-  readonly content: string;
-  readonly isOverwriteable: boolean;
-  constructor(path: string, content: string, isOverwriteable: boolean = false) {
-    this.path = path;
-    this.content = content;
-    this.isOverwriteable = isOverwriteable;
+  readonly path: string
+  readonly content: string
+  readonly isOverwriteable: boolean
+  constructor(
+    path: string,
+    content: string,
+    isOverwriteable: boolean = false
+  ) {
+    this.path = path
+    this.content = content
+    this.isOverwriteable = isOverwriteable
   }
 }
 
@@ -291,7 +301,7 @@ export class File {
  * @category symbols
  * @since 0.6.0
  */
-export const DocgenErrorTypeId = Symbol.for("@effect/docgen/DocgenError");
+export const DocgenErrorTypeId = Symbol.for("@effect/docgen/DocgenError")
 
 /**
  * Type-level representation of `DocgenErrorTypeId`.
@@ -299,7 +309,7 @@ export const DocgenErrorTypeId = Symbol.for("@effect/docgen/DocgenError");
  * @category symbols
  * @since 0.6.0
  */
-export type DocgenErrorTypeId = typeof DocgenErrorTypeId;
+export type DocgenErrorTypeId = typeof DocgenErrorTypeId
 
 /**
  * Error reported when documentation generation cannot continue.
@@ -308,7 +318,7 @@ export type DocgenErrorTypeId = typeof DocgenErrorTypeId;
  * @since 0.6.0
  */
 export class DocgenError extends Data.TaggedError("DocgenError")<{
-  readonly message: string;
+  readonly message: string
 }> {}
 
 /**
@@ -317,25 +327,22 @@ export class DocgenError extends Data.TaggedError("DocgenError")<{
  * @category services
  * @since 0.6.0
  */
-export class Process extends Context.Service<
-  Process,
-  {
-    readonly cwd: Effect.Effect<string>;
-    readonly platform: Effect.Effect<NodeJS.Platform>;
-    readonly argv: Effect.Effect<Array<string>>;
-    readonly env: Effect.Effect<Record<string, string>>;
-  }
->()("@effect/docgen/Process") {
+export class Process extends Context.Service<Process, {
+  readonly cwd: Effect.Effect<string>
+  readonly platform: Effect.Effect<NodeJS.Platform>
+  readonly argv: Effect.Effect<Array<string>>
+  readonly env: Effect.Effect<Record<string, string>>
+}>()("@effect/docgen/Process") {
   static readonly layer = Layer.succeed(Process, {
     cwd: Effect.sync(() => process.cwd()),
     platform: Effect.sync(() => process.platform),
     argv: Effect.sync(() => process.argv),
     env: Effect.sync(() => {
-      const env: Record<string, string> = {};
+      const env: Record<string, string> = {}
       for (const [key, value] of Object.entries(process.env)) {
-        if (value !== undefined) Rec.assignProperty(env, key, value);
+        if (value !== undefined) Rec.assignProperty(env, key, value)
       }
-      return env;
-    }),
-  });
+      return env
+    })
+  })
 }

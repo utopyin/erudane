@@ -1,26 +1,70 @@
-import { computeJSDocInputHash, extractJSDocsSync, parseJSDoc } from "@effect/jsdocs";
-import { assert, describe, it } from "@effect/vitest";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import * as ts from "typescript";
+import { computeJSDocInputHash, extractJSDocsSync, parseJSDoc } from "@effect/jsdocs"
+import { assert, describe, it } from "@effect/vitest"
+import * as fs from "node:fs"
+import * as os from "node:os"
+import * as path from "node:path"
+import * as ts from "typescript"
 
 interface SourceFileWithParseDiagnostics extends ts.SourceFile {
-  readonly parseDiagnostics: ReadonlyArray<ts.Diagnostic>;
+  readonly parseDiagnostics: ReadonlyArray<ts.Diagnostic>
+}
+
+const stabilityResult = (tag: string) => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-stability-"))
+  try {
+    fs.mkdirSync(path.join(cwd, "src"))
+    fs.writeFileSync(
+      path.join(cwd, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
+        include: ["src/**/*.ts"]
+      })
+    )
+    fs.writeFileSync(
+      path.join(cwd, "package.json"),
+      JSON.stringify({
+        name: "@effect/sample",
+        type: "module",
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), "export * as Foo from \"./Foo.ts\"\n")
+    fs.writeFileSync(
+      path.join(cwd, "src/Foo.ts"),
+      `/**
+ * Creates a value.
+ *
+ * ${tag}
+ * @category constructors
+ * @since 1.0.0
+ */
+export const makeValue = () => 1
+`
+    )
+    const model = extractJSDocsSync({
+      cwd,
+      tsconfig: "tsconfig.json",
+      include: ["src/**/*.ts"],
+      output: ".data/jsdocs.json"
+    })
+    return {
+      diagnostics: model.files.flatMap((file) => file.diagnostics.map((diagnostic) => diagnostic.code)),
+      stability: model.apis.find((api) => api.apiFqn === "@effect/sample/Foo.makeValue")?.tags.stability
+    }
+  } finally {
+    fs.rmSync(cwd, { recursive: true, force: true })
+  }
 }
 
 const signatureParseDiagnostics = (signature: string): ReadonlyArray<string> =>
-  (
-    ts.createSourceFile(
-      "signature.ts",
-      signature,
-      ts.ScriptTarget.Latest,
-      true,
-      ts.ScriptKind.TS,
-    ) as SourceFileWithParseDiagnostics
-  ).parseDiagnostics.map((diagnostic) =>
-    ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-  );
+  (ts.createSourceFile(
+    "signature.ts",
+    signature,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS
+  ) as SourceFileWithParseDiagnostics)
+    .parseDiagnostics.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"))
 
 describe("jsdocs", () => {
   it("parses a raw JSDoc block", () => {
@@ -29,12 +73,45 @@ describe("jsdocs", () => {
  *
  * @category constructors
  * @since 1.0.0
- */`);
-    assert.strictEqual(result._tag, "Success");
+ */`)
+    assert.strictEqual(result._tag, "Success")
     if (result._tag === "Success") {
-      assert.strictEqual(result.value.description.short, "Creates a value.");
+      assert.strictEqual(result.value.description.short, "Creates a value.")
     }
-  });
+  })
+
+  it("accepts unstable declarations", () => {
+    const result = parseJSDoc(`/**
+ * Creates an unstable value.
+ *
+ * @stability unstable
+ * @category constructors
+ * @since 1.0.0
+ */`)
+    assert.strictEqual(result._tag, "Success")
+  })
+
+  it("accepts experimental declarations", () => {
+    assert.deepStrictEqual(stabilityResult("@stability experimental"), {
+      diagnostics: [],
+      stability: "experimental"
+    })
+  })
+
+  it("rejects unknown stability values", () => {
+    assert.deepStrictEqual(stabilityResult("@stability bogus").diagnostics, ["invalid-stability"])
+    assert.deepStrictEqual(stabilityResult("@stability stable").diagnostics, ["invalid-stability"])
+  })
+
+  it("rejects duplicate stability tags", () => {
+    assert.deepStrictEqual(stabilityResult("@stability unstable\n * @stability unstable").diagnostics, [
+      "duplicate-tag"
+    ])
+  })
+
+  it("rejects legacy unstable tags", () => {
+    assert.deepStrictEqual(stabilityResult("@unstable").diagnostics, ["forbidden-tag"])
+  })
 
   it("accepts doctest metadata on TypeScript fences", () => {
     const result = parseJSDoc(`/**
@@ -48,9 +125,9 @@ describe("jsdocs", () => {
  *
  * @category constructors
  * @since 1.0.0
- */`);
-    assert.strictEqual(result._tag, "Success");
-  });
+ */`)
+    assert.strictEqual(result._tag, "Success")
+  })
 
   it("accepts practical When to use forms", () => {
     const result = parseJSDoc(`/**
@@ -62,15 +139,15 @@ describe("jsdocs", () => {
  *
  * @category constructors
  * @since 1.0.0
- */`);
-    assert.strictEqual(result._tag, "Success");
+ */`)
+    assert.strictEqual(result._tag, "Success")
     if (result._tag === "Success") {
       assert.strictEqual(
         result.value.description.whenToUse,
-        "Use to create a value when construction should be explicit.",
-      );
+        "Use to create a value when construction should be explicit."
+      )
     }
-  });
+  })
 
   it("flags unsupported When to use forms", () => {
     const result = parseJSDoc(`/**
@@ -82,35 +159,35 @@ describe("jsdocs", () => {
  *
  * @category constructors
  * @since 1.0.0
- */`);
-    assert.strictEqual(result._tag, "Failure");
+ */`)
+    assert.strictEqual(result._tag, "Failure")
     if (result._tag === "Failure") {
       assert.deepStrictEqual(
         result.error.diagnostics.map((diagnostic) => diagnostic.code),
-        ["when-to-use-format"],
-      );
+        ["when-to-use-format"]
+      )
     }
-  });
+  })
 
-  it("extracts docs with TypeScript", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+  it("refreshes extracted docs after a source change", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -120,52 +197,58 @@ describe("jsdocs", () => {
  * @since 1.0.0
  */
 export const makeValue = () => 1
-`,
-    );
-    const model = extractJSDocsSync({
+`
+    )
+    const options = {
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    assert.strictEqual(model.version, 2);
-    assert.strictEqual(model.files.length, 1);
-    assert.strictEqual(model.files[0]?.declarations[0]?.name, "makeValue");
-    assert.strictEqual(model.apis[0]?.apiFqn, "@effect/sample/Foo.makeValue");
+      output: ".data/jsdocs.json"
+    }
+    const model = extractJSDocsSync(options)
+    assert.strictEqual(model.version, 3)
+    assert.strictEqual(model.files.length, 1)
+    assert.strictEqual(model.files[0]?.declarations[0]?.name, "makeValue")
+    assert.strictEqual(model.apis[0]?.apiFqn, "@effect/sample/Foo.makeValue")
     assert.deepStrictEqual(model.apis[0]?.importGuidance, {
       style: "namespace-barrel",
-      importDeclaration: 'import { Foo } from "@effect/sample"',
-      usage: "Foo.makeValue",
-    });
-  });
+      importDeclaration: "import { Foo } from \"@effect/sample\"",
+      usage: "Foo.makeValue"
+    })
+
+    const sourcePath = path.join(cwd, "src/Foo.ts")
+    fs.writeFileSync(sourcePath, fs.readFileSync(sourcePath, "utf8").replaceAll("makeValue", "makeUpdatedValue"))
+    const updated = extractJSDocsSync(options)
+    assert.strictEqual(updated.files[0]?.declarations[0]?.name, "makeUpdatedValue")
+  })
 
   it("stores a stable input hash for cache checks", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "jsdocs.config.json"),
       JSON.stringify({
         tsconfig: "tsconfig.json",
         include: ["src/**/*.ts"],
-        output: ".data/jsdocs.json",
-      }),
-    );
+        output: ".data/jsdocs.json"
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -175,42 +258,42 @@ export const makeValue = () => 1
  * @since 1.0.0
  */
 export const makeValue = () => 1
-`,
-    );
+`
+    )
     const options = {
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    };
-    const inputHash = computeJSDocInputHash(options);
-    const model = extractJSDocsSync(options);
-    assert.strictEqual(model.inputHash, inputHash);
-    assert.strictEqual(computeJSDocInputHash(options), inputHash);
+      output: ".data/jsdocs.json"
+    }
+    const inputHash = computeJSDocInputHash(options)
+    const model = extractJSDocsSync(options)
+    assert.strictEqual(model.inputHash, inputHash)
+    assert.strictEqual(computeJSDocInputHash(options), inputHash)
 
-    fs.appendFileSync(path.join(cwd, "src/Foo.ts"), "\n");
-    assert.notStrictEqual(computeJSDocInputHash(options), inputHash);
-  });
+    fs.appendFileSync(path.join(cwd, "src/Foo.ts"), "\n")
+    assert.notStrictEqual(computeJSDocInputHash(options), inputHash)
+  })
 
   it("extracts typechecker signatures for top-level functions", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/External.ts"),
       `/**
@@ -230,8 +313,8 @@ export interface External {
  * @since 1.0.0
  */
 export const makeExternal = (value: string): External => ({ value })
-`,
-    );
+`
+    )
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -447,65 +530,50 @@ export const count = 1
 export interface Sample {
   readonly value: string
 }
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    const signatureByName = new Map(model.apis.map((api) => [api.apiName, api.signature]));
-    assert.deepStrictEqual(
-      model.files.flatMap((file) => file.diagnostics),
-      [],
-    );
+      output: ".data/jsdocs.json"
+    })
+    const signatureByName = new Map(model.apis.map((api) => [api.apiName, api.signature]))
+    assert.deepStrictEqual(model.files.flatMap((file) => file.diagnostics), [])
     for (const api of model.apis) {
       if (api.signature !== null) {
-        const diagnostics = signatureParseDiagnostics(api.signature);
+        const diagnostics = signatureParseDiagnostics(api.signature)
         if (diagnostics.length > 0) {
-          assert.fail(`${api.apiName}: ${diagnostics.join(", ")}`);
+          assert.fail(`${api.apiName}: ${diagnostics.join(", ")}`)
         }
       }
     }
     assert.strictEqual(
       signatureByName.get("parse"),
-      "declare function parse(value: string): string\ndeclare function parse(value: number): number",
-    );
-    assert.strictEqual(
-      signatureByName.get("inferred"),
-      "declare function inferred(value: number): string",
-    );
-    assert.strictEqual(
-      signatureByName.get("renamed"),
-      "declare function renamed(value: boolean): boolean",
-    );
+      "declare function parse(value: string): string\ndeclare function parse(value: number): number"
+    )
+    assert.strictEqual(signatureByName.get("inferred"), "declare function inferred(value: number): string")
+    assert.strictEqual(signatureByName.get("renamed"), "declare function renamed(value: boolean): boolean")
     assert.strictEqual(
       signatureByName.get("try"),
       `declare const _try: {
   (value: string): number;
 }
-export { _try as try }`,
-    );
-    assert.strictEqual(
-      signatureByName.get("external"),
-      "declare function external(value: string): External",
-    );
-    const manyLines = signatureByName.get("many")?.split("\n");
-    assert.strictEqual(manyLines?.length, 1);
-    assert.strictEqual(manyLines?.[0], "declare function many(value: 1): 1");
-    const pipelineLines = signatureByName.get("pipeline")?.split("\n") ?? [];
-    assert.strictEqual(pipelineLines.length, 6);
-    assert.deepStrictEqual(
-      pipelineLines.map((line) => line.match(/=>/g)?.length ?? 0),
-      [0, 1, 2, 3, 4, 8],
-    );
-    const boxedSignature = signatureByName.get("boxed");
+export { _try as try }`
+    )
+    assert.strictEqual(signatureByName.get("external"), "declare function external(value: string): External")
+    const manyLines = signatureByName.get("many")?.split("\n")
+    assert.strictEqual(manyLines?.length, 1)
+    assert.strictEqual(manyLines?.[0], "declare function many(value: 1): 1")
+    const pipelineLines = signatureByName.get("pipeline")?.split("\n") ?? []
+    assert.strictEqual(pipelineLines.length, 6)
+    assert.deepStrictEqual(pipelineLines.map((line) => line.match(/=>/g)?.length ?? 0), [0, 1, 2, 3, 4, 8])
+    const boxedSignature = signatureByName.get("boxed")
     assert.strictEqual(
       boxedSignature,
-      "declare const boxed: <A extends Box<any>>(value_0: Check<Box.Inner<A>>, ...value: Check<Box.Inner<A>>[]) => Ctor<A>",
-    );
-    const modeLines = signatureByName.get("modes")?.split("\n");
+      "declare const boxed: <A extends Box<any>>(value_0: Check<Box.Inner<A>>, ...value: Check<Box.Inner<A>>[]) => Ctor<A>"
+    )
+    const modeLines = signatureByName.get("modes")?.split("\n")
     assert.deepStrictEqual(modeLines, [
       "declare function modes(body: () => string): string",
       "declare function modes(body: (this: string) => string): string",
@@ -514,33 +582,33 @@ export { _try as try }`,
       "declare function modes(name: string): (body: () => string) => string",
       "declare function modes(self: string, body: () => string): string",
       "declare function modes(predicate: (value: number) => boolean, body: () => number): number",
-      "declare function modes(refinement: (value: string | number) => value is string, body: () => string): string",
-    ]);
-    assert.strictEqual(signatureByName.get("Service"), null);
-    assert.strictEqual(signatureByName.get("Service.run"), null);
-    assert.strictEqual(signatureByName.get("count"), null);
-    assert.strictEqual(signatureByName.get("Sample"), null);
-  });
+      "declare function modes(refinement: (value: string | number) => value is string, body: () => string): string"
+    ])
+    assert.strictEqual(signatureByName.get("Service"), null)
+    assert.strictEqual(signatureByName.get("Service.run"), null)
+    assert.strictEqual(signatureByName.get("count"), null)
+    assert.strictEqual(signatureByName.get("Sample"), null)
+  })
 
   it("stores valid top-of-file module JSDoc", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -567,40 +635,37 @@ import type { Buffer } from "node:buffer"
  * @since 1.0.0
  */
 export const makeValue = () => 1
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    assert.strictEqual(
-      model.files[0]?.moduleJSDoc?.raw.includes("The Foo module provides helpers"),
-      true,
-    );
-    assert.deepStrictEqual(model.files[0]?.diagnostics, []);
-  });
+      output: ".data/jsdocs.json"
+    })
+    assert.strictEqual(model.files[0]?.moduleJSDoc?.raw.includes("The Foo module provides helpers"), true)
+    assert.deepStrictEqual(model.files[0]?.diagnostics, [])
+  })
 
   it("does not treat the first exported declaration JSDoc as module JSDoc", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -610,38 +675,38 @@ export const makeValue = () => 1
  * @since 1.0.0
  */
 export const makeValue = () => 1
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    assert.strictEqual(model.files[0]?.moduleJSDoc, undefined);
-    assert.deepStrictEqual(model.files[0]?.diagnostics, []);
-  });
+      output: ".data/jsdocs.json"
+    })
+    assert.strictEqual(model.files[0]?.moduleJSDoc, undefined)
+    assert.deepStrictEqual(model.files[0]?.diagnostics, [])
+  })
 
   it("flags inline links that TypeScript does not bind", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
-    fs.writeFileSync(path.join(cwd, "src/Schema.ts"), `export {}\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
+    fs.writeFileSync(path.join(cwd, "src/Schema.ts"), `export {}\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -651,43 +716,43 @@ export const makeValue = () => 1
  * @since 1.0.0
  */
 export const makeValue = () => 1
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
+      output: ".data/jsdocs.json"
+    })
     assert.deepStrictEqual(
       model.files[0]?.diagnostics.map((diagnostic) => diagnostic.code),
-      ["unresolved-link"],
-    );
+      ["unresolved-link"]
+    )
     assert.deepStrictEqual(
       model.files[0]?.diagnostics.map((diagnostic) => diagnostic.message),
-      ["Unresolved JSDoc inline link: {@link Schema}"],
-    );
-  });
+      ["Unresolved JSDoc inline link: {@link Schema}"]
+    )
+  })
 
   it("flags module JSDoc tag, example, and public @see diagnostics", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -710,43 +775,40 @@ class Hidden {}
  * @since 1.0.0
  */
 export const makeValue = () => 1
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
+      output: ".data/jsdocs.json"
+    })
     assert.deepStrictEqual(
       model.files[0]?.diagnostics.map((diagnostic) => diagnostic.code).sort(),
-      ["loose-ts-fence", "missing-tag", "public-see-target"].sort(),
-    );
-    assert.strictEqual(
-      model.files[0]?.moduleJSDoc?.raw.includes("The Foo module provides helpers"),
-      true,
-    );
-  });
+      ["loose-ts-fence", "missing-tag", "public-see-target"].sort()
+    )
+    assert.strictEqual(model.files[0]?.moduleJSDoc?.raw.includes("The Foo module provides helpers"), true)
+  })
 
   it("flags @see links to targets without public JSDoc", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -768,47 +830,47 @@ export interface Box {
  * @since 1.0.0
  */
 export const useHidden = () => undefined
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
+      output: ".data/jsdocs.json"
+    })
     assert.deepStrictEqual(
       model.files[0]?.diagnostics.map((diagnostic) => diagnostic.code),
-      ["undocumented-see-target"],
-    );
+      ["undocumented-see-target"]
+    )
     assert.deepStrictEqual(model.files[0]?.imports?.barrel, {
       type: "namespace",
       module: "@effect/sample",
-      name: "Foo",
-    });
-  });
+      name: "Foo"
+    })
+  })
 
   it("resolves @see links through TypeScript symbols before local-name lookup", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "src/index.ts"),
-      `export * as Eq from "./Eq.ts"\nexport * as Ordering from "./Ordering.ts"\nexport * as Reducer from "./Reducer.ts"\n`,
-    );
+      `export * as Eq from "./Eq.ts"\nexport * as Ordering from "./Ordering.ts"\nexport * as Reducer from "./Reducer.ts"\n`
+    )
     fs.writeFileSync(
       path.join(cwd, "src/Reducer.ts"),
       `/**
@@ -823,8 +885,8 @@ export interface Reducer {
    */
   combine: string
 }
-`,
-    );
+`
+    )
     fs.writeFileSync(
       path.join(cwd, "src/Ordering.ts"),
       `/**
@@ -834,8 +896,8 @@ export interface Reducer {
  * @since 1.0.0
  */
 export const Reducer = "ordering"
-`,
-    );
+`
+    )
     fs.writeFileSync(
       path.join(cwd, "src/Eq.ts"),
       `import * as Reducer from "./Reducer.ts"
@@ -848,46 +910,43 @@ export const Reducer = "ordering"
  * @since 1.0.0
  */
 export const makeReducer = () => Reducer
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    const makeReducer = model.apis.find((api) => api.apiFqn === "@effect/sample/Eq.makeReducer");
-    const link = makeReducer?.see[0]?.links[0];
-    assert.deepStrictEqual(
-      model.files.flatMap((file) => file.diagnostics),
-      [],
-    );
+      output: ".data/jsdocs.json"
+    })
+    const makeReducer = model.apis.find((api) => api.apiFqn === "@effect/sample/Eq.makeReducer")
+    const link = makeReducer?.see[0]?.links[0]
+    assert.deepStrictEqual(model.files.flatMap((file) => file.diagnostics), [])
     assert.deepStrictEqual(link?.resolution, {
       _tag: "Resolved",
       apiId: "root-declaration:type:@effect/sample/Reducer.Reducer",
-      apiFqn: "@effect/sample/Reducer.Reducer",
-    });
-  });
+      apiFqn: "@effect/sample/Reducer.Reducer"
+    })
+  })
 
   it("flags @see links to targets outside the public JSDoc API model", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -906,48 +965,48 @@ class Hidden {}
  * @since 1.0.0
  */
 export const useHidden = () => Hidden
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
+      output: ".data/jsdocs.json"
+    })
     assert.deepStrictEqual(
       model.files[0]?.diagnostics.map((diagnostic) => diagnostic.code),
-      ["public-see-target"],
-    );
+      ["public-see-target"]
+    )
     assert.deepStrictEqual(
       model.files[0]?.diagnostics.map((diagnostic) => diagnostic.message),
       [
-        "@see link {@link Hidden} does not resolve to a public JSDoc API. Check that the target is exported and has valid public JSDoc.",
-      ],
-    );
-  });
+        "@see link {@link Hidden} does not resolve to a public JSDoc API. Check that the target is exported and has valid public JSDoc."
+      ]
+    )
+  })
 
   it("keeps valid APIs from files with diagnostics for @see resolution", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "src/index.ts"),
-      `export * as Bar from "./Bar.ts"\nexport * as Foo from "./Foo.ts"\n`,
-    );
+      `export * as Bar from "./Bar.ts"\nexport * as Foo from "./Foo.ts"\n`
+    )
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -971,8 +1030,8 @@ export const Target = "target"
  * @since 1.0.0
  */
 export const Broken = "broken"
-`,
-    );
+`
+    )
     fs.writeFileSync(
       path.join(cwd, "src/Bar.ts"),
       `import * as Foo from "./Foo.ts"
@@ -985,46 +1044,46 @@ export const Broken = "broken"
  * @since 1.0.0
  */
 export const useTarget = () => Foo.Target
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    const foo = model.files.find((file) => file.file === "src/Foo.ts");
-    const bar = model.files.find((file) => file.file === "src/Bar.ts");
+      output: ".data/jsdocs.json"
+    })
+    const foo = model.files.find((file) => file.file === "src/Foo.ts")
+    const bar = model.files.find((file) => file.file === "src/Bar.ts")
     assert.deepStrictEqual(
       foo?.diagnostics.map((diagnostic) => diagnostic.code),
-      ["malformed-example"],
-    );
-    assert.deepStrictEqual(bar?.diagnostics, []);
+      ["malformed-example"]
+    )
+    assert.deepStrictEqual(bar?.diagnostics, [])
     assert.strictEqual(
       model.apis.some((api) => api.apiFqn === "@effect/sample/Foo.Target"),
-      true,
-    );
-  });
+      true
+    )
+  })
 
   it("resolves @see links to aliased export specifiers", () => {
-    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"));
-    fs.mkdirSync(path.join(cwd, "src"), { recursive: true });
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
     fs.writeFileSync(
       path.join(cwd, "tsconfig.json"),
       JSON.stringify({
         compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
-        include: ["src/**/*.ts"],
-      }),
-    );
+        include: ["src/**/*.ts"]
+      })
+    )
     fs.writeFileSync(
       path.join(cwd, "package.json"),
       JSON.stringify({
         name: "@effect/sample",
         type: "module",
-        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" },
-      }),
-    );
-    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`);
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
     fs.writeFileSync(
       path.join(cwd, "src/Foo.ts"),
       `/**
@@ -1051,34 +1110,166 @@ export {
  * @since 1.0.0
  */
 export const Tuple = Array
-`,
-    );
+`
+    )
     const model = extractJSDocsSync({
       cwd,
       tsconfig: "tsconfig.json",
       include: ["src/**/*.ts"],
-      output: ".data/jsdocs.json",
-    });
-    const tuple = model.apis.find((api) => api.apiFqn === "@effect/sample/Foo.Tuple");
-    const links = tuple?.see.flatMap((tag) => tag.links) ?? [];
-    assert.deepStrictEqual(
-      model.files.flatMap((file) => file.diagnostics),
-      [],
-    );
-    assert.deepStrictEqual(
-      links.map((link) => link.resolution),
-      [
-        {
-          _tag: "Resolved",
-          apiId: "root-declaration:value:@effect/sample/Foo.Array",
-          apiFqn: "@effect/sample/Foo.Array",
-        },
-        {
-          _tag: "Resolved",
-          apiId: "root-declaration:value:@effect/sample/Foo.Array",
-          apiFqn: "@effect/sample/Foo.Array",
-        },
-      ],
-    );
-  });
-});
+      output: ".data/jsdocs.json"
+    })
+    const tuple = model.apis.find((api) => api.apiFqn === "@effect/sample/Foo.Tuple")
+    const links = tuple?.see.flatMap((tag) => tag.links) ?? []
+    assert.deepStrictEqual(model.files.flatMap((file) => file.diagnostics), [])
+    assert.deepStrictEqual(links.map((link) => link.resolution), [{
+      _tag: "Resolved",
+      apiId: "root-declaration:value:@effect/sample/Foo.Array",
+      apiFqn: "@effect/sample/Foo.Array"
+    }, {
+      _tag: "Resolved",
+      apiId: "root-declaration:value:@effect/sample/Foo.Array",
+      apiFqn: "@effect/sample/Foo.Array"
+    }])
+  })
+
+  it("accepts @stability unstable on module, member, and namespace docs", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "jsdocs-"))
+    fs.mkdirSync(path.join(cwd, "src"), { recursive: true })
+    fs.writeFileSync(
+      path.join(cwd, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: { module: "NodeNext", moduleResolution: "NodeNext", target: "ES2022" },
+        include: ["src/**/*.ts"]
+      })
+    )
+    fs.writeFileSync(
+      path.join(cwd, "package.json"),
+      JSON.stringify({
+        name: "@effect/sample",
+        type: "module",
+        exports: { ".": "./src/index.ts", "./*": "./src/*.ts" }
+      })
+    )
+    fs.writeFileSync(path.join(cwd, "src/index.ts"), `export * as Foo from "./Foo.ts"\n`)
+    fs.writeFileSync(
+      path.join(cwd, "src/Imported.ts"),
+      `/**
+ * Imported marker.
+ *
+ * @category models
+ * @since 1.0.0
+ */
+export interface Marker {
+  readonly id: string
+}
+`
+    )
+    fs.writeFileSync(
+      path.join(cwd, "src/Foo.ts"),
+      `/**
+ * Sample module.
+ *
+ * @stability unstable
+ * @since 1.0.0
+ */
+import type { Marker } from "./Imported.ts"
+
+/**
+ * A boxed value.
+ *
+ * @category models
+ * @since 1.0.0
+ */
+export interface Box {
+  /**
+   * The boxed text.
+   *
+   * @stability unstable
+   * @since 1.0.0
+   */
+  readonly value: Marker["id"]
+
+  /**
+   * The stable label.
+   *
+   * @since 1.0.0
+   */
+  readonly label: string
+}
+
+/**
+ * Groups boxed types.
+ *
+ * @stability unstable
+ * @category models
+ * @since 1.0.0
+ */
+export declare namespace Group {
+  /**
+   * A grouped item.
+   *
+   * @stability unstable
+   * @category models
+   * @since 1.0.0
+   */
+  export interface Item {
+    readonly id: string
+  }
+
+  /**
+   * A stable grouped item.
+   *
+   * @category models
+   * @since 1.0.0
+   */
+  export interface StableItem {
+    readonly id: string
+  }
+}
+
+/**
+ * Groups stable types.
+ *
+ * @category models
+ * @since 1.0.0
+ */
+export declare namespace StableGroup {
+  /**
+   * A stable nested item.
+   *
+   * @category models
+   * @since 1.0.0
+   */
+  export interface Item {
+    readonly id: string
+  }
+}
+`
+    )
+    const model = extractJSDocsSync({
+      cwd,
+      tsconfig: "tsconfig.json",
+      include: ["src/**/*.ts"],
+      output: ".data/jsdocs.json"
+    })
+    const foo = model.files.find((file) => file.file.endsWith("src/Foo.ts"))
+    const stabilityByName = Object.fromEntries(
+      model.apis
+        .filter((api) => api.moduleName === "@effect/sample/Foo")
+        .map((api) => [api.apiFqn, api.tags.stability])
+    )
+
+    assert.deepStrictEqual(foo?.diagnostics ?? [], [])
+    assert.match(foo?.moduleJSDoc?.raw ?? "", /@stability unstable/)
+    assert.deepStrictEqual(stabilityByName, {
+      "@effect/sample/Foo.Box": "stable",
+      "@effect/sample/Foo.Box.value": "unstable",
+      "@effect/sample/Foo.Box.label": "stable",
+      "@effect/sample/Foo.Group": "unstable",
+      "@effect/sample/Foo.Group.Item": "unstable",
+      "@effect/sample/Foo.Group.StableItem": "stable",
+      "@effect/sample/Foo.StableGroup": "stable",
+      "@effect/sample/Foo.StableGroup.Item": "stable"
+    })
+  })
+})

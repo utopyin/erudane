@@ -1,22 +1,38 @@
 {
   "name": "@effect/platform-browser",
-  "version": "4.0.0-rc.111",
-  "description": "Platform specific implementations for the browser",
-  "keywords": [
-    "algebraic-data-types",
-    "browser",
-    "functional-programming",
-    "typescript"
-  ],
-  "homepage": "https://effect.website",
-  "bugs": {
-    "url": "https://github.com/Effect-TS/effect/issues"
-  },
+  "type": "module",
+  "version": "4.0.0",
   "license": "MIT",
+  "description": "Platform specific implementations for the browser",
+  "homepage": "https://effect.website",
   "repository": {
     "type": "git",
     "url": "https://github.com/Effect-TS/effect.git",
     "directory": "packages/platform/browser"
+  },
+  "bugs": {
+    "url": "https://github.com/Effect-TS/effect/issues"
+  },
+  "tags": [
+    "browser",
+    "typescript",
+    "algebraic-data-types",
+    "functional-programming"
+  ],
+  "keywords": [
+    "browser",
+    "typescript",
+    "algebraic-data-types",
+    "functional-programming"
+  ],
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./internal/*": null,
+    "./index": null,
+    "./*/index": null
   },
   "files": [
     "src/**/*.ts",
@@ -28,17 +44,9 @@
     "CLAUDE.md",
     "ai-docs/**/*"
   ],
-  "type": "module",
-  "sideEffects": [],
-  "exports": {
-    "./package.json": "./package.json",
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts",
-    "./internal/*": null,
-    "./index": null,
-    "./*/index": null
-  },
   "publishConfig": {
+    "access": "public",
+    "provenance": true,
     "exports": {
       "./package.json": "./package.json",
       ".": "./dist/index.js",
@@ -46,9 +54,7 @@
       "./internal/*": null,
       "./index": null,
       "./*/index": null
-    },
-    "access": "public",
-    "provenance": true
+    }
   },
   "scripts": {
     "codegen": "effect-utils codegen",
@@ -56,18 +62,12 @@
     "babel": "babel dist --plugins annotate-pure-calls --out-dir dist --source-maps",
     "check": "tsc -b tsconfig.json"
   },
+  "peerDependencies": {
+    "effect": "workspace:^"
+  },
   "devDependencies": {
     "effect": "workspace:^",
     "fake-indexeddb": "^6.2.5",
     "mock-xmlhttprequest": "^8.4.1"
-  },
-  "peerDependencies": {
-    "effect": "workspace:^"
-  },
-  "tags": [
-    "browser",
-    "typescript",
-    "algebraic-data-types",
-    "functional-programming"
-  ]
+  }
 }

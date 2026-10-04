@@ -1,3 +1,5 @@
-import * as Effect from "effect/Effect";
+import * as Effect from "effect/Effect"
 
-Effect.log("hello").pipe(Effect.runFork);
+Effect.log("hello").pipe(
+  Effect.runFork
+)

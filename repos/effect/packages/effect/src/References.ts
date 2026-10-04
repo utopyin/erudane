@@ -11,20 +11,14 @@
  *
  * @since 4.0.0
  */
-import type * as Context from "./Context.ts";
-import * as internalEffect from "./internal/effect.ts";
-import * as references from "./internal/references.ts";
-import type { Logger } from "./Logger.ts";
-import type { LogLevel, Severity } from "./LogLevel.ts";
-import type { ReadonlyRecord } from "./Record.ts";
-import { MaxOpsBeforeYield, PreventSchedulerYield } from "./Scheduler.ts";
-import {
-  CurrentTraceLevel,
-  DisablePropagation,
-  MinimumTraceLevel,
-  type SpanLink,
-  Tracer,
-} from "./Tracer.ts";
+import type * as Context from "./Context.ts"
+import * as internalEffect from "./internal/effect.ts"
+import * as references from "./internal/references.ts"
+import type { Logger } from "./Logger.ts"
+import type { LogLevel, Severity } from "./LogLevel.ts"
+import type { ReadonlyRecord } from "./Record.ts"
+import { MaxOpsBeforeYield, PreventSchedulerYield } from "./Scheduler.ts"
+import { CurrentTraceLevel, DisablePropagation, MinimumTraceLevel, type SpanLink, Tracer } from "./Tracer.ts"
 
 export {
   /**
@@ -127,8 +121,8 @@ export {
    * @category references
    * @since 4.0.0
    */
-  Tracer,
-};
+  Tracer
+}
 
 /**
  * Context reference for managing log annotations that are automatically added to all log entries.
@@ -189,7 +183,7 @@ export {
  * @since 4.0.0
  */
 export const CurrentLogAnnotations: Context.Reference<ReadonlyRecord<string, unknown>> =
-  references.CurrentLogAnnotations;
+  references.CurrentLogAnnotations
 
 /**
  * Context reference for the current log severity used by `Effect.log` when no explicit
@@ -228,7 +222,7 @@ export const CurrentLogAnnotations: Context.Reference<ReadonlyRecord<string, unk
  * @category references
  * @since 4.0.0
  */
-export const CurrentLogLevel: Context.Reference<Severity> = references.CurrentLogLevel;
+export const CurrentLogLevel: Context.Reference<Severity> = references.CurrentLogLevel
 
 /**
  * Context reference for managing log spans that track the duration and hierarchy of operations.
@@ -294,7 +288,7 @@ export const CurrentLogLevel: Context.Reference<Severity> = references.CurrentLo
  * @since 4.0.0
  */
 export const CurrentLogSpans: Context.Reference<ReadonlyArray<[label: string, timestamp: number]>> =
-  references.CurrentLogSpans;
+  references.CurrentLogSpans
 
 /**
  * Context reference for the current captured stack-frame chain for the running
@@ -316,8 +310,7 @@ export const CurrentLogSpans: Context.Reference<ReadonlyArray<[label: string, ti
  * @category references
  * @since 4.0.0
  */
-export const CurrentStackFrame: Context.Reference<StackFrame | undefined> =
-  references.CurrentStackFrame;
+export const CurrentStackFrame: Context.Reference<StackFrame | undefined> = references.CurrentStackFrame
 
 /**
  * Context reference for setting the minimum log level threshold. Log entries below this
@@ -353,7 +346,7 @@ export const CurrentStackFrame: Context.Reference<StackFrame | undefined> =
  * @category references
  * @since 4.0.0
  */
-export const MinimumLogLevel: Context.Reference<LogLevel> = references.MinimumLogLevel;
+export const MinimumLogLevel: Context.Reference<LogLevel> = references.MinimumLogLevel
 
 /**
  * Context reference for controlling whether tracing is enabled globally. When set to false,
@@ -395,7 +388,7 @@ export const MinimumLogLevel: Context.Reference<LogLevel> = references.MinimumLo
  * @category references
  * @since 4.0.0
  */
-export const TracerEnabled: Context.Reference<boolean> = references.TracerEnabled;
+export const TracerEnabled: Context.Reference<boolean> = references.TracerEnabled
 
 /**
  * Context reference for managing span annotations that are automatically added to all new spans.
@@ -450,7 +443,7 @@ export const TracerEnabled: Context.Reference<boolean> = references.TracerEnable
  * @since 4.0.0
  */
 export const TracerSpanAnnotations: Context.Reference<ReadonlyRecord<string, unknown>> =
-  references.TracerSpanAnnotations;
+  references.TracerSpanAnnotations
 
 /**
  * Context reference for managing span links that are automatically added to all new spans.
@@ -508,8 +501,7 @@ export const TracerSpanAnnotations: Context.Reference<ReadonlyRecord<string, unk
  * @category references
  * @since 4.0.0
  */
-export const TracerSpanLinks: Context.Reference<ReadonlyArray<SpanLink>> =
-  references.TracerSpanLinks;
+export const TracerSpanLinks: Context.Reference<ReadonlyArray<SpanLink>> = references.TracerSpanLinks
 
 /**
  * Context reference for controlling whether trace timing is enabled globally. When set
@@ -552,7 +544,7 @@ export const TracerSpanLinks: Context.Reference<ReadonlyArray<SpanLink>> =
  * @category references
  * @since 4.0.0
  */
-export const TracerTimingEnabled: Context.Reference<boolean> = references.TracerTimingEnabled;
+export const TracerTimingEnabled: Context.Reference<boolean> = references.TracerTimingEnabled
 
 /**
  * Context reference for the log severity used when a pool finalizer reports an
@@ -578,8 +570,7 @@ export const TracerTimingEnabled: Context.Reference<boolean> = references.Tracer
  * @category references
  * @since 4.0.0
  */
-export const UnhandledLogLevel: Context.Reference<Severity | undefined> =
-  references.UnhandledLogLevel;
+export const UnhandledLogLevel: Context.Reference<Severity | undefined> = references.UnhandledLogLevel
 
 /**
  * A captured stack-frame node used to describe the traced execution path.
@@ -600,9 +591,9 @@ export const UnhandledLogLevel: Context.Reference<Severity | undefined> =
  * @since 4.0.0
  */
 export interface StackFrame {
-  readonly name: string;
-  readonly stack: () => string | undefined;
-  readonly parent: StackFrame | undefined;
+  readonly name: string
+  readonly stack: () => string | undefined
+  readonly parent: StackFrame | undefined
 }
 
 /**
@@ -623,8 +614,7 @@ export interface StackFrame {
  * @category references
  * @since 4.0.0
  */
-export const CurrentLoggers: Context.Reference<ReadonlySet<Logger<unknown, any>>> =
-  internalEffect.CurrentLoggers;
+export const CurrentLoggers: Context.Reference<ReadonlySet<Logger<unknown, any>>> = internalEffect.CurrentLoggers
 
 /**
  * Context reference for controlling whether built-in console loggers write to stderr.
@@ -642,7 +632,7 @@ export const CurrentLoggers: Context.Reference<ReadonlySet<Logger<unknown, any>>
  * @category references
  * @since 4.0.0
  */
-export const LogToStderr: Context.Reference<boolean> = internalEffect.LogToStderr;
+export const LogToStderr: Context.Reference<boolean> = internalEffect.LogToStderr
 
 export {
   /**
@@ -680,5 +670,5 @@ export {
    * @category references
    * @since 4.0.0
    */
-  Scheduler,
-} from "./Scheduler.ts";
+  Scheduler
+} from "./Scheduler.ts"
