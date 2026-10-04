@@ -28,7 +28,6 @@ import { Subquery } from '~/subquery.ts';
 import { getTableName, type InferInsertModel, Table } from '~/table.ts';
 import {
 	type Assume,
-	type DrizzleTypeError,
 	type Equal,
 	getTableLikeName,
 	mapUpdateSet,
@@ -41,14 +40,14 @@ import { ViewBaseConfig } from '~/view-common.ts';
 import type { CockroachColumn } from '../columns/common.ts';
 import type { CockroachViewBase } from '../view-base.ts';
 import type {
+	CheckTableLikeSelection,
 	CockroachSelectJoinConfig,
 	SelectedFields,
 	SelectedFieldsOrdered,
-	TableLikeHasEmptySelection,
 } from './select.types.ts';
 
 export interface CockroachUpdateConfig {
-	ignoreSelectionCastCodecs?: boolean;
+	useSelectionCastCodecs?: boolean;
 	where?: SQL | undefined;
 	set: UpdateSet;
 	table: CockroachTable;
@@ -150,10 +149,7 @@ export type CockroachUpdateJoinFn<
 > = <
 	TJoinedTable extends CockroachTable | Subquery | CockroachViewBase | SQL,
 >(
-	table: TableLikeHasEmptySelection<TJoinedTable> extends true ? DrizzleTypeError<
-			"Cannot reference a data-modifying statement subquery if it doesn't contain a `returning` clause"
-		>
-		: TJoinedTable,
+	table: CheckTableLikeSelection<TJoinedTable>,
 	on:
 		| (
 			(
@@ -393,10 +389,7 @@ export class CockroachUpdateBase<
 	}
 
 	from<TFrom extends CockroachTable | Subquery | CockroachViewBase | SQL>(
-		source: TableLikeHasEmptySelection<TFrom> extends true ? DrizzleTypeError<
-				"Cannot reference a data-modifying statement subquery if it doesn't contain a `returning` clause"
-			>
-			: TFrom,
+		source: CheckTableLikeSelection<TFrom>,
 	): CockroachUpdateWithJoins<this, TDynamic, TFrom> {
 		const src = source as TFrom;
 		const tableName = getTableLikeName(src);
@@ -584,18 +577,20 @@ export class CockroachUpdateBase<
 		return this as any;
 	}
 
-	getSQL(): SQL {
-		return this.dialect.buildUpdateQuery(this.config);
+	getSQL(withCastCodecs = false): SQL {
+		return this.dialect.buildUpdateQuery(
+			withCastCodecs ? { ...this.config, useSelectionCastCodecs: true } : this.config,
+		);
 	}
 
-	toSQL(): Query {
-		return this.dialect.sqlToQuery(this.getSQL());
+	toSQL(withCastCodecs = true): Query {
+		return this.dialect.sqlToQuery(this.getSQL(withCastCodecs));
 	}
 
 	/** @internal */
 	_prepare(name?: string, generateName = false): CockroachUpdatePrepare<this> {
 		const { returning: fields } = this.config;
-		const query = this.dialect.sqlToQuery(this.getSQL());
+		const query = this.dialect.sqlToQuery(this.getSQL(true));
 		const nullableObjectPaths = fields ? resolveNullableObjectPaths(fields, this.joinsNotNullableMap) : undefined;
 
 		return this.session.prepareQuery<
@@ -630,12 +625,6 @@ export class CockroachUpdateBase<
 				)
 				: undefined
 		) as this['_']['selectedFields'];
-	}
-
-	/** @internal */
-	withoutSelectionCastCodecs(): this {
-		this.config.ignoreSelectionCastCodecs = true;
-		return this;
 	}
 
 	$dynamic(): CockroachUpdateDynamic<this> {

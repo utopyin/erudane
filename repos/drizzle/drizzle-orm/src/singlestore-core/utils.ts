@@ -3,6 +3,7 @@ import type { AnyRelations } from '~/relations.ts';
 import { SQL } from '~/sql/sql.ts';
 import { Subquery } from '~/subquery.ts';
 import { Table } from '~/table.ts';
+import { throwUnknownExtraConfigValue } from '~/table.utils.ts';
 import type { DrizzleConfig } from '~/utils.ts';
 import type { SingleStoreCodecs } from './codecs.ts';
 import type { Index } from './indexes.ts';
@@ -48,6 +49,8 @@ export function getTableConfig(table: SingleStoreTable) {
 				uniqueConstraints.push(builder.build(table));
 			} else if (is(builder, PrimaryKeyBuilder)) {
 				primaryKeys.push(builder.build(table));
+			} else {
+				throwUnknownExtraConfigValue(name, builder);
 			}
 		}
 	}
@@ -63,10 +66,7 @@ export function getTableConfig(table: SingleStoreTable) {
 	};
 }
 
-/* export function getViewConfig<
-	TName extends string = string,
-	TExisting extends boolean = boolean,
->(view: SingleStoreView<TName, TExisting>) {
+/* export function getViewConfig<T extends ViewConfig = ViewConfig>(view: SingleStoreView<T>) {
 	return {
 		...view[ViewBaseConfig],
 		...view[SingleStoreViewConfig],

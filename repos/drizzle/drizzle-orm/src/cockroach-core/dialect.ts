@@ -28,16 +28,20 @@ import type {
 	WithContainer,
 } from '~/relations.ts';
 import {
+	collectRelationalSubquery,
 	getTableAsAliasSQL,
 	makeDefaultRqbMapper,
 	makeJitRqbMapper,
+	type RelationalWithSubqueries,
 	relationExtrasToSQL,
 	relationsFilterToSQL,
 	relationsOrderToSQL,
 	relationToSQL,
+	type SchemaEntry,
 } from '~/relations.ts';
-import { and, View } from '~/sql/index.ts';
+import { and } from '~/sql/index.ts';
 import {
+	type DriverValueDecoder,
 	isSQLWrapper,
 	type Name,
 	Param,
@@ -51,8 +55,15 @@ import {
 import { Subquery } from '~/subquery.ts';
 import { getTableName, Table, TableColumns } from '~/table.ts';
 import { upgradeIfNeeded } from '~/up-migrations/cockroach.ts';
-import { makeDefaultQueryMapper, makeJitQueryMapper, type RowsMapperGenerator, type UpdateSet } from '~/utils.ts';
+import {
+	getColumnFromDecoder,
+	makeDefaultQueryMapper,
+	makeJitQueryMapper,
+	type RowsMapperGenerator,
+	type UpdateSet,
+} from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import { type CockroachCodecs, type CockroachType, resolveCockroachTypeAlias } from './codecs.ts';
 import type { CockroachSession } from './session.ts';
 import { CockroachViewBase } from './view-base.ts';
@@ -215,13 +226,13 @@ export class CockroachDialect {
 		where,
 		returning,
 		withList,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: CockroachDeleteConfig): SQL {
 		const withSql = this.buildWithCTE(withList);
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -270,7 +281,7 @@ export class CockroachDialect {
 		withList,
 		from,
 		joins,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: CockroachUpdateConfig): SQL {
 		const withSql = this.buildWithCTE(withList);
 
@@ -292,7 +303,7 @@ export class CockroachDialect {
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: !from, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: !from, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -550,7 +561,7 @@ export class CockroachDialect {
 		distinct,
 		setOperators,
 		setFieldsFlat: setSelection,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: CockroachSelectConfig): SQL {
 		if (!fieldsFlat) {
 			throw new Error('Select query builder must be provided with `fieldsFlat` on `buildSelectQuery` invocation');
@@ -601,7 +612,7 @@ export class CockroachDialect {
 		const selection = this.buildSelection(fieldsList, {
 			isSingleTable,
 			table,
-			ignoreCastCodecs: ignoreSelectionCastCodecs || setOperators.length > 0,
+			ignoreCastCodecs: !useSelectionCastCodecs || setOperators.length > 0,
 		});
 
 		const tableSql = this.buildFromTable(table);
@@ -654,7 +665,7 @@ export class CockroachDialect {
 			sql`${withSql}select${distinctSql} ${selection} from ${tableSql}${joinsSql}${whereSql}${groupBySql}${havingSql}${orderBySql}${limitSql}${offsetSql}${lockingClauseSql}`;
 
 		if (setOperators.length > 0) {
-			return this.buildSetOperations(finalQuery, setSelection!, ignoreSelectionCastCodecs, setOperators);
+			return this.buildSetOperations(finalQuery, setSelection!, useSelectionCastCodecs, setOperators);
 		}
 
 		return finalQuery;
@@ -663,7 +674,7 @@ export class CockroachDialect {
 	buildSetOperations(
 		leftSelect: SQL,
 		outputSelection: SelectedFieldsOrdered,
-		ignoreSelectionCastCodecs: boolean | undefined,
+		useSelectionCastCodecs: boolean | undefined,
 		setOperators: CockroachSelectConfig['setOperators'],
 	): SQL {
 		const lastIdx = setOperators.length - 1;
@@ -672,12 +683,12 @@ export class CockroachDialect {
 		for (let i = 0; i <= lastIdx; ++i) {
 			const setOperator = setOperators[i]!;
 
-			const hoistTail = !ignoreSelectionCastCodecs && i === lastIdx;
+			const hoistTail = useSelectionCastCodecs && i === lastIdx;
 			leftSelect = this.buildSetOperationQuery({ leftSelect, setOperator, omitTail: hoistTail });
 			if (hoistTail) tailSql = this.buildSetOperationTail(setOperator);
 		}
 
-		return ignoreSelectionCastCodecs ? leftSelect : sql`select ${
+		return !useSelectionCastCodecs ? leftSelect : sql`select ${
 			this.buildSelection(
 				outputSelection.map((field) => {
 					if (field.fieldType === 'SQL.Aliased') {
@@ -699,7 +710,7 @@ export class CockroachDialect {
 				}),
 				{
 					isSingleTable: true,
-					ignoreCastCodecs: ignoreSelectionCastCodecs,
+					ignoreCastCodecs: !useSelectionCastCodecs,
 				},
 			)
 		} from (${leftSelect}) ${sql.identifier('drizzle_union')}${tailSql}`;
@@ -716,7 +727,7 @@ export class CockroachDialect {
 	}): SQL {
 		const { type, isAll, rightSelect } = setOperator;
 		const leftChunk = sql`(${leftSelect.getSQL()}) `;
-		const rightChunk = sql`(${rightSelect.withoutSelectionCastCodecs().getSQL()})`;
+		const rightChunk = sql`(${rightSelect.getSQL()})`;
 
 		const operatorChunk = new StringChunk(`${type} ${isAll ? 'all ' : ''}`);
 		const tailSql = omitTail ? undefined : this.buildSetOperationTail(setOperator);
@@ -773,7 +784,7 @@ export class CockroachDialect {
 		withList,
 		select,
 		columnList,
-		ignoreSelectionCastCodecs,
+		useSelectionCastCodecs,
 	}: CockroachInsertConfig): SQL {
 		const columns: Record<string, CockroachColumn> = table[Table.Symbol.Columns];
 
@@ -861,7 +872,7 @@ export class CockroachDialect {
 
 		const returningSql = returning
 			? sql` returning ${
-				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: ignoreSelectionCastCodecs, table })
+				this.buildSelection(returning, { isSingleTable: true, ignoreCastCodecs: !useSelectionCastCodecs, table })
 			}`
 			: undefined;
 
@@ -898,7 +909,7 @@ export class CockroachDialect {
 	}
 
 	private buildRqbColumn(
-		table: Table | View,
+		table: SchemaEntry,
 		field: unknown,
 		key: string,
 		inJson: boolean,
@@ -906,6 +917,7 @@ export class CockroachDialect {
 		tableTsName: string,
 	) {
 		let decoderColumn: Column | undefined;
+		let subqueryDecoder: DriverValueDecoder<any, any> | undefined;
 		let fieldType: BuildRelationalQueryResult['selection'][number]['fieldType'];
 		let output: SQL;
 
@@ -936,6 +948,25 @@ export class CockroachDialect {
 			output = sql`${decoderColumn ? this.codecs.apply(decoderColumn, inJson ? 'castInJson' : 'cast', q) : q} as ${
 				sql.identifier(key)
 			}`;
+		} else if (is(field, Subquery)) {
+			const innerField = Object.values(field._.selectedFields)[0];
+
+			if (is(innerField, Column)) {
+				decoderColumn = innerField;
+				subqueryDecoder = innerField;
+			} else if (is(innerField, SQL.Aliased)) {
+				decoderColumn = getColumnFromDecoder(innerField);
+				subqueryDecoder = innerField.sql.decoder;
+			} else if (is(innerField, SQL)) {
+				decoderColumn = getColumnFromDecoder(innerField);
+				subqueryDecoder = innerField.decoder;
+			}
+			fieldType = 'Subquery';
+
+			const q = sql`${table}.${sql.identifier(field._.alias)}`;
+			output = sql`${decoderColumn ? this.codecs.apply(decoderColumn, inJson ? 'castInJson' : 'cast', q) : q} as ${
+				sql.identifier(key)
+			}`;
 		} else if (isSQLWrapper(field)) {
 			const query = (field as SQLWrapper).getSQL();
 			decoderColumn = is(query.decoder, Column) ? query.decoder : undefined;
@@ -949,7 +980,7 @@ export class CockroachDialect {
 			throw new DrizzleError({
 				message: field === undefined
 					? `Unknown column: "${tableTsName}"."${key}"`
-					: `Views with nested selections are not supported by the relational query builder`,
+					: `Views and subqueries with nested selections are not supported by the relational query builder`,
 			});
 		}
 
@@ -959,6 +990,7 @@ export class CockroachDialect {
 					key,
 					field,
 					fieldType,
+					subqueryDecoder,
 					codec: !inJson || !(<CockroachCustomColumn<any>> decoderColumn).mapFromJsonValue
 						? this.codecs.get(decoderColumn, inJson ? 'normalizeInJson' : 'normalize')
 						: undefined,
@@ -968,6 +1000,7 @@ export class CockroachDialect {
 					key,
 					field,
 					fieldType,
+					subqueryDecoder,
 				}) as BuildRelationalQueryResult['selection'][number],
 		);
 
@@ -975,7 +1008,7 @@ export class CockroachDialect {
 	}
 
 	private getSelectedTableColumns = (
-		table: Table | View,
+		table: SchemaEntry,
 		columns: Record<string, boolean | undefined>,
 	) => {
 		const selectedColumns: ColumnWithTSName[] = [];
@@ -1010,7 +1043,7 @@ export class CockroachDialect {
 	};
 
 	private buildColumns = (
-		table: Table | View,
+		table: SchemaEntry,
 		selection: BuildRelationalQueryResult['selection'],
 		inJson: boolean,
 		tableTsName: string,
@@ -1048,9 +1081,10 @@ export class CockroachDialect {
 		depth,
 		throughJoin,
 		nested,
+		withSubqueries,
 	}: {
 		schema: TablesRelationalConfig;
-		table: CockroachTable | CockroachViewBase;
+		table: SchemaEntry;
 		tableConfig: TableRelationalConfig;
 		queryConfig?: DBQueryConfigWithComment<'many'> | true;
 		relationWhere?: SQL;
@@ -1059,24 +1093,29 @@ export class CockroachDialect {
 		depth?: number;
 		throughJoin?: SQL;
 		nested?: boolean;
+		withSubqueries?: RelationalWithSubqueries;
 	}): BuildRelationalQueryResult {
 		const selection: BuildRelationalQueryResult['selection'] = [];
 		const isSingle = mode === 'first';
 		const params = config === true ? undefined : config;
 		const currentPath = errorPath ?? '';
 		const currentDepth = depth ?? 0;
-		if (!currentDepth) table = aliasedTable(table, `d${currentDepth}`);
+		const subqueries: RelationalWithSubqueries = withSubqueries ?? new Map();
+		if (!currentDepth) {
+			collectRelationalSubquery(subqueries, table);
+			table = aliasedTable(table, `d${currentDepth}`);
+		}
 
 		const limit = isSingle ? 1 : params?.limit;
 		const offset = params?.offset;
 
 		const where: SQL | undefined = params && 'where' in params && relationWhere
 			? and(
-				relationsFilterToSQL(table, params.where, tableConfig.relations, schema),
+				relationsFilterToSQL(table, params.where, tableConfig.relations, schema, subqueries),
 				relationWhere,
 			)
 			: params && 'where' in params
-			? relationsFilterToSQL(table, params.where, tableConfig.relations, schema)
+			? relationsFilterToSQL(table, params.where, tableConfig.relations, schema, subqueries)
 			: relationWhere;
 		const order = params?.orderBy ? relationsOrderToSQL(table, params.orderBy) : undefined;
 		const columns = this.buildColumns(table, selection, !!nested, tableConfig.name, params);
@@ -1107,10 +1146,14 @@ export class CockroachDialect {
 					const relation = tableConfig.relations[k];
 					if (!relation) throw new DrizzleError({ message: `Unknown relation "${tableConfig.name}" -> "${k}"` });
 					const isSingle = relation.relationType === 'one';
+					collectRelationalSubquery(subqueries, relation.targetTable);
+					collectRelationalSubquery(subqueries, relation.throughTable);
+
 					const targetTable = aliasedTable(relation.targetTable, `d${currentDepth + 1}`);
 					const throughTable = relation.throughTable
-						? (aliasedTable(relation.throughTable, `tr${currentDepth}`) as Table | View)
+						? (aliasedTable(relation.throughTable, `tr${currentDepth}`))
 						: undefined;
+
 					const { filter, joinCondition } = relationToSQL(relation, table, targetTable, throughTable);
 
 					selectionArr.push(sql`${sql.identifier(k)}.${sql.identifier('r')} as ${sql.identifier(k)}`);
@@ -1120,7 +1163,7 @@ export class CockroachDialect {
 						: undefined;
 
 					const innerQuery = this.buildRelationalQuery({
-						table: targetTable as CockroachTable | CockroachViewBase,
+						table: targetTable,
 						mode: isSingle ? 'first' : 'many',
 						schema,
 						queryConfig: join as DBQueryConfigWithComment,
@@ -1128,6 +1171,7 @@ export class CockroachDialect {
 						relationWhere: filter,
 						errorPath: `${currentPath.length ? `${currentPath}.` : ''}${k}`,
 						depth: currentDepth + 1,
+						withSubqueries: subqueries,
 						throughJoin,
 						nested: true,
 					});
@@ -1165,7 +1209,8 @@ export class CockroachDialect {
 		}
 		const selectionSet = sql.join(selectionArr, new StringChunk(', '));
 
-		const query = sql`select ${selectionSet} from ${getTableAsAliasSQL(table)}${throughJoin}${joins}${
+		const withSql = currentDepth ? undefined : this.buildWithCTE([...subqueries.values()]);
+		const query = sql`${withSql}select ${selectionSet} from ${getTableAsAliasSQL(table)}${throughJoin}${joins}${
 			where ? sql` where ${where}` : undefined
 		}${order ? sql` order by ${order}` : undefined}${limit !== undefined ? sql` limit ${limit}` : undefined}${
 			offset !== undefined ? sql` offset ${offset}` : undefined

@@ -18,13 +18,12 @@ import type {
 	SetOperator,
 } from '~/query-builders/select.types.ts';
 import { SelectionProxyHandler } from '~/selection-proxy.ts';
-import { SQL, sql, View } from '~/sql/sql.ts';
+import { SQL, sql } from '~/sql/sql.ts';
 import type { ColumnsSelection, CommentInput, Placeholder, Query, SQLWrapper } from '~/sql/sql.ts';
 import { Subquery } from '~/subquery.ts';
 import { Table } from '~/table.ts';
 import {
 	type Assume,
-	type DrizzleTypeError,
 	getTableColumns,
 	getTableLikeName,
 	haveSameKeys,
@@ -32,10 +31,12 @@ import {
 	type ValueOrArray,
 } from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import { type PostgresType, unionsTypeTable } from '../codecs.ts';
 import { extractUsedTable } from '../utils.ts';
 import type {
 	AnyPgSelectQueryBuilder,
+	CheckTableLikeSelection,
 	GetPgSetOperators,
 	LockConfig,
 	LockStrength,
@@ -53,7 +54,6 @@ import type {
 	SelectedFields,
 	SelectedFieldsOrdered,
 	SetOperatorRightSelect,
-	TableLikeHasEmptySelection,
 } from './select.types.ts';
 
 export interface PgSelectBuilderConstructor {
@@ -120,10 +120,7 @@ export class PgSelectBuilder<
 			nullabilityMap: GetSelectTableName<TFrom> extends string ? Record<GetSelectTableName<TFrom>, 'not-null'> : {};
 		},
 	>(
-		source: TableLikeHasEmptySelection<TFrom> extends true ? DrizzleTypeError<
-				"Cannot reference a data-modifying statement subquery if it doesn't contain a `returning` clause"
-			>
-			: TFrom,
+		source: CheckTableLikeSelection<TFrom>,
 	): PgSelectKind<
 		THKT,
 		TConfig['tableName'],
@@ -1139,13 +1136,15 @@ export class PgSelectBase<
 		return config.setFieldsFlat ?? fieldsFlat;
 	}
 
-	getSQL(): SQL {
+	getSQL(withCastCodecs = false): SQL {
 		this._resolveSelection();
-		return this.dialect.buildSelectQuery(this.config);
+		return this.dialect.buildSelectQuery(
+			withCastCodecs ? { ...this.config, useSelectionCastCodecs: true } : this.config,
+		);
 	}
 
-	toSQL(): Query {
-		return this.dialect.sqlToQuery(this.getSQL());
+	toSQL(withCastCodecs = true): Query {
+		return this.dialect.sqlToQuery(this.getSQL(withCastCodecs));
 	}
 	as<TAlias extends string>(
 		alias: TAlias,
@@ -1155,7 +1154,7 @@ export class PgSelectBase<
 		if (this.config.joins) { for (const it of this.config.joins) usedTables.push(...extractUsedTable(it.table)); }
 
 		return new Proxy(
-			new Subquery(this.withoutSelectionCastCodecs().getSQL(), this.config.fields, alias, false, [
+			new Subquery(this.getSQL(), this.config.fields, alias, false, [
 				...new Set(usedTables),
 			]),
 			new SelectionProxyHandler({ alias, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
@@ -1168,12 +1167,6 @@ export class PgSelectBase<
 			this.config.fields,
 			new SelectionProxyHandler({ alias: this.tableName, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
 		) as this['_']['selectedFields'];
-	}
-
-	/** @internal */
-	override withoutSelectionCastCodecs(): this {
-		this.config.ignoreSelectionCastCodecs = true;
-		return this;
 	}
 
 	$dynamic(): PgSelectDynamic<this> {

@@ -12,7 +12,7 @@ import type {
 	SetOperator,
 } from '~/query-builders/select.types.ts';
 import { SelectionProxyHandler } from '~/selection-proxy.ts';
-import { SQL, View } from '~/sql/sql.ts';
+import { SQL } from '~/sql/sql.ts';
 import type { ColumnsSelection, Placeholder, Query } from '~/sql/sql.ts';
 import type { SQLiteColumn } from '~/sqlite-core/columns/index.ts';
 import type { SQLiteDialect } from '~/sqlite-core/dialect.ts';
@@ -23,6 +23,7 @@ import { Subquery } from '~/subquery.ts';
 import { Table } from '~/table.ts';
 import { getTableColumns, getTableLikeName, haveSameKeys, orderSelectedFields, type ValueOrArray } from '~/utils.ts';
 import { ViewBaseConfig } from '~/view-common.ts';
+import { View } from '~/view.ts';
 import { extractUsedTable } from '../utils.ts';
 import { SQLiteViewBase } from '../view-base.ts';
 import type {
@@ -830,13 +831,15 @@ export class SQLiteSelectBase<
 		return this;
 	}
 
-	getSQL(): SQL {
+	getSQL(withCastCodecs = false): SQL {
 		this.config.fieldsFlat ??= orderSelectedFields<SQLiteColumn>(this.config.fields, undefined, this.dialect.codecs);
-		return this.dialect.buildSelectQuery(this.config);
+		return this.dialect.buildSelectQuery(
+			withCastCodecs ? { ...this.config, useSelectionCastCodecs: true } : this.config,
+		);
 	}
 
-	toSQL(): Query {
-		return this.dialect.sqlToQuery(this.getSQL());
+	toSQL(withCastCodecs = true): Query {
+		return this.dialect.sqlToQuery(this.getSQL(withCastCodecs));
 	}
 
 	as<TAlias extends string>(
@@ -847,7 +850,7 @@ export class SQLiteSelectBase<
 		if (this.config.joins) { for (const it of this.config.joins) usedTables.push(...extractUsedTable(it.table)); }
 
 		return new Proxy(
-			new Subquery(this.withoutSelectionCastCodecs().getSQL(), this.config.fields, alias, false, [
+			new Subquery(this.getSQL(), this.config.fields, alias, false, [
 				...new Set(usedTables),
 			]),
 			new SelectionProxyHandler({ alias, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
@@ -860,12 +863,6 @@ export class SQLiteSelectBase<
 			this.config.fields,
 			new SelectionProxyHandler({ alias: this.tableName, sqlAliasedBehavior: 'alias', sqlBehavior: 'error' }),
 		) as this['_']['selectedFields'];
-	}
-
-	/** @internal */
-	override withoutSelectionCastCodecs(): this {
-		this.config.ignoreSelectionCastCodecs = true;
-		return this;
 	}
 
 	$dynamic(): SQLiteSelectDynamic<this> {
