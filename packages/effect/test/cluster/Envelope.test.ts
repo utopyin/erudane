@@ -1,7 +1,8 @@
 import { assert, describe, it } from "@effect/vitest"
 import { Schema } from "effect"
-import { EntityAddress, EntityId, EntityType, Envelope, ShardId, Snowflake } from "effect/unstable/cluster"
-import { Headers } from "effect/unstable/http"
+import { EntityAddress, EntityId, EntityType, Envelope, Reply, ShardId, Snowflake } from "effect/cluster"
+import { SchemaBinary } from "effect/encoding"
+import { Headers } from "effect/http"
 
 const request = {
   _tag: "Request",
@@ -32,5 +33,26 @@ describe("Envelope.OpaqueHole", () => {
       { ...request, payload: bytes } as Envelope.PartialRequest
     ) as Envelope.PartialRequestEncoded
     assert.strictEqual(encoded.payload, bytes)
+  })
+
+  it("compiles the hole and Reply.Encoded as a bytes leaf under SchemaBinary", () => {
+    const bytes = Uint8Array.of(1, 2, 3)
+    const encodedBytes = Schema.encodeSync(SchemaBinary.toCodec(Schema.Uint8Array))(bytes)
+    const encodedHole = Schema.encodeSync(SchemaBinary.toCodec(Envelope.OpaqueHole))(bytes)
+    const encodedReply = Schema.encodeSync(SchemaBinary.toCodec(Reply.Encoded))(bytes as unknown as Reply.Encoded)
+
+    assert.deepStrictEqual(encodedHole, encodedBytes)
+    assert.deepStrictEqual(encodedReply, encodedBytes)
+    assert.deepStrictEqual(Schema.decodeSync(SchemaBinary.toCodec(Envelope.OpaqueHole))(encodedHole), bytes)
+    assert.deepStrictEqual(
+      Schema.decodeSync(SchemaBinary.toCodec(Reply.Encoded))(encodedReply) as unknown,
+      bytes
+    )
+  })
+
+  it("reports non-byte OpaqueHole inputs as schema failures", () => {
+    const encode = Schema.encodeUnknownSync(SchemaBinary.toCodec(Envelope.OpaqueHole))
+
+    assert.throws(() => encode({ id: 1 }), /Uint8Array/)
   })
 })
