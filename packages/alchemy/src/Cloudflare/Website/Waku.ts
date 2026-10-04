@@ -51,28 +51,6 @@ export interface WakuProps<
    */
   rootDir?: string;
   /**
-   * Waku source directory, relative to {@link rootDir}. Setting this
-   * overrides a `srcDir` in the project's `waku.config.*`.
-   * @default the project's `waku.config.*` value, or waku's own default (`"src"`)
-   */
-  srcDir?: string;
-  /**
-   * Waku build output directory, relative to {@link rootDir}. The server
-   * bundle is read from `<distDir>/server` and the client assets from
-   * `<distDir>/public`. Setting this overrides a `distDir` in the
-   * project's `waku.config.*` — if your config file customizes `distDir`,
-   * mirror it here (or exclude it via `memo`) so the build output doesn't
-   * pollute the rebuild hash.
-   * @default the project's `waku.config.*` value, or waku's own default (`"dist"`)
-   */
-  distDir?: string;
-  /**
-   * Base path the app is served under. Setting this overrides a
-   * `basePath` in the project's `waku.config.*`.
-   * @default the project's `waku.config.*` value, or waku's own default (`"/"`)
-   */
-  basePath?: string;
-  /**
    * Controls which files feed the content hash that decides whether a
    * rebuild is needed. By default every non-gitignored file under
    * {@link rootDir} is hashed, plus the nearest package-manager lockfile.
@@ -91,15 +69,48 @@ export interface WakuProps<
    * @default { htmlHandling: "drop-trailing-slash" }
    */
   assets?: AssetsConfig;
+  /**
+   * Waku config overrides merged over the project's `waku.config.*`
+   * (per-key; deploy-time values win). For values that vary by stage or
+   * come from other resources — static config belongs in `waku.config.*`.
+   */
+  waku?: {
+    /**
+     * Waku `srcDir` (relative to {@link rootDir}).
+     * @default "src"
+     */
+    srcDir?: string;
+    /**
+     * Waku `distDir` (relative to {@link rootDir}). If `waku.config.*`
+     * customizes `distDir`, mirror it here (or add it to `memo.exclude`)
+     * so the build output stays excluded from the rebuild-deciding input
+     * hash.
+     * @default "dist"
+     */
+    distDir?: string;
+    /**
+     * Waku `basePath`.
+     * @default "/"
+     */
+    basePath?: string;
+  };
 }
+
+// These options are inspected while constructing the Worker. Resolve them in
+// the outer props Effect; pass-through properties can remain deferred Inputs.
+type WakuInput<Bindings extends WorkerBindingProps> = InputProps<
+  WakuProps<Bindings>,
+  "compatibility" | "assets" | "waku"
+>;
 
 /**
  * A Cloudflare Worker deployed from a [Waku](https://waku.gg) project.
  *
  * `Waku` builds the project programmatically — no `waku.config.ts` edits,
  * no Wrangler configuration, and no build command required. A project's
- * `waku.config.*` loads natively (same as waku's CLI) as the base config,
- * with `srcDir`/`distDir`/`basePath` from this resource winning per key;
+ * `waku.config.*` loads natively (same as waku's CLI) and is where all
+ * Waku configuration (`srcDir`, `distDir`, `basePath`, ...) lives; the
+ * `waku` prop overrides it per key at deploy time.
  * `unstable_adapter` is owned by Alchemy and must not be set. Note that a
  * standalone `vite.config.ts` is NOT loaded (same as waku's CLI) — Vite
  * config belongs in `waku.config.*`'s `vite` field. The RSC server
@@ -132,6 +143,20 @@ export interface WakuProps<
  * ```typescript
  * const site = yield* Cloudflare.Website.Waku("Site", {
  *   rootDir: "apps/web",
+ * });
+ * ```
+ *
+ * ### Waku Config Overrides
+ * Waku configuration lives in your `waku.config.*`. The `waku` prop
+ * overrides it per key at deploy time — for values that vary by stage
+ * or come from other resources.
+ *
+ * **Example:** Stage-dependent base path
+ * ```typescript
+ * const site = yield* Cloudflare.Website.Waku("Site", {
+ *   waku: {
+ *     basePath: "/docs/",
+ *   },
  * });
  * ```
  *
@@ -213,8 +238,8 @@ export const Waku: {
     <const Bindings extends WorkerBindingProps = {}, Req = never>(
       id: string,
       propsEff?:
-        | InputProps<WakuProps<Bindings>>
-        | Effect.Effect<InputProps<WakuProps<Bindings>>, never, Req>,
+        | WakuInput<Bindings>
+        | Effect.Effect<WakuInput<Bindings>, never, Req>,
     ): Effect.Effect<Self, never, Req | Providers> & {
       new (): Worker<{
         [
@@ -226,8 +251,8 @@ export const Waku: {
   <const Bindings extends WorkerBindingProps = {}, Req = never>(
     id: string,
     propsEff?:
-      | InputProps<WakuProps<Bindings>>
-      | Effect.Effect<InputProps<WakuProps<Bindings>>, never, Req>,
+      | WakuInput<Bindings>
+      | Effect.Effect<WakuInput<Bindings>, never, Req>,
   ): Effect.Effect<
     Worker<{
       [
@@ -237,9 +262,19 @@ export const Waku: {
     never,
     Req | Providers
   >;
-} = ((id?: any, propsEff?: any) =>
+} = (<const Bindings extends WorkerBindingProps = {}, Req = never>(
+  id?: string,
+  propsEff?:
+    | WakuInput<Bindings>
+    | Effect.Effect<WakuInput<Bindings>, never, Req>,
+) =>
   id === undefined
-    ? (id: string, propsEff: any) => effectClass(Waku(id, propsEff))
+    ? <const Bindings extends WorkerBindingProps = {}, Req = never>(
+        id: string,
+        propsEff?:
+          | WakuInput<Bindings>
+          | Effect.Effect<WakuInput<Bindings>, never, Req>,
+      ) => effectClass(Waku(id, propsEff))
     : Worker(
         id,
         Effect.map(
@@ -274,9 +309,11 @@ export const Waku: {
                 // `virtual:waku/server-entry`); resolved against `rootDir`
                 // by the source provider.
                 main: props?.main,
-                srcDir: props?.srcDir,
-                distDir: props?.distDir,
-                basePath: props?.basePath,
+                // Deploy-time waku config overrides, merged over the
+                // project's `waku.config.*` by the source provider.
+                srcDir: props?.waku?.srcDir,
+                distDir: props?.waku?.distDir,
+                basePath: props?.waku?.basePath,
                 memo: props?.memo,
               },
             },

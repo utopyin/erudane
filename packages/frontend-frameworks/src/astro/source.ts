@@ -104,7 +104,6 @@ type PluginWorker = Exclude<CloudflareVitePluginOptions["worker"], undefined>;
 /** Mirror of alchemy's `DevContext` (the slots this source reads). */
 export interface DevContext extends SourceContext {
   readonly worker: {
-    readonly name: string;
     readonly bindings: PluginWorker["bindings"];
     readonly durableObjectNamespaces: PluginWorker["durableObjectNamespaces"];
     readonly hyperdrives: PluginWorker["hyperdrives"];
@@ -244,6 +243,12 @@ export interface AstroSourceOptions {
     readonly outDir?: string;
     readonly trailingSlash?: "always" | "never" | "ignore";
   };
+  /**
+   * Path to an alternate Astro config file, resolved against
+   * {@link rootDir} when relative. Defaults to astro's own config
+   * discovery (`astro.config.*` in the project root).
+   */
+  readonly config?: string;
 }
 
 const PROVIDER = "@alchemy.run/frontend-frameworks/astro/source";
@@ -299,7 +304,7 @@ const sha256Object = (input: unknown): Effect.Effect<string> =>
 
 // ─────────────────────────────────────────────────────────────────────
 // Glob / gitignore matching (self-contained approximation of the
-// fast-glob + gitignore semantics alchemy's `hashDirectory` uses)
+// glob + gitignore semantics alchemy's `hashDirectory` uses)
 // ─────────────────────────────────────────────────────────────────────
 
 const escapeRegex = (char: string): string =>
@@ -843,6 +848,7 @@ export interface AstroBuildChildConfig {
   readonly sessionDevKV: boolean | undefined;
   readonly prerenderEnvironment: "workerd" | "node" | undefined;
   readonly astro: AstroSourceOptions["astro"];
+  readonly config: string | undefined;
 }
 
 export const buildInChild = (config: AstroBuildChildConfig) =>
@@ -869,6 +875,7 @@ export const buildInChild = (config: AstroBuildChildConfig) =>
             prerenderEnvironment: config.prerenderEnvironment,
           }),
           astro: config.astro,
+          config: config.config,
         }),
       ),
     );
@@ -899,6 +906,7 @@ const makeAstroSourceProvider = (
             prerenderEnvironment: options.prerenderEnvironment,
           }),
           astro: options.astro,
+          config: options.config,
         }),
       ),
     );
@@ -924,6 +932,7 @@ const makeAstroSourceProvider = (
             sessionDevKV: options.sessionDevKV,
             prerenderEnvironment: options.prerenderEnvironment,
             astro: options.astro,
+            config: options.config,
           } satisfies AstroBuildChildConfig,
         }).pipe(
           Effect.mapError((error) =>
@@ -1001,7 +1010,7 @@ const makeAstroSourceProvider = (
           compatibilityDate: ctx.compatibility.date,
           compatibilityFlags: ctx.compatibility.flags,
           worker: {
-            name: ctx.worker.name,
+            name: ctx.workerName,
             bindings: ctx.worker.bindings,
             durableObjectNamespaces: ctx.worker.durableObjectNamespaces,
             hyperdrives: ctx.worker.hyperdrives,

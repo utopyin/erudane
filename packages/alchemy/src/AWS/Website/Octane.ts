@@ -1,3 +1,4 @@
+import type { InputProps } from "../../Input.ts";
 import * as Namespace from "../../Namespace.ts";
 import { makeFrameworkSite, type FrameworkSiteProps } from "./FrameworkSite.ts";
 
@@ -27,19 +28,11 @@ export interface OctaneProps extends FrameworkSiteProps {
  * The build runs through `@alchemy.run/frontend-frameworks/octane` with the
  * `@alchemy.run/frontend-frameworks/octane/aws` deploy target — the project's
  * own `vite build` (with `@octanejs/vite-plugin`) produces the
- * self-contained node server bundle, and the target's finishing pass wraps
- * its fetch handler as a streaming Lambda handler. The project's
- * `octane.config.ts` must select the AWS marker adapter:
- *
- * ```ts
- * import { aws } from "@alchemy.run/frontend-frameworks/octane/aws-adapter";
- * import { defineConfig } from "@octanejs/vite-plugin";
- *
- * export default defineConfig({
- *   adapter: aws(),
- *   // ...
- * });
- * ```
+ * default native Node server bundle, and the target's finishing pass
+ * automatically wraps its fetch handler as a streaming Lambda handler.
+ * `AWS.Website.Octane` selects hosting; keep native compiler and route
+ * settings in `octane.config.ts` without an adapter. The legacy AWS marker
+ * adapter remains optional for existing projects.
  *
  * ### Creating Octane Sites
  * **Example:** Basic Octane App
@@ -65,18 +58,16 @@ export interface OctaneProps extends FrameworkSiteProps {
  * ```typescript
  * const site = yield* AWS.Website.Octane("Web", {
  *   rootDir: "./app",
- *   server: {
- *     memorySize: 2048,
- *     environment: {
- *       API_BASE: api.url,
- *     },
+ *   memorySize: 2048,
+ *   env: {
+ *     API_BASE: api.url,
  *   },
  * });
  * ```
  *
  * @resource
  */
-export const Octane = (id: string, props: OctaneProps = {}) =>
+export const Octane = (id: string, props: InputProps<OctaneProps> = {}) =>
   makeFrameworkSite(id, props, {
     name: "Octane",
     framework: OCTANE_FRAMEWORK_SPECIFIER,

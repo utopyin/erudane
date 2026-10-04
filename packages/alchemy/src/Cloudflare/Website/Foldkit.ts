@@ -69,12 +69,19 @@ export interface FoldkitProps<
    * Foldkit apps route on the client, so `notFoundHandling` defaults to
    * `"single-page-application"` — unmatched paths serve `index.html` and
    * the app's router takes over. Set `notFoundHandling` explicitly to
-   * override.
+   * override (e.g. `"404-page"` to serve the built `404.html`).
    *
    * @default { notFoundHandling: "single-page-application" }
    */
   assets?: AssetsConfig;
 }
+
+// These options are inspected while constructing the Worker. Resolve them in
+// the outer props Effect; pass-through properties can remain deferred Inputs.
+type FoldkitInput<Bindings extends WorkerBindingProps> = InputProps<
+  FoldkitProps<Bindings>,
+  "assets"
+>;
 
 /**
  * A Cloudflare Worker deployed from a [Foldkit](https://foldkit.dev) app.
@@ -111,9 +118,8 @@ export interface FoldkitProps<
  *
  * ### Single-Page Application Routing
  * Unmatched paths serve `index.html` by default so deep links boot the
- * app and the Foldkit router resolves the route. An explicit `assets`
- * config merges over the default — a site that ships real 404 content
- * can opt out.
+ * app and the Foldkit router resolves the route. A site that ships real
+ * 404 content overrides the default with `notFoundHandling: "404-page"`.
  *
  * **Example:** Serving a real 404 page
  * ```typescript
@@ -181,8 +187,8 @@ export const Foldkit: {
     <const Bindings extends WorkerBindingProps = {}, Req = never>(
       id: string,
       propsEff?:
-        | InputProps<FoldkitProps<Bindings>>
-        | Effect.Effect<InputProps<FoldkitProps<Bindings>>, never, Req>,
+        | FoldkitInput<Bindings>
+        | Effect.Effect<FoldkitInput<Bindings>, never, Req>,
     ): Effect.Effect<Self, never, Req | Providers> & {
       new (): Worker<{
         [
@@ -194,8 +200,8 @@ export const Foldkit: {
   <const Bindings extends WorkerBindingProps = {}, Req = never>(
     id: string,
     propsEff?:
-      | InputProps<FoldkitProps<Bindings>>
-      | Effect.Effect<InputProps<FoldkitProps<Bindings>>, never, Req>,
+      | FoldkitInput<Bindings>
+      | Effect.Effect<FoldkitInput<Bindings>, never, Req>,
   ): Effect.Effect<
     Worker<{
       [
@@ -205,9 +211,19 @@ export const Foldkit: {
     never,
     Req | Providers
   >;
-} = ((id?: any, propsEff?: any) =>
+} = (<const Bindings extends WorkerBindingProps = {}, Req = never>(
+  id?: string,
+  propsEff?:
+    | FoldkitInput<Bindings>
+    | Effect.Effect<FoldkitInput<Bindings>, never, Req>,
+) =>
   id === undefined
-    ? (id: string, propsEff: any) => effectClass(Foldkit(id, propsEff))
+    ? <const Bindings extends WorkerBindingProps = {}, Req = never>(
+        id: string,
+        propsEff?:
+          | FoldkitInput<Bindings>
+          | Effect.Effect<FoldkitInput<Bindings>, never, Req>,
+      ) => effectClass(Foldkit(id, propsEff))
     : Worker(
         id,
         Effect.map(
@@ -215,7 +231,8 @@ export const Foldkit: {
           (props) => ({
             ...props,
             // Foldkit routes on the client; serve index.html for unmatched
-            // paths so deep links boot the app instead of 404ing.
+            // paths so deep links boot the app instead of 404ing. An
+            // explicit `assets.notFoundHandling` wins over the default.
             assets: {
               notFoundHandling: "single-page-application" as const,
               ...props?.assets,

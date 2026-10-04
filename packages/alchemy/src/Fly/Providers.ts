@@ -1,8 +1,10 @@
 import * as Layer from "effect/Layer";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import { CredentialsStoreLive } from "../Auth/Credentials.ts";
-import { ProfileLive } from "../Auth/Profile.ts";
+import { ProfileStoreLive } from "../Auth/Profile.ts";
+import * as Command from "../Command/index.ts";
 import * as Provider from "../Provider.ts";
+import { Random, RandomProvider } from "../Random.ts";
 import { App, AppProvider } from "./App.ts";
 import { FlyAuth } from "./AuthProvider.ts";
 import { Bucket, BucketProvider } from "./Bucket.ts";
@@ -32,10 +34,19 @@ import { MountVolumeLive } from "./MountVolume.ts";
 import { Secret, SecretProvider } from "./Secret.ts";
 import { SecretKey, SecretKeyProvider } from "./SecretKey.ts";
 import { Service, ServiceProvider } from "./Service.ts";
+import {
+  AssetDeployment,
+  AssetDeploymentProvider,
+} from "./Website/AssetDeployment.ts";
+import {
+  Server as WebsiteServer,
+  ServerProvider as WebsiteServerProvider,
+} from "../Website/Server.ts";
 import { SignHttp } from "./SignHttp.ts";
 import { Sprite, SpriteProvider } from "./Sprite.ts";
 import { VerifyHttp } from "./VerifyHttp.ts";
 import { VolumeSnapshot, VolumeSnapshotProvider } from "./VolumeSnapshot.ts";
+import { WriteCertificatesHttp } from "./WriteCertificatesHttp.ts";
 import { WriteSecretHttp } from "./WriteSecretHttp.ts";
 
 export class Providers extends Provider.ProviderCollection<Providers>()(
@@ -76,33 +87,39 @@ export const providers = () =>
     Providers,
     Provider.collection([
       App,
+      AssetDeployment,
       Bucket,
       Certificate,
       IpAssignment,
       Machine,
       Postgres,
+      Random,
       Redis,
       Secret,
       SecretKey,
       Service,
       Sprite,
       VolumeSnapshot,
+      WebsiteServer,
     ]),
   ).pipe(
     Layer.provide(
       Layer.mergeAll(
         AppProvider(),
+        AssetDeploymentProvider(),
         BucketProvider(),
         CertificateProvider(),
         IpAssignmentProvider(),
         MachineProvider(),
         PostgresProvider(),
+        RandomProvider(),
         RedisProvider(),
         SecretProvider(),
         SecretKeyProvider(),
         ServiceProvider(),
         SpriteProvider(),
         VolumeSnapshotProvider(),
+        WebsiteServerProvider(),
       ),
     ),
     // The binding layers are mutually independent — they all draw on the
@@ -125,6 +142,7 @@ export const providers = () =>
         GetSecretHttp,
         ListSecretsHttp,
         WriteSecretHttp,
+        WriteCertificatesHttp,
         EncryptHttp,
         DecryptHttp,
         SignHttp,
@@ -134,8 +152,9 @@ export const providers = () =>
     Layer.provideMerge(fromCredentials()),
     Layer.provideMerge(Credentials.fromAuthProvider()),
     Layer.provideMerge(FlyAuth),
-    Layer.provideMerge(ProfileLive),
+    Layer.provideMerge(ProfileStoreLive),
     Layer.provideMerge(CredentialsStoreLive),
     Layer.provideMerge(FetchHttpClient.layer),
+    Layer.provideMerge(Command.providers()),
     Layer.orDie,
   );

@@ -1,14 +1,20 @@
+import * as loadBalancers from "@distilled.cloud/hetzner/load_balancers";
+import * as zoneRrsets from "@distilled.cloud/hetzner/zone_rrsets";
 import * as Hetzner from "@/Hetzner";
 import * as Alchemy from "@/index.ts";
 import * as Test from "@/Test/Alchemy";
-import { CredentialsFromEnv, Services } from "@distilled.cloud/hetzner";
+import { CredentialsFromEnv } from "@distilled.cloud/hetzner";
+import * as firewalls from "@distilled.cloud/hetzner/firewalls";
+import * as servers from "@distilled.cloud/hetzner/servers";
+import * as volumes from "@distilled.cloud/hetzner/volumes";
 import { expect } from "alchemy-test";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import { MinimumLogLevel } from "effect/References";
 import * as Schedule from "effect/Schedule";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import * as HttpClient from "effect/unstable/http/HttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import * as HttpClient from "effect/http/HttpClient";
 import Api from "./fixtures/app/api.ts";
 import {
   API_PORT,
@@ -36,8 +42,7 @@ const hasHetznerCreds = !!process.env.HCLOUD_TOKEN;
 
 const distilled = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
   effect.pipe(
-    Effect.provide(CredentialsFromEnv),
-    Effect.provide(FetchHttpClient.layer),
+    Effect.provide(Layer.mergeAll(CredentialsFromEnv, FetchHttpClient.layer)),
   );
 
 class ApiNotReady extends Data.TaggedError("ApiNotReady")<{
@@ -79,11 +84,12 @@ const Stack = Alchemy.Stack(
 );
 
 const stack = hasHetznerCreds
-  ? beforeAll(deploy(Stack), { timeout: 180_000 })
+  ? beforeAll(deploy(Stack), { timeout: 180_000, exclusive: true })
   : null;
 
 afterAll.skipIf(!hasHetznerCreds || !!process.env.NO_DESTROY)(destroy(Stack), {
   timeout: 120_000,
+  exclusive: true,
 });
 
 test.skipIf(!hasHetznerCreds)(
@@ -105,19 +111,19 @@ test.skipIf(!hasHetznerCreds)(
     expect(out.apiUrl).toContain(out.serverIpv4);
 
     const liveServer = yield* distilled(
-      Services.servers.getServer({ id: out.serverId }),
+      servers.getServer({ id: out.serverId }),
     );
     expect(liveServer.server?.id).toEqual(out.serverId);
     expect(liveServer.server?.public_net.ipv4?.ip).toEqual(out.serverIpv4);
 
     const liveVolume = yield* distilled(
-      Services.volumes.getVolume({ id: out.volumeId }),
+      volumes.getVolume({ id: out.volumeId }),
     );
     expect(liveVolume.volume.server).toEqual(out.serverId);
     expect(liveVolume.volume.linux_device).toMatch(/^\/dev\//);
 
     const liveFirewall = yield* distilled(
-      Services.firewalls.getFirewall({ id: out.firewallId }),
+      firewalls.getFirewall({ id: out.firewallId }),
     );
     expect(liveFirewall.firewall.applied_to).toEqual(
       expect.arrayContaining([
@@ -143,7 +149,7 @@ test.skipIf(!hasHetznerCreds)(
     );
 
     const liveLb = yield* distilled(
-      Services.loadBalancers.getLoadBalancer({ id: out.lbId }),
+      loadBalancers.getLoadBalancer({ id: out.lbId }),
     );
     expect(liveLb.load_balancer.public_net.ipv4.ip).toEqual(out.lbIpv4);
     expect(liveLb.load_balancer.targets).toEqual(
@@ -156,7 +162,7 @@ test.skipIf(!hasHetznerCreds)(
     );
 
     const liveRecord = yield* distilled(
-      Services.zoneRrsets.getZoneRrset({
+      zoneRrsets.getZoneRrset({
         id_or_name: String(out.zoneId),
         rr_name: out.recordName,
         rr_type: out.recordType,
@@ -187,5 +193,20 @@ test.skipIf(!hasHetznerCreds)(
     expect(body.path).toEqual(VOLUME_PATH);
     expect(body.text).toEqual(MARKER);
   }).pipe(logLevel),
-  { timeout: 180_000 },
+  {
+    tags: [
+      "provider:hetzner",
+      "provider:hetzner:firewall",
+      "provider:hetzner:loadbalancer",
+      "provider:hetzner:mountvolume",
+      "provider:hetzner:recordset",
+      "provider:hetzner:server",
+      "provider:hetzner:service",
+      "provider:hetzner:volume",
+      "provider:hetzner:zone",
+      "live",
+    ],
+    timeout: 180_000,
+    exclusive: true,
+  },
 );
