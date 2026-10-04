@@ -11,7 +11,7 @@ import { fromReference } from "@erudane/files/types";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import type * as Prompt from "effect/unstable/ai/Prompt";
+import type * as Prompt from "effect/ai/Prompt";
 
 type Json = Record<string, unknown>;
 

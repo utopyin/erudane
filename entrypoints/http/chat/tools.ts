@@ -8,7 +8,7 @@
 import { ChatTools } from "@erudane/chat/tools";
 import { ResearchTools } from "@erudane/research/tools";
 import { SubjectTools } from "@erudane/subjects/tools";
-import * as Toolkit from "effect/unstable/ai/Toolkit";
+import * as Toolkit from "effect/ai/Toolkit";
 
 export const toolkit = Toolkit.merge(
   ChatTools.toolkit,

@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 import { ThreadId } from "./types";
-import type * as AiError from "effect/unstable/ai/AiError";
+import type * as AiError from "effect/ai/AiError";
 
 /** Failure of a chat run, mapped from the provider's `AiError` at the service seam. */
 export class ChatError extends Schema.TaggedError<ChatError>()("Chat.Error", {

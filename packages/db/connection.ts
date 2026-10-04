@@ -66,13 +66,13 @@ const migrate = (url: string, after: string | Output.Output<string>) =>
 const production = Effect.gen(function* () {
   const origin = {
     scheme: "postgres" as const,
-    host: yield* Config.string("DB_HOST"),
-    port: yield* Config.number("DB_PORT").pipe(Config.withDefault(5432)),
-    database: yield* Config.string("DB_NAME"),
-    user: yield* Config.string("DB_USER"),
-    password: yield* Config.redacted("DB_PASSWORD"),
+    host: yield* Config.String("DB_HOST"),
+    port: yield* Config.Number("DB_PORT").pipe(Config.withDefault(5432)),
+    database: yield* Config.String("DB_NAME"),
+    user: yield* Config.String("DB_USER"),
+    password: yield* Config.Redacted("DB_PASSWORD"),
   };
-  const migrateUrl = Redacted.value(yield* Config.redacted("DB_MIGRATE_URL"));
+  const migrateUrl = Redacted.value(yield* Config.Redacted("DB_MIGRATE_URL"));
   return { origin, migrateUrl };
 });
 
@@ -87,7 +87,7 @@ export const Hyperdrive = Cloudflare.Hyperdrive.Connection(
     // the resource). There the binding is what matters; the bundler folds this flag
     // to `true`, so everything below it stays out of the worker bundle.
     if (globalThis.__ALCHEMY_RUNTIME__) return placeholder;
-    const name = yield* Config.string("HYPERDRIVE_NAME").pipe(Config.withDefault("erudane"));
+    const name = yield* Config.String("HYPERDRIVE_NAME").pipe(Config.withDefault("erudane"));
     const dev = yield* Alchemy.ALCHEMY_DEV;
     if (dev) {
       const container = yield* local;

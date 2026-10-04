@@ -11,8 +11,8 @@ import { ThreadId } from "@erudane/chat/types";
 import { DocumentNotFound, RepoError as DocumentRepoError } from "@erudane/documents/errors";
 import { DocumentId, DocumentMeta } from "@erudane/documents/types";
 import * as Schema from "effect/Schema";
-import * as Rpc from "effect/unstable/rpc/Rpc";
-import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
+import * as Rpc from "effect/rpc/Rpc";
+import * as RpcGroup from "effect/rpc/RpcGroup";
 import {
   ChapterNotFound,
   ExerciseNotFound,

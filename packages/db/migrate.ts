@@ -5,7 +5,7 @@ import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
-import * as SqlClient from "effect/unstable/sql/SqlClient";
+import * as SqlClient from "effect/sql/SqlClient";
 import { MIGRATIONS_TABLE } from "./config";
 
 /**
@@ -45,7 +45,7 @@ const program = Effect.gen(function* () {
   );
   yield* Console.log(`migrations: ${pending.length} applied, ${done.size} already present`);
 }).pipe(
-  Effect.provide(PgClient.layerConfig({ url: Config.redacted("DATABASE_URL") })),
+  Effect.provide(PgClient.layerConfig({ url: Config.Redacted("DATABASE_URL") })),
   Effect.retry({ schedule: Schedule.spaced("1 second"), times: 30 }),
 );
 

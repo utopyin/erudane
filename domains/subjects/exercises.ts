@@ -7,7 +7,7 @@ import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import * as Prompt from "effect/unstable/ai/Prompt";
+import * as Prompt from "effect/ai/Prompt";
 import type { ExerciseNotFound, RepoError } from "./errors";
 import { SubjectRepo } from "./repo";
 import { Anchor, type ExerciseId } from "./types";

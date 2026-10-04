@@ -43,7 +43,7 @@ export const messages = table(
     /** Position in the thread, assigned by the repository. */
     seq: integer().notNull(),
     role: messageRole().notNull(),
-    /** Encoded `Prompt.Message` (effect/unstable/ai); the codec lives with the repository. */
+    /** Encoded `Prompt.Message` (effect/ai); the codec lives with the repository. */
     content: jsonb().$type<unknown>().notNull(),
     createdAt: timestamp({ withTimezone: true, mode: "string" }).notNull().defaultNow(),
   },

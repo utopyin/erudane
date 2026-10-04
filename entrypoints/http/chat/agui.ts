@@ -14,9 +14,9 @@ import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
-import * as Prompt from "effect/unstable/ai/Prompt";
-import type * as Response from "effect/unstable/ai/Response";
-import * as Sse from "effect/unstable/encoding/Sse";
+import * as Prompt from "effect/ai/Prompt";
+import type * as Response from "effect/ai/Response";
+import * as Sse from "effect/encoding/Sse";
 
 // ---------------------------------------------------------------------------
 // Inbound

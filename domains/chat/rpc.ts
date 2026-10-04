@@ -5,8 +5,8 @@
  * imports this group for `RpcClient.make` without pulling repositories in.
  */
 import * as Schema from "effect/Schema";
-import * as Rpc from "effect/unstable/rpc/Rpc";
-import * as RpcGroup from "effect/unstable/rpc/RpcGroup";
+import * as Rpc from "effect/rpc/Rpc";
+import * as RpcGroup from "effect/rpc/RpcGroup";
 import { RepoError } from "./errors";
 import { Thread } from "./types";
 

@@ -16,9 +16,9 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import * as HttpClient from "effect/unstable/http/HttpClient";
-import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import * as HttpClient from "effect/http/HttpClient";
+import * as HttpClientRequest from "effect/http/HttpClientRequest";
 
 const CODEX_URL = "https://chatgpt.com/backend-api/codex";
 
@@ -74,15 +74,15 @@ const chatGpt = (tier: Tier, model: string, credentials: typeof Credentials.Type
 const layer = (tier: Tier) =>
   Layer.unwrap(
     Effect.gen(function* () {
-      const model = yield* Config.string(tier.config).pipe(Config.withDefault(tier.model));
-      const oauth = yield* Config.redacted("CHATGPT_OAUTH").pipe(
+      const model = yield* Config.String(tier.config).pipe(Config.withDefault(tier.model));
+      const oauth = yield* Config.Redacted("CHATGPT_OAUTH").pipe(
         Config.withDefault(Redacted.make("")),
       );
       const provider =
         Redacted.value(oauth) === ""
           ? apiKey(
               model,
-              yield* Config.redacted("OPENAI_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
+              yield* Config.Redacted("OPENAI_API_KEY").pipe(Config.withDefault(Redacted.make(""))),
             )
           : chatGpt(tier, model, yield* Schema.decodeEffect(Credentials)(Redacted.value(oauth)));
       return provider.pipe(Layer.provide(FetchHttpClient.layer));

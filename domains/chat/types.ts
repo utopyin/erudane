@@ -1,8 +1,8 @@
 import * as Data from "effect/Data";
 import * as Schema from "effect/Schema";
-import * as Prompt from "effect/unstable/ai/Prompt";
-import type * as Response from "effect/unstable/ai/Response";
-import type * as Tool from "effect/unstable/ai/Tool";
+import * as Prompt from "effect/ai/Prompt";
+import type * as Response from "effect/ai/Response";
+import type * as Tool from "effect/ai/Tool";
 
 export interface ChatInput {
   /** Full transcript, already decoded into Effect AI messages by the caller. */

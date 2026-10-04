@@ -1,16 +1,16 @@
 /**
  * Firecrawl v2 over Effect's `HttpClient`
  */
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
-import * as HttpClient from "effect/unstable/http/HttpClient";
-import * as HttpClientRequest from "effect/unstable/http/HttpClientRequest";
-import * as HttpClientResponse from "effect/unstable/http/HttpClientResponse";
+import * as HttpClient from "effect/http/HttpClient";
+import * as HttpClientRequest from "effect/http/HttpClientRequest";
+import * as HttpClientResponse from "effect/http/HttpClientResponse";
 
 const BASE_URL = "https://api.firecrawl.dev/v2";
 const SEARCH_TIMEOUT_MS = 15_000;
@@ -101,7 +101,7 @@ const tbs: Record<Recency, string> = {
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
-    const apiKey = yield* Config.redacted("FIRECRAWL_API_KEY");
+    const apiKey = yield* Config.Redacted("FIRECRAWL_API_KEY");
     const client = (yield* HttpClient.HttpClient).pipe(
       HttpClient.mapRequest(HttpClientRequest.bearerToken(Redacted.value(apiKey))),
       HttpClient.filterStatusOk,

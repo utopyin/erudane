@@ -5,8 +5,8 @@
  * from here — the web app imports this module to type its client tools.
  */
 import * as Schema from "effect/Schema";
-import * as Tool from "effect/unstable/ai/Tool";
-import * as Toolkit from "effect/unstable/ai/Toolkit";
+import * as Tool from "effect/ai/Tool";
+import * as Toolkit from "effect/ai/Toolkit";
 
 export const CurrentTime = Tool.make("CurrentTime", {
   description:

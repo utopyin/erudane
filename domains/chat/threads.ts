@@ -10,7 +10,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
-import * as Prompt from "effect/unstable/ai/Prompt";
+import * as Prompt from "effect/ai/Prompt";
 import { RepoError, ThreadNotFound } from "./errors";
 import { MessageId, type NewMessage, StoredMessage, Thread, ThreadId } from "./types";
 
